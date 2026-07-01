@@ -1,0 +1,197 @@
+/* ===========================================================================
+   Destiny 2 UI language — design tokens
+   Charcoal/near-black surfaces, thin cyan accents, condensed uppercase headers,
+   sharp/angular framing (no rounded corners), diagonal + hex cuts.
+   =========================================================================== */
+
+:root {
+  /* Surfaces */
+  --d2-bg: #0a0c0f;
+  --d2-surface: #12161b;
+  --d2-surface-2: #191f26;
+  --d2-panel: #1c232b;
+  --d2-line: #2b343d;
+
+  /* Text */
+  --d2-text: #e7edf2;
+  --d2-text-dim: #8b98a5;
+  --d2-text-faint: #55606b;
+
+  /* Accents */
+  --d2-cyan: #4fd0e0;
+  --d2-cyan-bright: #7fe9f5;
+  --d2-gold: #f5dc56; /* exotic / highlight */
+  --d2-danger: #e0563f;
+  --d2-ok: #67c98a;
+
+  /* Metrics */
+  --d2-gap: 12px;
+  --d2-radius: 0px; /* intentionally sharp */
+
+  /* Angular clip used for panels/buttons (top-right + bottom-left notch) */
+  --d2-notch: 10px;
+
+  --font-sans: "Neue Haas Grotesk", "Helvetica Neue", "Segoe UI", system-ui, sans-serif;
+  --font-condensed: "Bebas Neue", "Oswald", "Helvetica Neue", system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--d2-bg);
+  color: var(--d2-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background-image:
+    radial-gradient(circle at 20% -10%, rgba(79, 208, 224, 0.06), transparent 40%),
+    radial-gradient(circle at 90% 110%, rgba(79, 208, 224, 0.04), transparent 45%);
+}
+
+h1,
+h2,
+h3,
+.d2-header {
+  font-family: var(--font-condensed);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  margin: 0;
+}
+
+a {
+  color: var(--d2-cyan);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--d2-cyan-bright);
+}
+
+/* ---- Reusable angular panel ------------------------------------------------ */
+.d2-panel {
+  background: var(--d2-surface);
+  border: 1px solid var(--d2-line);
+  clip-path: polygon(
+    var(--d2-notch) 0,
+    100% 0,
+    100% calc(100% - var(--d2-notch)),
+    calc(100% - var(--d2-notch)) 100%,
+    0 100%,
+    0 var(--d2-notch)
+  );
+}
+
+.d2-panel--accent {
+  border-color: var(--d2-cyan);
+  box-shadow: inset 0 0 0 1px rgba(79, 208, 224, 0.15);
+}
+
+/* thin cyan rule */
+.d2-rule {
+  height: 1px;
+  background: linear-gradient(90deg, var(--d2-cyan), transparent);
+  border: 0;
+  margin: 8px 0;
+}
+
+.d2-eyebrow {
+  font-family: var(--font-condensed);
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  font-size: 12px;
+  color: var(--d2-cyan);
+}
+
+/* ---- Angular button -------------------------------------------------------- */
+.d2-btn {
+  font-family: var(--font-condensed);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 15px;
+  color: var(--d2-text);
+  background: var(--d2-surface-2);
+  border: 1px solid var(--d2-line);
+  padding: 10px 18px;
+  cursor: pointer;
+  clip-path: polygon(
+    8px 0,
+    100% 0,
+    100% calc(100% - 8px),
+    calc(100% - 8px) 100%,
+    0 100%,
+    0 8px
+  );
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.d2-btn:hover {
+  border-color: var(--d2-cyan);
+  color: var(--d2-cyan-bright);
+  background: var(--d2-panel);
+}
+.d2-btn--primary {
+  background: rgba(79, 208, 224, 0.12);
+  border-color: var(--d2-cyan);
+  color: var(--d2-cyan-bright);
+}
+
+/* ---- Form fields ----------------------------------------------------------- */
+.d2-input {
+  background: var(--d2-bg);
+  border: 1px solid var(--d2-line);
+  color: var(--d2-text);
+  padding: 9px 12px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  outline: none;
+}
+.d2-input:focus {
+  border-color: var(--d2-cyan);
+}
+
+.mono {
+  font-family: ui-monospace, "SF Mono", "Cascadia Code", Menlo, monospace;
+}
+
+/* ---- POC layout (responsive) ---------------------------------------------- */
+.poc-main {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+.poc-viewport {
+  flex: 1;
+  position: relative;
+  min-width: 0;
+}
+.poc-aside {
+  width: 380px;
+  flex-shrink: 0;
+  border-left: 1px solid var(--d2-line);
+  background: var(--d2-surface);
+  padding: 20px;
+  overflow-y: auto;
+}
+@media (max-width: 760px) {
+  .poc-main {
+    flex-direction: column;
+  }
+  .poc-viewport {
+    flex: none;
+    height: 55vh;
+    width: 100%;
+  }
+  .poc-aside {
+    width: 100%;
+    flex: 1;
+    border-left: none;
+    border-top: 1px solid var(--d2-line);
+  }
+}

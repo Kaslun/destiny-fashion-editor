@@ -179,6 +179,16 @@ a:hover {
   padding: 20px;
   overflow-y: auto;
 }
+.editor-aside {
+  width: 400px;
+  flex-shrink: 0;
+  border-left: 1px solid var(--d2-line);
+  background: var(--d2-surface);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
 @media (max-width: 760px) {
   .poc-main {
     flex-direction: column;
@@ -188,7 +198,8 @@ a:hover {
     height: 55vh;
     width: 100%;
   }
-  .poc-aside {
+  .poc-aside,
+  .editor-aside {
     width: 100%;
     flex: 1;
     border-left: none;

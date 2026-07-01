@@ -39,8 +39,10 @@ export interface ResolvedManifest {
   version: string;
   gearAssetDatabases: GearAssetDatabase[];
   gearCdn: MobileGearCDN;
-  /** en-locale world content path (item/stat/perk/class defs) for later steps. */
+  /** en-locale aggregate world content path. */
   worldContentPath: string;
+  /** en-locale per-table JSON paths (DestinyInventoryItemDefinition, etc.). */
+  componentPaths: Record<string, string>;
   fetchedAt: string;
 }
 
@@ -85,6 +87,7 @@ export async function getManifest(force = false): Promise<ResolvedManifest> {
     gearAssetDatabases: remote.mobileGearAssetDataBases ?? [],
     gearCdn: remote.mobileGearCDN,
     worldContentPath: remote.jsonWorldContentPaths?.en ?? "",
+    componentPaths: remote.jsonWorldComponentContentPaths?.en ?? {},
     fetchedAt: new Date().toISOString(),
   };
 

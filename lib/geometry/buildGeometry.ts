@@ -28,6 +28,9 @@ import {
 } from "./renderMetadata";
 import { fileAsText, findRenderMetadata } from "./tgxm";
 
+/** Primitive-restart sentinel for 16-bit triangle strips. */
+const RESTART_INDEX = 0xffff;
+
 const SEM_POSITION = "_tfx_vb_semantic_position";
 const SEM_NORMAL = "_tfx_vb_semantic_normal";
 const SEM_TEXCOORD = "_tfx_vb_semantic_texcoord";
@@ -210,13 +213,22 @@ function buildMesh(
     const end = Math.min(part.startIndex + part.indexCount, sourceIndexCount);
 
     if (part.primitiveType === PRIMITIVE_TRIANGLE_STRIP) {
-      // Expand strip -> list, respecting degenerate/restart via winding.
+      // Expand strip -> list. Bungie strips use 0xFFFF as a primitive-restart
+      // sentinel; a triangle touching it (or a degenerate) is skipped, and
+      // parity resets after each restart so winding stays correct.
+      let stripStart = part.startIndex;
       for (let i = part.startIndex; i < end - 2; i++) {
         const a = readIndex(i);
         const b = readIndex(i + 1);
         const c = readIndex(i + 2);
+        if (a === RESTART_INDEX || b === RESTART_INDEX || c === RESTART_INDEX) {
+          if (c === RESTART_INDEX) stripStart = i + 3;
+          else if (b === RESTART_INDEX) stripStart = i + 2;
+          else stripStart = i + 1;
+          continue;
+        }
         if (a === b || b === c || a === c) continue; // degenerate
-        if ((i - part.startIndex) % 2 === 0) combined.push(a, b, c);
+        if ((i - stripStart) % 2 === 0) combined.push(a, b, c);
         else combined.push(a, c, b);
       }
     } else {

@@ -21,9 +21,14 @@ export default function Home() {
           Three.js) is wired to a verification page. Load a single item hash and
           confirm the real LOD-0 mesh and textures render.
         </p>
-        <Link href="/poc" className="d2-btn d2-btn--primary" style={{ display: "inline-block", marginTop: 12 }}>
-          Open POC Viewer →
-        </Link>
+        <div style={{ display: "flex", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
+          <Link href="/editor" className="d2-btn d2-btn--primary" style={{ display: "inline-block" }}>
+            Open Manual Editor →
+          </Link>
+          <Link href="/poc" className="d2-btn" style={{ display: "inline-block" }}>
+            POC Viewer
+          </Link>
+        </div>
       </div>
     </main>
   );

@@ -176,21 +176,42 @@ export function parseRenderMetadata(json: string): RenderMetadata {
   return { meshes, raw: data };
 }
 
+// Stage-part flag bits (empirically derived from live D2 items). A mesh's
+// index buffer is shared across many stage parts describing different LODs and
+// render passes; without filtering they overlap and z-fight, and secondary
+// passes throw spanning artifacts. Bit 0x8 marks a secondary/decal pass we skip
+// for the main opaque render.
+const FLAG_SECONDARY_PASS = 0x8;
+
 /**
- * Stage parts that belong to LOD 0 (highest detail).
+ * Stage parts that belong to LOD 0 (highest detail), deduplicated.
  *
- * Empirically (confirmed against live D2 items) `lod_category` values vary per
- * mesh — e.g. one mesh uses {0,4,7,9}, another {1,8}. The lowest value present
- * in a mesh is its highest-detail LOD, so we select parts matching that minimum
- * rather than a fixed category set. Falls back to all parts if categories are
- * absent.
+ * `lod_category` values vary per mesh (e.g. {0,4,7,9} vs {1,8}); the lowest
+ * value present is the highest-detail LOD. Among those we (a) drop secondary-
+ * pass parts (flag 0x8) and (b) dedupe identical draw ranges, since the same
+ * geometry is often listed multiple times for different passes/variants.
  */
 export function lod0Parts(mesh: RenderMesh): StagePart[] {
   const cats = mesh.stageParts.map((p) => p.lodCategory).filter((c) => c >= 0);
   if (cats.length === 0) return mesh.stageParts;
   const min = Math.min(...cats);
-  const selected = mesh.stageParts.filter((p) => p.lodCategory === min);
-  return selected.length > 0 ? selected : mesh.stageParts;
+
+  const pick = (allowSecondaryFilter: boolean): StagePart[] => {
+    // Keep the largest draw range per start_index (overlapping ranges at the
+    // same start are different LOD runs of the same geometry — take the finest).
+    const byStart = new Map<number, StagePart>();
+    for (const p of mesh.stageParts) {
+      if (p.lodCategory !== min) continue;
+      if (allowSecondaryFilter && (p.flags & FLAG_SECONDARY_PASS) !== 0) continue;
+      const existing = byStart.get(p.startIndex);
+      if (!existing || p.indexCount > existing.indexCount) byStart.set(p.startIndex, p);
+    }
+    return [...byStart.values()];
+  };
+
+  const selected = pick(true);
+  // If flag filtering removed everything, retry without it (unknown flag scheme).
+  return selected.length > 0 ? selected : pick(false);
 }
 
 /** Compact, human-readable summary for the POC debug dump. */

@@ -157,6 +157,7 @@ function DebugPanel({ debug }: { debug: GearModelDebug }) {
   const rows: [string, string][] = [
     ["Manifest", debug.manifestVersion ?? "—"],
     ["Meshes", String(debug.meshCount)],
+    ["Textured", `${debug.texturedMeshCount}/${debug.meshCount}`],
     ["Triangles", debug.totalTriangles.toLocaleString()],
     ["Geometry files", String(debug.geometryFiles.length)],
     ["Texture files", String(debug.textureFiles.length)],

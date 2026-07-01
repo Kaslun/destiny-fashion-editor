@@ -1,20 +1,30 @@
 /**
  * Browser-side gear model loader. Runs the full pipeline for one item hash:
  *
- *   /api/gearasset/:hash  ->  proxied .tgxm geometry containers  ->  parse
- *   ->  build BufferGeometry  ->  resolve dyes  ->  Three.js meshes
+ *   /api/gearasset/:hash  ->  proxied .tgxm geometry + texture containers
+ *   ->  parse  ->  build BufferGeometry  ->  decode textures  ->  Three.js meshes
  *
- * Returns a THREE.Group plus a debug payload so the POC can show exactly what
- * resolved (geometry files, texture files, metadata summary). Texture loading
- * is intentionally best-effort/off by default — geometry visibility is the POC
- * gate; textures + gearstack are tuned once we see live data.
+ * Texture -> mesh association comes from `region_index_sets` in the gear-asset
+ * content: each entry maps geometry indices to the texture-container indices
+ * that dress them. Within a container, entry suffixes give the role
+ * (diffuse `_0`, normal `_1`, gearstack `_2`). See textureContainer.ts.
+ *
+ * Returns a THREE.Group plus a debug payload for the POC.
  */
 import * as THREE from "three";
 import { parseTgxm } from "@/lib/geometry/tgxm";
 import { buildGeometryFromContainer } from "@/lib/geometry/buildGeometry";
 import { summarize } from "@/lib/geometry/renderMetadata";
+import {
+  extractTextureImages,
+  pickBestByRole,
+  type TexImage,
+} from "@/lib/geometry/textureContainer";
 import { resolveDyeSet } from "@/lib/materials/gearDye";
-import { createGearMaterials } from "@/lib/materials/gearMaterial";
+import {
+  createGearMaterials,
+  type GearTextureMaps,
+} from "@/lib/materials/gearMaterial";
 
 export interface GearModelDebug {
   itemHash: number;
@@ -23,6 +33,7 @@ export interface GearModelDebug {
   textureFiles: string[];
   gearFiles: string[];
   meshCount: number;
+  texturedMeshCount: number;
   totalTriangles: number;
   metadataSummaries: unknown[];
   warnings: string[];
@@ -39,6 +50,11 @@ interface FileRef {
   proxyUrl: string;
 }
 
+interface RegionEntry {
+  textures?: number[];
+  geometry?: number[];
+}
+
 interface GearAssetResponse {
   itemHash: number;
   found: boolean;
@@ -48,6 +64,8 @@ interface GearAssetResponse {
     geometry: FileRef[];
     textures: FileRef[];
     gear: FileRef[];
+    region_index_sets: Record<string, RegionEntry[]> | null;
+    dye_index_set: RegionEntry | null;
   }[];
   raw?: {
     content?: {
@@ -56,6 +74,39 @@ interface GearAssetResponse {
       custom_dyes?: unknown[];
     }[];
   };
+}
+
+/** geometryIndex -> texture-container indices, from region_index_sets. */
+function buildGeomTextureMap(
+  regions: Record<string, RegionEntry[]> | null,
+): Map<number, number[]> {
+  const map = new Map<number, number[]>();
+  if (!regions) return map;
+  for (const entries of Object.values(regions)) {
+    for (const entry of entries) {
+      for (const gi of entry.geometry ?? []) {
+        const cur = map.get(gi) ?? [];
+        map.set(gi, cur.concat(entry.textures ?? []));
+      }
+    }
+  }
+  return map;
+}
+
+async function bytesToTexture(
+  bytes: Uint8Array,
+  srgb: boolean,
+): Promise<THREE.Texture> {
+  // Copy into a fresh ArrayBuffer (bytes is a subarray view of the container).
+  const blob = new Blob([bytes.slice()]);
+  const bitmap = await createImageBitmap(blob, { imageOrientation: "none" });
+  const tex = new THREE.Texture(bitmap);
+  tex.flipY = false; // UVs are already V-flipped in buildGeometry
+  tex.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.anisotropy = 4;
+  tex.needsUpdate = true;
+  return tex;
 }
 
 export async function loadGearModel(itemHash: number): Promise<LoadedGearModel> {
@@ -72,7 +123,6 @@ export async function loadGearModel(itemHash: number): Promise<LoadedGearModel> 
     throw new Error("No gear-asset content for this item hash.");
   }
 
-  // Prefer a content record that actually has geometry.
   const content =
     data.content.find((c) => c.geometry.length > 0) ?? data.content[0];
 
@@ -83,13 +133,53 @@ export async function loadGearModel(itemHash: number): Promise<LoadedGearModel> 
     default: rawContent.default_dyes,
   });
 
+  const geomTexMap = buildGeomTextureMap(content.region_index_sets);
+  // Cache parsed texture containers by index (a container can dress >1 mesh).
+  const texContainerCache = new Map<number, TexImage[]>();
+
+  async function texturesForGeometry(gi: number): Promise<GearTextureMaps> {
+    const texIdxs = geomTexMap.get(gi) ?? [];
+    const images: TexImage[] = [];
+    for (const ti of texIdxs) {
+      const ref = content.textures[ti];
+      if (!ref) continue;
+      try {
+        let entries = texContainerCache.get(ti);
+        if (!entries) {
+          const buf = await fetch(ref.proxyUrl).then((r) => {
+            if (!r.ok) throw new Error(`texture ${r.status}`);
+            return r.arrayBuffer();
+          });
+          entries = extractTextureImages(buf);
+          texContainerCache.set(ti, entries);
+        }
+        images.push(...entries);
+      } catch (err) {
+        warnings.push(
+          `Texture #${ti} (${ref.file}) failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
+
+    const maps: GearTextureMaps = {};
+    const diffuse = pickBestByRole(images, "diffuse");
+    const normal = pickBestByRole(images, "normal");
+    const gearstack = pickBestByRole(images, "gearstack");
+    if (diffuse) maps.diffuse = await bytesToTexture(diffuse.bytes, true);
+    if (normal) maps.normal = await bytesToTexture(normal.bytes, false);
+    if (gearstack) maps.gearstack = await bytesToTexture(gearstack.bytes, false);
+    return maps;
+  }
+
   const group = new THREE.Group();
   group.name = `item_${itemHash}`;
   const metadataSummaries: unknown[] = [];
   let meshCount = 0;
+  let texturedMeshCount = 0;
   let totalTriangles = 0;
 
-  for (const geom of content.geometry) {
+  for (let gi = 0; gi < content.geometry.length; gi++) {
+    const geom = content.geometry[gi];
     try {
       const buf = await fetch(geom.proxyUrl).then((r) => {
         if (!r.ok) throw new Error(`asset ${r.status}`);
@@ -99,12 +189,21 @@ export async function loadGearModel(itemHash: number): Promise<LoadedGearModel> 
       const built = buildGeometryFromContainer(container);
       metadataSummaries.push({ file: geom.file, ...summarize(built.metadata) });
 
+      const maps = await texturesForGeometry(gi);
+      const hasTex = !!(maps.diffuse || maps.normal || maps.gearstack);
+
       for (const m of built.meshes) {
-        const materials = createGearMaterials(m.groupDyeIndices, dyeSet);
+        // Gearstack drives AO + roughness now; dye-colour tinting stays off until
+        // real shader/dye colours are loaded (from the item definition, later).
+        const materials = createGearMaterials(m.groupDyeIndices, dyeSet, maps, {
+          useGearstack: true,
+          applyDye: false,
+        });
         const mesh = new THREE.Mesh(m.geometry, materials);
         mesh.name = geom.file;
         group.add(mesh);
         meshCount++;
+        if (hasTex) texturedMeshCount++;
         const idx = m.geometry.getIndex();
         if (idx) totalTriangles += idx.count / 3;
       }
@@ -141,6 +240,7 @@ export async function loadGearModel(itemHash: number): Promise<LoadedGearModel> 
       textureFiles: content.textures.map((t) => t.file),
       gearFiles: content.gear.map((g) => g.file),
       meshCount,
+      texturedMeshCount,
       totalTriangles: Math.round(totalTriangles),
       metadataSummaries,
       warnings,

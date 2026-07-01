@@ -25,7 +25,10 @@ export interface GearTextureMaps {
 }
 
 export interface GearMaterialOptions {
+  /** Apply gearstack AO + smoothness to the PBR response. */
   useGearstack?: boolean;
+  /** Tint the albedo with the resolved dye colours (needs real shader/dye data). */
+  applyDye?: boolean;
 }
 
 function makeOne(
@@ -49,30 +52,35 @@ function makeOne(
 
   if (maps.diffuse) maps.diffuse.colorSpace = THREE.SRGBColorSpace;
 
-  const wantGearstack = opts.useGearstack && !!maps.gearstack;
+  // Gearstack needs the diffuse map's UV varying (vMapUv), so only wire it when
+  // a diffuse map is present alongside it.
+  const wantGearstack = opts.useGearstack && !!maps.gearstack && !!maps.diffuse;
   if (wantGearstack) {
     mat.onBeforeCompile = (shader) => {
       shader.uniforms.uGearstack = { value: maps.gearstack };
       shader.uniforms.uPrimaryTint = { value: dye.primary };
       shader.uniforms.uSecondaryTint = { value: dye.secondary };
+      shader.uniforms.uApplyDye = { value: opts.applyDye ? 1 : 0 };
 
       shader.fragmentShader =
-        `uniform sampler2D uGearstack;\nuniform vec3 uPrimaryTint;\nuniform vec3 uSecondaryTint;\n` +
+        `uniform sampler2D uGearstack;\nuniform vec3 uPrimaryTint;\nuniform vec3 uSecondaryTint;\nuniform float uApplyDye;\n` +
         shader.fragmentShader.replace(
           "#include <map_fragment>",
           `#include <map_fragment>
           {
             vec4 gs = texture2D( uGearstack, vMapUv );
-            // A channel: dye mask. Blend primary tint into masked regions,
-            // secondary elsewhere, weighted so untinted detail survives.
-            vec3 tint = mix( uSecondaryTint, uPrimaryTint, gs.a );
-            diffuseColor.rgb *= tint;
-            // R = AO (darken), G = smoothness -> lower roughness handled below.
-            diffuseColor.rgb *= mix( 0.6, 1.0, gs.r );
+            // R = ambient occlusion -> darken albedo.
+            diffuseColor.rgb *= mix( 0.55, 1.0, gs.r );
+            // A = dye mask. Tint only when a real shader/dye is applied, so an
+            // undyed item keeps its true albedo instead of a neutral wash.
+            if ( uApplyDye > 0.5 ) {
+              vec3 tint = mix( uSecondaryTint, uPrimaryTint, gs.a );
+              diffuseColor.rgb *= tint;
+            }
           }`,
         );
 
-      // G channel: smoothness -> roughness. Feed into roughness map slot.
+      // G = smoothness -> roughness (inverted).
       shader.fragmentShader = shader.fragmentShader.replace(
         "#include <roughnessmap_fragment>",
         `#include <roughnessmap_fragment>

@@ -20,7 +20,7 @@ import {
   pickBestByRole,
   type TexImage,
 } from "@/lib/geometry/textureContainer";
-import { resolveDyeSet } from "@/lib/materials/gearDye";
+import { dyeSetFromGearDyes, type DyeSet } from "@/lib/materials/gearDye";
 import {
   createGearMaterials,
   type GearTextureMaps,
@@ -67,13 +67,6 @@ interface GearAssetResponse {
     region_index_sets: Record<string, RegionEntry[]> | null;
     dye_index_set: RegionEntry | null;
   }[];
-  raw?: {
-    content?: {
-      default_dyes?: unknown[];
-      locked_dyes?: unknown[];
-      custom_dyes?: unknown[];
-    }[];
-  };
 }
 
 /** geometryIndex -> texture-container indices, from region_index_sets. */
@@ -109,10 +102,18 @@ async function bytesToTexture(
   return tex;
 }
 
-export async function loadGearModel(itemHash: number): Promise<LoadedGearModel> {
+export interface LoadOptions {
+  /** Apply this shader's dye colours to the model. */
+  shaderHash?: number | null;
+}
+
+export async function loadGearModel(
+  itemHash: number,
+  opts: LoadOptions = {},
+): Promise<LoadedGearModel> {
   const warnings: string[] = [];
 
-  const res = await fetch(`/api/gearasset/${itemHash}?raw=1`);
+  const res = await fetch(`/api/gearasset/${itemHash}`);
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body.error ?? `gearasset lookup failed (${res.status})`);
@@ -126,12 +127,23 @@ export async function loadGearModel(itemHash: number): Promise<LoadedGearModel> 
   const content =
     data.content.find((c) => c.geometry.length > 0) ?? data.content[0];
 
-  const rawContent = data.raw?.content?.[0] ?? {};
-  const dyeSet = resolveDyeSet({
-    locked: rawContent.locked_dyes,
-    custom: rawContent.custom_dyes,
-    default: rawContent.default_dyes,
-  });
+  // A shader supplies per-slot dye colours; without one the item shows its baked
+  // textures (weapons look right; armor is neutral until a shader is applied).
+  let dyeSet: DyeSet = {};
+  let applyDye = false;
+  if (opts.shaderHash) {
+    try {
+      const dyeRes = await fetch(`/api/dyes/${opts.shaderHash}`).then((r) => r.json());
+      if (dyeRes.slots && Object.keys(dyeRes.slots).length > 0) {
+        dyeSet = dyeSetFromGearDyes(dyeRes.slots);
+        applyDye = true;
+      }
+    } catch (err) {
+      warnings.push(
+        `Shader ${opts.shaderHash} dyes failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+  }
 
   const geomTexMap = buildGeomTextureMap(content.region_index_sets);
   // Cache parsed texture containers by index (a container can dress >1 mesh).
@@ -193,11 +205,11 @@ export async function loadGearModel(itemHash: number): Promise<LoadedGearModel> 
       const hasTex = !!(maps.diffuse || maps.normal || maps.gearstack);
 
       for (const m of built.meshes) {
-        // Gearstack drives AO + roughness now; dye-colour tinting stays off until
-        // real shader/dye colours are loaded (from the item definition, later).
+        // Gearstack drives AO + roughness; dye tinting turns on only when a
+        // shader supplied colours (applyDye), blended by the gearstack mask.
         const materials = createGearMaterials(m.groupDyeIndices, dyeSet, maps, {
           useGearstack: true,
-          applyDye: false,
+          applyDye,
         });
         const mesh = new THREE.Mesh(m.geometry, materials);
         mesh.name = geom.file;

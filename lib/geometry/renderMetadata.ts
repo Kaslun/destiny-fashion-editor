@@ -12,10 +12,9 @@
  * the real key names against a live item and tighten this up empirically.
  */
 
-// LOD stage categories we keep for LOD 0 (highest detail). Bungie tags the
-// full-detail parts with these categories; lower LODs use higher values.
-export const LOD0_CATEGORIES = new Set([0, 7, 15]);
-
+// Primitive types: 3 = triangle list (no special handling), 5 = triangle strip
+// (expanded in buildGeometry). Highest-detail LOD is selected per-mesh in
+// lod0Parts().
 export const PRIMITIVE_TRIANGLES = 3;
 export const PRIMITIVE_TRIANGLE_STRIP = 5;
 

@@ -7,9 +7,12 @@
  */
 import { useState, useCallback } from "react";
 import dynamic from "next/dynamic";
-import Link from "next/link";
 import GearModel, { type LoadPath } from "@/components/viewer/GearModel";
 import ItemBrowser, { type ItemEntry } from "@/components/editor/ItemBrowser";
+import ShaderPicker from "@/components/editor/ShaderPicker";
+import AppHeader from "@/components/ui/AppHeader";
+
+type BrowseMode = "gear" | "shader";
 
 const ModelViewer = dynamic(() => import("@/components/viewer/ModelViewer"), {
   ssr: false,
@@ -20,6 +23,8 @@ const ModelViewer = dynamic(() => import("@/components/viewer/ModelViewer"), {
 
 export default function EditorPage() {
   const [selected, setSelected] = useState<ItemEntry | null>(null);
+  const [shaderHash, setShaderHash] = useState<number | null>(null);
+  const [mode, setMode] = useState<BrowseMode>("gear");
   const [path, setPath] = useState<LoadPath | null>(null);
 
   const onSelect = useCallback((item: ItemEntry) => {
@@ -30,12 +35,19 @@ export default function EditorPage() {
   const onStatus = useCallback((s: { path: LoadPath }) => setPath(s.path), []);
 
   return (
-    <main className="poc-main">
+    <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
+      <AppHeader title="Manual Editor" subtitle="Fashion · Manual Mode" />
+      <main className="poc-main" style={{ height: "auto", flex: 1, minHeight: 0 }}>
       {/* Viewport */}
       <section className="poc-viewport">
+        <div className="d2-frame" />
         {selected ? (
           <ModelViewer>
-            <GearModel itemHash={selected.hash} onStatus={onStatus} />
+            <GearModel
+              itemHash={selected.hash}
+              shaderHash={shaderHash}
+              onStatus={onStatus}
+            />
           </ModelViewer>
         ) : (
           <div
@@ -60,8 +72,8 @@ export default function EditorPage() {
           <div
             style={{
               position: "absolute",
-              top: 16,
-              left: 16,
+              top: 26,
+              left: 26,
               padding: "8px 14px",
               border: "1px solid var(--d2-line)",
               background: "rgba(10,12,15,0.82)",
@@ -92,26 +104,44 @@ export default function EditorPage() {
                     : "● NO 3D — FALLBACK"}
               </div>
             )}
+            {shaderHash && (
+              <div style={{ fontSize: 10, color: "var(--d2-cyan)" }}>◆ SHADER APPLIED</div>
+            )}
           </div>
         )}
       </section>
 
       {/* Browser panel */}
       <aside className="editor-aside">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-          <div>
-            <p className="d2-eyebrow">Destiny Fashion</p>
-            <h1 style={{ fontSize: 24 }}>Manual Editor</h1>
-          </div>
-          <Link href="/" style={{ fontSize: 12 }}>
-            ← Home
-          </Link>
+        {/* Gear / Shader mode toggle */}
+        <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+          <button
+            className={`d2-btn ${mode === "gear" ? "d2-btn--primary" : ""}`}
+            style={{ flex: 1, padding: "8px 0", fontSize: 13 }}
+            onClick={() => setMode("gear")}
+          >
+            Gear
+          </button>
+          <button
+            className={`d2-btn ${mode === "shader" ? "d2-btn--primary" : ""}`}
+            style={{ flex: 1, padding: "8px 0", fontSize: 13 }}
+            onClick={() => setMode("shader")}
+            disabled={!selected}
+            title={selected ? "" : "Select an item first"}
+          >
+            Shaders
+          </button>
         </div>
-        <hr className="d2-rule" />
+
         <div style={{ flex: 1, minHeight: 0 }}>
-          <ItemBrowser selectedHash={selected?.hash ?? null} onSelect={onSelect} />
+          {mode === "gear" ? (
+            <ItemBrowser selectedHash={selected?.hash ?? null} onSelect={onSelect} />
+          ) : (
+            <ShaderPicker selectedShaderHash={shaderHash} onSelect={setShaderHash} />
+          )}
         </div>
       </aside>
-    </main>
+      </main>
+    </div>
   );
 }

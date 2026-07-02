@@ -16,6 +16,7 @@ export type LoadPath = "loading" | "real" | "fallback";
 
 interface Props {
   itemHash: number;
+  shaderHash?: number | null;
   onStatus?: (s: {
     path: LoadPath;
     debug?: GearModelDebug;
@@ -23,7 +24,7 @@ interface Props {
   }) => void;
 }
 
-export default function GearModel({ itemHash, onStatus }: Props) {
+export default function GearModel({ itemHash, shaderHash, onStatus }: Props) {
   const [group, setGroup] = useState<THREE.Group | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -33,7 +34,7 @@ export default function GearModel({ itemHash, onStatus }: Props) {
     setFailed(false);
     onStatus?.({ path: "loading" });
 
-    loadGearModel(itemHash)
+    loadGearModel(itemHash, { shaderHash })
       .then(({ group, debug }) => {
         if (disposed) return;
         setGroup(group);
@@ -52,7 +53,7 @@ export default function GearModel({ itemHash, onStatus }: Props) {
       disposed = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [itemHash]);
+  }, [itemHash, shaderHash]);
 
   if (group) return <primitive object={group} />;
   if (failed) return <FallbackModel />;

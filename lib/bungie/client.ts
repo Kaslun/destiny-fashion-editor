@@ -10,6 +10,8 @@
  * ErrorCode === 1 (Success) is the only non-error code.
  */
 
+import { env } from "@/lib/env";
+
 export const BUNGIE_ROOT = "https://www.bungie.net";
 export const BUNGIE_PLATFORM = `${BUNGIE_ROOT}/Platform`;
 
@@ -35,13 +37,7 @@ interface BungieEnvelope<T> {
 }
 
 function apiKey(): string {
-  const key = process.env.BUNGIE_API_KEY;
-  if (!key) {
-    throw new Error(
-      "BUNGIE_API_KEY is not set. Add it to .env.local (see .env.example).",
-    );
-  }
-  return key;
+  return env.bungieApiKey();
 }
 
 /**

@@ -4,6 +4,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { searchItems, type SlotKey } from "@/lib/bungie/itemDefs";
+import { apiError } from "@/lib/http";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,14 +31,15 @@ export async function GET(req: NextRequest) {
       q: sp.get("q") ?? undefined,
       slot: slotParam && SLOTS.has(slotParam) ? slotParam : undefined,
       kind:
-        kindParam === "weapon" || kindParam === "armor" ? kindParam : undefined,
+        kindParam === "weapon" || kindParam === "armor" || kindParam === "shader"
+          ? kindParam
+          : undefined,
       classType: classParam != null ? Number(classParam) : undefined,
       limit: sp.get("limit") ? Number(sp.get("limit")) : undefined,
     });
 
     return NextResponse.json(result);
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return apiError(err, 500, "items");
   }
 }

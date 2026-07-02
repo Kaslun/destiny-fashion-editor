@@ -11,6 +11,26 @@ const nextConfig = {
     config.resolve.fallback = { ...config.resolve.fallback, fs: false, path: false, crypto: false };
     return config;
   },
+  // Baseline security headers. A full Content-Security-Policy is intentionally
+  // deferred (needs per-env tuning for Next dev's eval + WebGL/blob usage) and
+  // is documented in SECURITY.md as a follow-up.
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "X-DNS-Prefetch-Control", value: "off" },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=()",
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

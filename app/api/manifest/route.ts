@@ -5,17 +5,19 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getManifest } from "@/lib/bungie/manifest";
+import { apiError, isProd } from "@/lib/http";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
-    const force = req.nextUrl.searchParams.get("force") === "1";
+    // `force` re-downloads the manifest from Bungie — only honoured in dev to
+    // avoid a resource-abuse vector in production.
+    const force = !isProd() && req.nextUrl.searchParams.get("force") === "1";
     const manifest = await getManifest(force);
     return NextResponse.json(manifest);
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return apiError(err, 500, "manifest");
   }
 }

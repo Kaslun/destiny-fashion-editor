@@ -152,3 +152,57 @@ export async function getGearAsset(
 
   return null;
 }
+
+// --- debug/introspection helpers --------------------------------------------
+/** List tables (and row counts) in the highest-version gear-asset DB. */
+export async function listGearDbTables(): Promise<Record<string, number>> {
+  const manifest = await getManifest();
+  const dbs = [...manifest.gearAssetDatabases].sort((a, b) => b.version - a.version);
+  const database = await openDb(dbs[0]);
+  const res = database.exec(
+    "SELECT name FROM sqlite_master WHERE type='table'",
+  );
+  const names = (res[0]?.values ?? []).map((v) => String(v[0]));
+  const counts: Record<string, number> = {};
+  for (const n of names) {
+    const c = database.exec(`SELECT COUNT(*) FROM "${n}"`);
+    counts[n] = Number(c[0]?.values?.[0]?.[0] ?? 0);
+  }
+  return counts;
+}
+
+/** Fetch a raw JSON row from a gear-asset table by its (unsigned) hash id. */
+export async function queryGearTable(
+  tableName: string,
+  hash: number,
+): Promise<unknown | null> {
+  // Table names can't be bound as SQL parameters, so guard against injection:
+  // require a plain identifier AND that the table actually exists in the DB.
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(tableName)) {
+    throw new Error("Invalid table name");
+  }
+  const known = await listGearDbTables();
+  if (!(tableName in known)) {
+    throw new Error("Unknown table");
+  }
+
+  const manifest = await getManifest();
+  const dbs = [...manifest.gearAssetDatabases].sort((a, b) => b.version - a.version);
+  const signedId = hashToSignedId(hash);
+  for (const db of dbs) {
+    const database = await openDb(db);
+    let out: unknown | null = null;
+    try {
+      const stmt = database.prepare(
+        `SELECT json FROM "${tableName}" WHERE id = :id`,
+      );
+      stmt.bind({ ":id": signedId });
+      if (stmt.step()) out = JSON.parse(stmt.getAsObject().json as string);
+      stmt.free();
+    } catch {
+      // table may not exist in this db
+    }
+    if (out) return out;
+  }
+  return null;
+}

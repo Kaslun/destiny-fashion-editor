@@ -42,7 +42,9 @@ const ARMOR_SLOTS = new Set<SlotKey>([
   "classItem",
 ]);
 
-const DESTINY_ITEM_TYPE = { ARMOR: 2, WEAPON: 3 } as const;
+const DESTINY_ITEM_TYPE = { ARMOR: 2, WEAPON: 3, SHADER: 19 } as const;
+
+export type ItemKind = "weapon" | "armor" | "shader";
 
 export interface ItemIndexEntry {
   hash: number;
@@ -50,7 +52,7 @@ export interface ItemIndexEntry {
   /** proxied icon URL (or null) */
   icon: string | null;
   slot: SlotKey | null;
-  kind: "weapon" | "armor";
+  kind: ItemKind;
   tier: string;
   /** 0 Titan, 1 Hunter, 2 Warlock, 3 any (weapons) */
   classType: number;
@@ -94,20 +96,31 @@ function buildIndex(
     const itemType: number = item.itemType ?? 0;
     const isWeapon = itemType === DESTINY_ITEM_TYPE.WEAPON;
     const isArmor = itemType === DESTINY_ITEM_TYPE.ARMOR;
-    if (!isWeapon && !isArmor) continue;
+    const isShader =
+      itemType === DESTINY_ITEM_TYPE.SHADER &&
+      item.plug?.plugCategoryIdentifier === "shader";
 
-    const bucketHash: number = item.inventory?.bucketTypeHash ?? 0;
-    const slot = SLOT_BUCKETS[bucketHash] ?? null;
-    if (!slot) continue; // only equippable gear in known slots
-    if (isArmor && !ARMOR_SLOTS.has(slot)) continue;
-    if (isWeapon && ARMOR_SLOTS.has(slot)) continue;
+    let slot: SlotKey | null = null;
+    let kind: ItemKind;
+    if (isWeapon || isArmor) {
+      const bucketHash: number = item.inventory?.bucketTypeHash ?? 0;
+      slot = SLOT_BUCKETS[bucketHash] ?? null;
+      if (!slot) continue; // only equippable gear in known slots
+      if (isArmor && !ARMOR_SLOTS.has(slot)) continue;
+      if (isWeapon && ARMOR_SLOTS.has(slot)) continue;
+      kind = isWeapon ? "weapon" : "armor";
+    } else if (isShader) {
+      kind = "shader";
+    } else {
+      continue;
+    }
 
     items.push({
       hash: item.hash,
       name,
       icon: proxyIcon(item.displayProperties?.icon),
       slot,
-      kind: isWeapon ? "weapon" : "armor",
+      kind,
       tier: item.inventory?.tierTypeName ?? "",
       classType: item.classType ?? 3,
     });
@@ -151,7 +164,7 @@ export async function getItemIndex(force = false): Promise<ItemIndex> {
 export interface ItemSearchParams {
   q?: string;
   slot?: SlotKey;
-  kind?: "weapon" | "armor";
+  kind?: ItemKind;
   classType?: number;
   limit?: number;
 }

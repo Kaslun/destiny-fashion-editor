@@ -1,8 +1,11 @@
 import Link from "next/link";
+import AppHeader from "@/components/ui/AppHeader";
 
 export default function Home() {
   return (
-    <main style={{ maxWidth: 960, margin: "0 auto", padding: "64px 24px" }}>
+    <>
+    <AppHeader title="Destiny Fashion" subtitle="3D Editor" />
+    <main style={{ maxWidth: 960, margin: "0 auto", padding: "56px 24px" }}>
       <p className="d2-eyebrow">Bungie API · Three.js · Gear Assets</p>
       <h1 style={{ fontSize: 56, lineHeight: 1.0, marginTop: 8 }}>
         Destiny Fashion Editor
@@ -31,5 +34,6 @@ export default function Home() {
         </div>
       </div>
     </main>
+    </>
   );
 }

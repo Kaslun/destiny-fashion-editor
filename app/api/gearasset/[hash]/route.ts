@@ -12,6 +12,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getGearAsset, hashToSignedId } from "@/lib/bungie/gearAsset";
 import { getManifest, cdnUrl } from "@/lib/bungie/manifest";
+import { apiError } from "@/lib/http";
 
 export const runtime = "nodejs"; // needs fs + sql.js wasm
 
@@ -78,7 +79,6 @@ export async function GET(
       ...(wantRaw ? { raw: gearAsset.raw } : {}),
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: message, itemHash }, { status: 500 });
+    return apiError(err, 500, "gearasset");
   }
 }

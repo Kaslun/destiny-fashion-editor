@@ -68,47 +68,7 @@ export default function EditorPage() {
           </div>
         )}
 
-        {selected && (
-          <div
-            style={{
-              position: "absolute",
-              top: 26,
-              left: 26,
-              padding: "8px 14px",
-              border: "1px solid var(--d2-line)",
-              background: "rgba(10,12,15,0.82)",
-            }}
-          >
-            <div className="d2-eyebrow" style={{ fontSize: 10 }}>
-              {selected.tier} · {selected.slot}
-            </div>
-            <div style={{ fontFamily: "var(--font-condensed)", fontSize: 20, letterSpacing: "0.04em" }}>
-              {selected.name}
-            </div>
-            {path && (
-              <div
-                style={{
-                  fontSize: 10,
-                  color:
-                    path === "real"
-                      ? "var(--d2-ok)"
-                      : path === "fallback"
-                        ? "var(--d2-gold)"
-                        : "var(--d2-cyan)",
-                }}
-              >
-                {path === "loading"
-                  ? "LOADING…"
-                  : path === "real"
-                    ? "● REAL GEAR ASSET"
-                    : "● NO 3D — FALLBACK"}
-              </div>
-            )}
-            {shaderHash && (
-              <div style={{ fontSize: 10, color: "var(--d2-cyan)" }}>◆ SHADER APPLIED</div>
-            )}
-          </div>
-        )}
+        {selected && <ItemCard item={selected} path={path} shaderApplied={!!shaderHash} />}
       </section>
 
       {/* Browser panel */}
@@ -142,6 +102,91 @@ export default function EditorPage() {
         </div>
       </aside>
       </main>
+    </div>
+  );
+}
+
+const TIER_COLOR: Record<string, string> = {
+  Exotic: "#ceae33",
+  Legendary: "#5a3e70",
+  Rare: "#4f7ba8",
+  Uncommon: "#3a7d44",
+  Common: "#8a929c",
+};
+
+/** D2-style item detail card overlaid on the viewport (see FUI item tooltip). */
+function ItemCard({
+  item,
+  path,
+  shaderApplied,
+}: {
+  item: ItemEntry;
+  path: LoadPath | null;
+  shaderApplied: boolean;
+}) {
+  const tier = TIER_COLOR[item.tier] ?? "var(--d2-line)";
+  return (
+    <div
+      className="d2-panel"
+      style={{
+        position: "absolute",
+        top: 26,
+        left: 26,
+        width: 250,
+        padding: 0,
+        background: "rgba(10,12,15,0.9)",
+        overflow: "hidden",
+      }}
+    >
+      {/* tier-coloured header (darkened so the name stays legible on any tier) */}
+      <div
+        style={{
+          background: `color-mix(in srgb, ${tier} 55%, #0a0c0f)`,
+          borderBottom: `1px solid ${tier}`,
+          padding: "8px 12px",
+        }}
+      >
+        <div className="d2-tooltip-header">{item.name}</div>
+        <div
+          style={{
+            fontSize: 11,
+            textTransform: "uppercase",
+            letterSpacing: "0.08em",
+            color: "var(--d2-text-dim)",
+          }}
+        >
+          {item.tier} · {item.slot ?? item.kind}
+        </div>
+      </div>
+
+      <div style={{ padding: "8px 12px", display: "grid", gap: 4 }}>
+        {path && (
+          <div
+            style={{
+              fontSize: 10,
+              letterSpacing: "0.06em",
+              color:
+                path === "real"
+                  ? "var(--d2-ok)"
+                  : path === "fallback"
+                    ? "var(--d2-gold)"
+                    : "var(--d2-cyan)",
+            }}
+          >
+            {path === "loading"
+              ? "LOADING…"
+              : path === "real"
+                ? "● REAL GEAR ASSET"
+                : "● NO 3D — FALLBACK"}
+          </div>
+        )}
+        {shaderApplied && (
+          <div style={{ fontSize: 10, letterSpacing: "0.06em", color: "var(--d2-cyan)" }}>
+            ◆ SHADER APPLIED
+          </div>
+        )}
+      </div>
+      <div className="d2-hazard" />
     </div>
   );
 }

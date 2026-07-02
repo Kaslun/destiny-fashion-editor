@@ -1,7 +1,14 @@
 /* ===========================================================================
    Destiny 2 UI language — design tokens
-   Charcoal/near-black surfaces, thin cyan accents, condensed uppercase headers,
-   sharp/angular framing (no rounded corners), diagonal + hex cuts.
+   Charcoal/near-black surfaces, thin cyan accents, sharp/angular framing.
+
+   Typography follows Bungie's D2 type system (from the official style sheet):
+   ONE grotesk family (Neue Haas Grotesk) throughout — the "Destiny" feel comes
+   from weight (Medium 500 / Bold 700), TRACKING (letter-spacing) and UPPERCASE,
+   NOT from a condensed face. Neue Haas Grotesk is licensed; we fall back to
+   Helvetica/Arial (metric-similar). D2 tracking is in 1/1000 em (e.g. 375T =
+   0.375em); we scale a touch for web legibility. Named ramp = utility classes
+   below (.d2-tracked-title, .d2-screen-header, .d2-header, .d2-body, ...).
    =========================================================================== */
 
 :root {
@@ -31,8 +38,13 @@
   /* Angular clip used for panels/buttons (top-right + bottom-left notch) */
   --d2-notch: 10px;
 
-  --font-sans: "Neue Haas Grotesk", "Helvetica Neue", "Segoe UI", system-ui, sans-serif;
-  --font-condensed: "Bebas Neue", "Oswald", "Helvetica Neue", system-ui, sans-serif;
+  /* One grotesk family everywhere (Neue Haas Grotesk target; Helvetica/Arial
+     fallback). --font-condensed is kept as an alias for back-compat but is NOT
+     condensed — D2 uses the same grotesk for headers, differentiated by weight
+     and tracking. */
+  --font-sans: "Neue Haas Grotesk", "Helvetica Neue", Helvetica, Arial, "Segoe UI", system-ui, sans-serif;
+  --font-display: var(--font-sans);
+  --font-condensed: var(--font-sans);
 }
 
 * {
@@ -56,14 +68,25 @@ body {
     radial-gradient(circle at 90% 110%, rgba(79, 208, 224, 0.04), transparent 45%);
 }
 
+/* Headers. D2: SUB-SCREEN HEADER = 75 Bold, tight negative tracking; GENERAL
+   HEADER = 65 Medium, +tracking. Both uppercase, grotesk (not condensed). */
 h1,
+.d2-screen-header {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.0;
+  margin: 0;
+}
 h2,
 h3,
 .d2-header {
-  font-family: var(--font-condensed);
+  font-family: var(--font-display);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-weight: 600;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  line-height: 1.1;
   margin: 0;
 }
 
@@ -102,20 +125,25 @@ a:hover {
   margin: 8px 0;
 }
 
-.d2-eyebrow {
-  font-family: var(--font-condensed);
+/* TRACKED TITLE — wide-letterspaced section label (D2 uses 375T; scaled for
+   web). The signature "spaced-out caps" section header. */
+.d2-eyebrow,
+.d2-tracked-title {
+  font-family: var(--font-display);
   text-transform: uppercase;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.26em;
+  font-weight: 500;
   font-size: 12px;
   color: var(--d2-cyan);
 }
 
-/* ---- Angular button -------------------------------------------------------- */
+/* ---- Angular button (ON-SCREEN BUTTONS: 55 Display, very wide 205T) -------- */
 .d2-btn {
-  font-family: var(--font-condensed);
+  font-family: var(--font-display);
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  font-size: 15px;
+  letter-spacing: 0.16em;
+  font-weight: 500;
+  font-size: 14px;
   color: var(--d2-text);
   background: var(--d2-surface-2);
   border: 1px solid var(--d2-line);
@@ -259,6 +287,81 @@ a:hover {
   inset: 34%;
   border: 1px solid var(--d2-text-faint);
   transform: rotate(45deg);
+}
+
+/* ---- D2 type ramp (body / fiction / numbers / tooltip header) -------------- */
+.d2-body {
+  font-family: var(--font-sans);
+  font-weight: 400;
+  font-size: 14px;
+  letter-spacing: 0.01em;
+  line-height: 1.5;
+  color: var(--d2-text-dim);
+}
+.d2-fiction {
+  font-family: var(--font-sans);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--d2-text-dim);
+}
+.d2-sub-title {
+  font-family: var(--font-sans);
+  font-weight: 400;
+  font-size: 14px;
+  letter-spacing: 0.01em;
+}
+/* TOOLTIP HEADER — item name atop a detail card (65 Medium, uppercase). */
+.d2-tooltip-header {
+  font-family: var(--font-display);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: 22px;
+  line-height: 1.05;
+}
+/* Big numeric readout (75 Bold) — power/attack values. */
+.d2-num {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- FUI accents ----------------------------------------------------------- */
+/* Hazard-stripe divider (the yellow/purple chevron bars on the item screen). */
+.d2-hazard {
+  height: 6px;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--d2-cyan) 0 2px,
+    transparent 2px 10px
+  );
+  opacity: 0.5;
+}
+
+/* Stat row: label above a fill bar (weapon/armor stats). */
+.d2-stat {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 3px;
+  margin-bottom: 6px;
+}
+.d2-stat__label {
+  font-size: 11px;
+  color: var(--d2-text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.d2-stat__track {
+  height: 6px;
+  background: var(--d2-bg);
+  border: 1px solid var(--d2-line);
+}
+.d2-stat__fill {
+  height: 100%;
+  background: var(--d2-text);
 }
 
 /* ---- POC layout (responsive) ---------------------------------------------- */

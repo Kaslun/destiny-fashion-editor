@@ -67,6 +67,20 @@ interface GearAssetResponse {
     region_index_sets: Record<string, RegionEntry[]> | null;
     dye_index_set: RegionEntry | null;
   }[];
+  /** Which geometry indices to render (null = all); excludes body/gender overrides. */
+  renderGeometryIndices: number[] | null;
+}
+
+async function fetchDyeSet(hash: number): Promise<DyeSet | null> {
+  try {
+    const res = await fetch(`/api/dyes/${hash}`).then((r) => r.json());
+    if (res.slots && Object.keys(res.slots).length > 0) {
+      return dyeSetFromGearDyes(res.slots);
+    }
+  } catch {
+    /* ignore — model still renders with baked textures */
+  }
+  return null;
 }
 
 /** geometryIndex -> texture-container indices, from region_index_sets. */
@@ -127,30 +141,38 @@ export async function loadGearModel(
   const content =
     data.content.find((c) => c.geometry.length > 0) ?? data.content[0];
 
-  // A shader supplies per-slot dye colours; without one the item shows its baked
-  // textures (weapons look right; armor is neutral until a shader is applied).
+  // Dye colours + emissive: the item's own gear file gives its default look
+  // (armor colour, glow); a shader, if applied, overrides those colours.
   let dyeSet: DyeSet = {};
   let applyDye = false;
+  const baseDyes = await fetchDyeSet(itemHash);
+  if (baseDyes) {
+    dyeSet = baseDyes;
+    applyDye = true;
+  }
   if (opts.shaderHash) {
-    try {
-      const dyeRes = await fetch(`/api/dyes/${opts.shaderHash}`).then((r) => r.json());
-      if (dyeRes.slots && Object.keys(dyeRes.slots).length > 0) {
-        dyeSet = dyeSetFromGearDyes(dyeRes.slots);
-        applyDye = true;
-      }
-    } catch (err) {
-      warnings.push(
-        `Shader ${opts.shaderHash} dyes failed: ${err instanceof Error ? err.message : String(err)}`,
-      );
+    const shaderDyes = await fetchDyeSet(opts.shaderHash);
+    if (shaderDyes) {
+      dyeSet = shaderDyes;
+      applyDye = true;
     }
   }
 
+  // Which geometry to render (skip gender/class body overrides that overlap).
+  const renderSet = data.renderGeometryIndices
+    ? new Set(data.renderGeometryIndices)
+    : null;
+
   const geomTexMap = buildGeomTextureMap(content.region_index_sets);
+  const allTextureIndices = content.textures.map((_, i) => i);
   // Cache parsed texture containers by index (a container can dress >1 mesh).
   const texContainerCache = new Map<number, TexImage[]>();
 
   async function texturesForGeometry(gi: number): Promise<GearTextureMaps> {
-    const texIdxs = geomTexMap.get(gi) ?? [];
+    // Region-mapped items (weapons) name the textures per geometry; items
+    // without a region map (armor) apply the whole set — pickBestByRole then
+    // selects the highest-res diffuse/normal/gearstack from the pool.
+    const texIdxs = geomTexMap.get(gi) ?? allTextureIndices;
     const images: TexImage[] = [];
     for (const ti of texIdxs) {
       const ref = content.textures[ti];
@@ -177,9 +199,11 @@ export async function loadGearModel(
     const diffuse = pickBestByRole(images, "diffuse");
     const normal = pickBestByRole(images, "normal");
     const gearstack = pickBestByRole(images, "gearstack");
+    const emissive = pickBestByRole(images, "emissive");
     if (diffuse) maps.diffuse = await bytesToTexture(diffuse.bytes, true);
     if (normal) maps.normal = await bytesToTexture(normal.bytes, false);
     if (gearstack) maps.gearstack = await bytesToTexture(gearstack.bytes, false);
+    if (emissive) maps.emissive = await bytesToTexture(emissive.bytes, true);
     return maps;
   }
 
@@ -191,6 +215,7 @@ export async function loadGearModel(
   let totalTriangles = 0;
 
   for (let gi = 0; gi < content.geometry.length; gi++) {
+    if (renderSet && !renderSet.has(gi)) continue; // skip overlapping overrides
     const geom = content.geometry[gi];
     try {
       const buf = await fetch(geom.proxyUrl).then((r) => {

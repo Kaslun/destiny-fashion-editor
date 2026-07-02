@@ -15,6 +15,8 @@ export interface DyeColors {
   roughness: number;
   /** metalness hint 0..1 */
   metalness: number;
+  /** emissive tint (linear RGB); applied where the gearstack emissive mask is set */
+  emissive: THREE.Color;
 }
 
 export type DyeSet = Record<number, DyeColors>;
@@ -24,6 +26,7 @@ const NEUTRAL: DyeColors = {
   secondary: new THREE.Color(0x4a4e54),
   roughness: 0.6,
   metalness: 0.4,
+  emissive: new THREE.Color(0, 0, 0),
 };
 
 /** Colours for a given dye slot, or neutral if unresolved. */
@@ -37,7 +40,10 @@ export function dyeForSlot(set: DyeSet, slot: number): DyeColors {
  * Color components directly without sRGB conversion.
  */
 export function dyeSetFromGearDyes(
-  slots: Record<string, { primary: number[]; secondary: number[] }>,
+  slots: Record<
+    string,
+    { primary: number[]; secondary: number[]; primaryEmissive?: number[] }
+  >,
 ): DyeSet {
   const set: DyeSet = {};
   for (const [key, d] of Object.entries(slots)) {
@@ -46,6 +52,9 @@ export function dyeSetFromGearDyes(
       secondary: new THREE.Color().fromArray(d.secondary),
       roughness: 0.5,
       metalness: 0.5,
+      emissive: d.primaryEmissive
+        ? new THREE.Color().fromArray(d.primaryEmissive)
+        : new THREE.Color(0, 0, 0),
     };
   }
   return set;

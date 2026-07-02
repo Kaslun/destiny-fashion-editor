@@ -22,6 +22,8 @@ export interface GearTextureMaps {
   diffuse?: THREE.Texture;
   normal?: THREE.Texture;
   gearstack?: THREE.Texture;
+  /** dedicated glow/illum mask (only some items have one) */
+  emissive?: THREE.Texture;
 }
 
 export interface GearMaterialOptions {
@@ -41,29 +43,39 @@ function makeOne(
   const slot = dyeIndex >= 0 ? Math.floor(dyeIndex / 2) : 0;
   const dye = dyeForSlot(dyes, slot);
 
+  // Emissive comes from a dedicated glow/illum texture (only some items have
+  // one) tinted by the dye's emissive colour. This keeps non-glowing items dark
+  // instead of washing the whole mesh in emissive.
+  const emissiveTint =
+    dye.emissive.r + dye.emissive.g + dye.emissive.b > 0.02
+      ? dye.emissive.clone()
+      : new THREE.Color(0xffffff);
+
   const mat = new THREE.MeshStandardMaterial({
     map: maps.diffuse ?? null,
     normalMap: maps.normal ?? null,
     color: maps.diffuse ? new THREE.Color(0xffffff) : dye.primary.clone(),
     metalness: dye.metalness,
     roughness: dye.roughness,
+    emissiveMap: maps.emissive ?? null,
+    emissive: maps.emissive ? emissiveTint : new THREE.Color(0, 0, 0),
+    emissiveIntensity: maps.emissive ? 1.5 : 1,
     side: THREE.DoubleSide, // Destiny meshes aren't always consistently wound
   });
 
   if (maps.diffuse) maps.diffuse.colorSpace = THREE.SRGBColorSpace;
+  if (maps.emissive) maps.emissive.colorSpace = THREE.SRGBColorSpace;
 
-  // Gearstack needs the diffuse map's UV varying (vMapUv), so only wire it when
-  // a diffuse map is present alongside it.
+  // Gearstack drives AO + smoothness (needs the diffuse map's UV varying).
   const wantGearstack = opts.useGearstack && !!maps.gearstack && !!maps.diffuse;
   if (wantGearstack) {
     mat.onBeforeCompile = (shader) => {
       shader.uniforms.uGearstack = { value: maps.gearstack };
       shader.uniforms.uPrimaryTint = { value: dye.primary };
-      shader.uniforms.uSecondaryTint = { value: dye.secondary };
       shader.uniforms.uApplyDye = { value: opts.applyDye ? 1 : 0 };
 
       shader.fragmentShader =
-        `uniform sampler2D uGearstack;\nuniform vec3 uPrimaryTint;\nuniform vec3 uSecondaryTint;\nuniform float uApplyDye;\n` +
+        `uniform sampler2D uGearstack;\nuniform vec3 uPrimaryTint;\nuniform float uApplyDye;\n` +
         shader.fragmentShader.replace(
           "#include <map_fragment>",
           `#include <map_fragment>
@@ -71,11 +83,12 @@ function makeOne(
             vec4 gs = texture2D( uGearstack, vMapUv );
             // R = ambient occlusion -> darken albedo.
             diffuseColor.rgb *= mix( 0.55, 1.0, gs.r );
-            // A = dye mask. Tint only when a real shader/dye is applied, so an
-            // undyed item keeps its true albedo instead of a neutral wash.
+            // A = dye mask. Tint ONLY the dyeable regions (mask high); regions
+            // with baked colour (mask low, e.g. a weapon's painted body) keep
+            // their albedo instead of being multiplied dark by the tint.
             if ( uApplyDye > 0.5 ) {
-              vec3 tint = mix( uSecondaryTint, uPrimaryTint, gs.a );
-              diffuseColor.rgb *= tint;
+              vec3 tinted = diffuseColor.rgb * uPrimaryTint;
+              diffuseColor.rgb = mix( diffuseColor.rgb, tinted, gs.a );
             }
           }`,
         );

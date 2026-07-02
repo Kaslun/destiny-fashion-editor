@@ -11,6 +11,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getGearAsset, hashToSignedId } from "@/lib/bungie/gearAsset";
+import { getItemGear } from "@/lib/bungie/gearDyeData";
 import { getManifest, cdnUrl } from "@/lib/bungie/manifest";
 import { apiError } from "@/lib/http";
 
@@ -69,6 +70,18 @@ export async function GET(
 
     const wantRaw = req.nextUrl.searchParams.get("raw") === "1";
 
+    // Determine which geometry to render. Region-mapped items (weapons) draw
+    // all geometry; body-arrangement items (armor) list base + gender/class
+    // overrides — render only the base so the variants don't overlap.
+    const hasRegions = resolved.some(
+      (c) => c.region_index_sets && Object.keys(c.region_index_sets).length > 0,
+    );
+    const gear = await getItemGear(itemHash);
+    const renderGeometryIndices =
+      !hasRegions && gear.baseGeometryCount != null
+        ? Array.from({ length: gear.baseGeometryCount }, (_, i) => i)
+        : null; // null = render all geometry
+
     return NextResponse.json({
       itemHash,
       signedId: hashToSignedId(itemHash),
@@ -76,6 +89,7 @@ export async function GET(
       manifestVersion: manifest.version,
       gearCdn: cdn,
       content: resolved,
+      renderGeometryIndices,
       ...(wantRaw ? { raw: gearAsset.raw } : {}),
     });
   } catch (err) {

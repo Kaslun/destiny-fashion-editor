@@ -16,17 +16,21 @@
  */
 import { parseTgxm } from "./tgxm";
 
-export type TexRole = "diffuse" | "normal" | "gearstack" | "other";
+export type TexRole = "diffuse" | "normal" | "gearstack" | "emissive" | "other";
 
 export interface TexImage {
   name: string;
   role: TexRole;
   bytes: Uint8Array;
   size: number;
+  /** true = the item's own gbit plate (primary maps); false = a detail texture. */
+  gbit: boolean;
 }
 
 export function classifyTextureRole(name: string): TexRole {
   const n = name.toLowerCase();
+  // Glow / illum textures are dedicated emissive masks (only some items have one).
+  if (n.includes("glow") || n.includes("illum")) return "emissive";
   if (n.includes("gearstack") || /_2$/.test(n)) return "gearstack";
   if (n.endsWith("_norm") || n.endsWith("_normal") || /_1$/.test(n)) return "normal";
   if (
@@ -40,6 +44,12 @@ export function classifyTextureRole(name: string): TexRole {
   return "other";
 }
 
+/** The item's own gbit plate (numeric suffix / "gbit" name) vs. a shared detail texture. */
+function isGbit(name: string): boolean {
+  const n = name.toLowerCase();
+  return n.includes("gbit") || /_[0-3]$/.test(n);
+}
+
 /** Parse a texture container into classified image entries. */
 export function extractTextureImages(buf: ArrayBuffer): TexImage[] {
   const container = parseTgxm(buf);
@@ -48,13 +58,21 @@ export function extractTextureImages(buf: ArrayBuffer): TexImage[] {
     role: classifyTextureRole(f.name),
     bytes: f.data,
     size: f.size,
+    gbit: isGbit(f.name),
   }));
 }
 
-/** Best image for a role across a set of entries (largest wins as a resolution proxy). */
+/**
+ * Best image for a role. Prefers the item's own gbit plate over shared detail
+ * textures (a fabric/metal detail normal must not outrank the item's normal
+ * map), then larger size as a resolution proxy.
+ */
 export function pickBestByRole(entries: TexImage[], role: TexRole): TexImage | null {
   const candidates = entries.filter((e) => e.role === role);
   if (candidates.length === 0) return null;
-  candidates.sort((a, b) => b.size - a.size);
+  candidates.sort((a, b) => {
+    if (a.gbit !== b.gbit) return a.gbit ? -1 : 1;
+    return b.size - a.size;
+  });
   return candidates[0];
 }

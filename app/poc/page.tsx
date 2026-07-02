@@ -28,6 +28,7 @@ export default function PocPage() {
   const [path, setPath] = useState<LoadPath | null>(null);
   const [debug, setDebug] = useState<GearModelDebug | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [itemName, setItemName] = useState<string | null>(null);
 
   const load = useCallback(() => {
     const n = Number(input.trim());
@@ -38,7 +39,13 @@ export default function PocPage() {
     setError(null);
     setDebug(null);
     setPath(null);
+    setItemName(null);
     setActiveHash(n);
+    // Resolve the item's display name to label the rendered mesh.
+    fetch(`/api/items?hash=${n}`)
+      .then((r) => r.json())
+      .then((d) => setItemName(d.item?.name ?? null))
+      .catch(() => setItemName(null));
   }, [input]);
 
   const onStatus = useCallback(
@@ -72,6 +79,22 @@ export default function PocPage() {
           </div>
         )}
         <PathBadge path={path} />
+        {itemName && (
+          <div
+            style={{
+              position: "absolute",
+              bottom: 16,
+              left: 16,
+              padding: "6px 12px",
+              border: "1px solid var(--d2-line)",
+              background: "rgba(10,12,15,0.82)",
+            }}
+          >
+            <span className="d2-tooltip-header" style={{ fontSize: 18 }}>
+              {itemName}
+            </span>
+          </div>
+        )}
       </section>
 
       {/* Control panel */}

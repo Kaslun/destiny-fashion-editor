@@ -11,10 +11,20 @@ export interface ItemEntry {
   name: string;
   icon: string | null;
   slot: string | null;
-  kind: "weapon" | "armor";
+  kind: "weapon" | "armor" | "shader";
   tier: string;
   classType: number;
 }
+
+// classType 3 = "All" (no filter). Hunter is the default per the primary user.
+const CLASSES: { value: number; label: string }[] = [
+  { value: 3, label: "All Classes" },
+  { value: 0, label: "Titan" },
+  { value: 1, label: "Hunter" },
+  { value: 2, label: "Warlock" },
+];
+
+const RARITIES = ["Exotic", "Legendary", "Rare", "Uncommon", "Common"];
 
 const SLOTS: { key: string; label: string }[] = [
   { key: "kinetic", label: "Kinetic" },
@@ -47,6 +57,8 @@ interface Props {
 export default function ItemBrowser({ selectedHash, onSelect }: Props) {
   const [slot, setSlot] = useState("kinetic");
   const [q, setQ] = useState("");
+  const [classType, setClassType] = useState(1); // Hunter by default
+  const [tier, setTier] = useState(""); // "" = all rarities
   const [items, setItems] = useState<ItemEntry[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -58,9 +70,10 @@ export default function ItemBrowser({ selectedHash, onSelect }: Props) {
     setError(null);
     const t = setTimeout(async () => {
       try {
-        const res = await fetch(
-          `/api/items?slot=${slot}&q=${encodeURIComponent(q)}&limit=90`,
-        );
+        const params = new URLSearchParams({ slot, q, limit: "90" });
+        if (classType !== 3) params.set("classType", String(classType));
+        if (tier) params.set("tier", tier);
+        const res = await fetch(`/api/items?${params.toString()}`);
         const data = await res.json();
         if (cancelled) return;
         if (!res.ok) throw new Error(data.error ?? `search failed (${res.status})`);
@@ -76,7 +89,7 @@ export default function ItemBrowser({ selectedHash, onSelect }: Props) {
       cancelled = true;
       clearTimeout(t);
     };
-  }, [slot, q]);
+  }, [slot, q, classType, tier]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
@@ -108,6 +121,36 @@ export default function ItemBrowser({ selectedHash, onSelect }: Props) {
         onChange={(e) => setQ(e.target.value)}
         style={{ marginBottom: 8 }}
       />
+
+      {/* Filters: class + rarity */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+        <select
+          className="d2-input"
+          style={{ flex: 1, cursor: "pointer" }}
+          value={classType}
+          onChange={(e) => setClassType(Number(e.target.value))}
+        >
+          {CLASSES.map((c) => (
+            <option key={c.value} value={c.value}>
+              {c.label}
+            </option>
+          ))}
+        </select>
+        <select
+          className="d2-input"
+          style={{ flex: 1, cursor: "pointer" }}
+          value={tier}
+          onChange={(e) => setTier(e.target.value)}
+        >
+          <option value="">All Rarities</option>
+          {RARITIES.map((r) => (
+            <option key={r} value={r}>
+              {r}
+            </option>
+          ))}
+        </select>
+      </div>
+
       <div style={{ fontSize: 11, color: "var(--d2-text-faint)", marginBottom: 8 }}>
         {loading ? "Searching…" : `${total} result${total === 1 ? "" : "s"}`}
         {total > items.length && ` (showing ${items.length})`}
@@ -123,12 +166,13 @@ export default function ItemBrowser({ selectedHash, onSelect }: Props) {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(56px, 1fr))",
-          gap: 6,
+          gridTemplateColumns: "repeat(auto-fill, minmax(60px, 1fr))",
+          gap: 16,
           overflowY: "auto",
           alignContent: "start",
           flex: 1,
           minHeight: 0,
+          padding: 2,
         }}
       >
         {items.map((item) => {

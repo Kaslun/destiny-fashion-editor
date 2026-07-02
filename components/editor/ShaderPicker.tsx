@@ -72,11 +72,12 @@ export default function ShaderPicker({ selectedShaderHash, onSelect }: Props) {
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fill, minmax(56px, 1fr))",
-          gap: 6,
+          gap: 12,
           overflowY: "auto",
           alignContent: "start",
           flex: 1,
           minHeight: 0,
+          padding: 2,
         }}
       >
         {items.map((s) => {

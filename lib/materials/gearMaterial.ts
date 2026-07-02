@@ -102,6 +102,18 @@ function makeOne(
           roughnessFactor *= clamp( 1.0 - smoothness, 0.05, 1.0 );
         }`,
       );
+
+      // B = emissive mask. It has a low floor (~0.16) plus a small bright emblem
+      // region, so smoothstep isolates the emblem (no whole-mesh wash). The
+      // emblem self-illuminates in its own albedo colour.
+      shader.fragmentShader = shader.fragmentShader.replace(
+        "#include <emissivemap_fragment>",
+        `#include <emissivemap_fragment>
+        {
+          float glow = smoothstep( 0.45, 0.85, texture2D( uGearstack, vMapUv ).b );
+          totalEmissiveRadiance += diffuseColor.rgb * glow * 2.5;
+        }`,
+      );
     };
   }
 

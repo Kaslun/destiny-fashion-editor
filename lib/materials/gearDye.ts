@@ -71,46 +71,78 @@ interface ApiSlotDye {
   cloth?: boolean;
   /** raw primary_material_params vec4; channel 0 used as detail-blend strength. */
   materialParams?: number[];
+  /** primary_roughness_remap[3] (output max): low = glossy/metal, high = matte. */
+  roughnessRemapMax?: number;
 }
 
 /**
- * Per-slot metalness/roughness. Bungie ships an authoritative `cloth` boolean
- * per dye slot in default_dyes — when set, it's the definitive signal (fabric =
- * dielectric, high roughness) and overrides everything. Bungie does NOT ship a
- * clean metalness scalar (material_params exists but its channel meanings are
- * only partly documented and don't cleanly separate metal from cloth), so for
- * NON-cloth slots we fall back to classifying metal vs painted-plate from the
- * detail-map NAME: metal diffuse (`metal_grunge00`) → metal, else dielectric.
- * The name check trusts the diffuse (albedo author's intent); the normal map is
- * reused across material types and is only a weak hint.
+ * Per-slot metalness/roughness, derived empirically from ~15 items' default_dyes.
+ *
+ * What the data showed (and did NOT show):
+ *  - Bungie ships NO clean per-slot metalness scalar. material_params is a
+ *    wear/blend control set (Monochromatic, a uniform-neutral shader, has it all
+ *    zeroed), and material_advanced_params[0] is a shader MATERIAL-TYPE id (-1,
+ *    23, 25, 35, 36, 40, 49, 51, 99...), not a value we can interpret directly.
+ *  - The reliable signals are: the `cloth` boolean (authoritative fabric flag),
+ *    the detail-map NAME (clusters cleanly by material across the corpus), and
+ *    roughness_remap[3] (output max) as a soft gloss hint — metal slots land low
+ *    (gold 0.15, brushed/carbon 0.16-0.23), matte slots high.
+ *
+ * So: metalness comes from the name (only reliable metal signal); roughness
+ * starts from the material class and is refined by roughnessRemapMax when present.
  */
 export function pbrFromDetail(
   diffuse?: string | null,
   normal?: string | null,
   cloth?: boolean,
+  roughnessRemapMax?: number,
 ): { metalness: number; roughness: number } {
-  // Authoritative: Bungie flagged this slot as fabric.
-  if (cloth === true) {
-    return { metalness: 0.0, roughness: 0.85 };
-  }
-
   const dif = (diffuse ?? "").toLowerCase();
   const nrm = (normal ?? "").toLowerCase();
 
-  // Metal: decided on the diffuse name only. `grunge0` catches Bungie's
-  // `metal_grunge00` family; `\bmetal\b` is the primary anchor.
-  if (/\bmetal\b|chrome|steel|iron|\bgold\b|brass|bronze|silver|grunge0/.test(dif)) {
-    return { metalness: 1.0, roughness: 0.4 };
+  // Refine a base roughness with the remap-max hint when it's present and sane.
+  // Blend rather than replace: the remap is a curve over a texture channel we
+  // may not have, so it's a nudge, not ground truth.
+  const refine = (base: number): number => {
+    if (typeof roughnessRemapMax === "number" && roughnessRemapMax > 0 && roughnessRemapMax <= 1) {
+      return Math.max(0.05, Math.min(1, base * 0.5 + roughnessRemapMax * 0.5));
+    }
+    return base;
+  };
+
+  // Authoritative: Bungie flagged this slot as fabric. Always dielectric + rough.
+  if (cloth === true) {
+    return { metalness: 0.0, roughness: refine(0.85) };
   }
 
-  // Non-cloth fabric-ish names (leather, etc.) as a secondary signal.
+  // Metal family (from the corpus: metal, metal_brushed, metal_cubes,
+  // carbon_fiber, battleworn_metal, armor_galvanized, plus classic keywords).
+  // Decided on the diffuse name — the albedo author's material intent.
+  if (/\bmetal\b|metal_brushed|metal_cubes|carbon_fiber|battleworn_metal|galvaniz|chrome|steel|iron|\bgold\b|brass|bronze|silver|grunge0/.test(dif)) {
+    // Metal is glossy; trust a low remap-max strongly here.
+    return { metalness: 1.0, roughness: refine(0.3) };
+  }
+
+  // Leather (dielectric, mid roughness) — corpus: leather, leather2, leather_worn.
+  if (/leather|suede|hide/.test(dif)) {
+    return { metalness: 0.0, roughness: refine(0.6) };
+  }
+
+  // Rubber / tech (dielectric, matte) — corpus: rubber.
+  if (/rubber|vinyl|tech/.test(dif)) {
+    return { metalness: 0.0, roughness: refine(0.8) };
+  }
+
+  // Fabric-ish names as a secondary cloth signal when the flag is absent
+  // (weave, felt, cotton_fabric, fabric01, gore-tex).
   const soft = `${dif} ${nrm}`;
-  if (/weave|felt|cloth|fabric|leather|linen|wool|canvas|knit|silk|denim|hide|suede/.test(soft)) {
-    return { metalness: 0.0, roughness: 0.85 };
+  if (/weave|felt|cloth|fabric|cotton|linen|wool|canvas|knit|silk|denim|gore-tex/.test(soft)) {
+    return { metalness: 0.0, roughness: refine(0.85) };
   }
 
-  // Default: painted / ceramic / worn armor plate — dielectric, mid roughness.
-  return { metalness: 0.0, roughness: 0.6 };
+  // Default: painted / ceramic / worn armor plate / generic detail
+  // (armor_battleworn, crust, hive_pattern, grime, noise, speckle, edz_common).
+  return { metalness: 0.0, roughness: refine(0.6) };
 }
 
 /**
@@ -122,7 +154,7 @@ export function dyeSetFromGearDyes(slots: Record<string, ApiSlotDye>): DyeSet {
   const set: DyeSet = {};
   for (const [key, d] of Object.entries(slots)) {
     const t = d.detailTransform;
-    const pbr = pbrFromDetail(d.detailDiffuse, d.detailNormal, d.cloth);
+    const pbr = pbrFromDetail(d.detailDiffuse, d.detailNormal, d.cloth, d.roughnessRemapMax);
     set[Number(key)] = {
       primary: new THREE.Color().fromArray(d.primary),
       secondary: new THREE.Color().fromArray(d.secondary),

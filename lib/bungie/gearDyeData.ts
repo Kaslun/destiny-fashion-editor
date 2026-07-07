@@ -30,6 +30,8 @@ export interface SlotDye {
   cloth: boolean;
   /** raw primary_material_params vec4 (channel meanings partly undocumented). */
   materialParams: [number, number, number, number];
+  /** primary_roughness_remap[3] output max — soft gloss hint (low = glossy). */
+  roughnessRemapMax: number;
 }
 
 export type GearDyes = Record<number, SlotDye>;
@@ -97,6 +99,10 @@ function parseDyes(defaultDyes: unknown): GearDyes {
       detailTransform: xform4(mp.detail_diffuse_transform),
       cloth: dye.cloth === true,
       materialParams: xform4(mp.primary_material_params),
+      roughnessRemapMax: (() => {
+        const rr = mp.primary_roughness_remap;
+        return Array.isArray(rr) && rr.length >= 4 ? Number(rr[3]) : 0;
+      })(),
     };
   }
   return out;

@@ -89,3 +89,39 @@ describe("dyeSetFromGearDyes — detailStrength from material_params[0] (Nightha
     expect(set[1].detailStrength).toBe(1);
   });
 });
+
+describe("pbrFromDetail — corpus-derived material families (15-item dataset)", () => {
+  it("carbon fiber (Metro Shift slot0) -> metal", () => {
+    expect(pbrFromDetail("327503503_gear_carbon_fiber_dif", "327503503_gear_carbon_fiber_norm", false, 0.23).metalness).toBe(1);
+  });
+  it("brushed metal (Synthoceps slot0) -> metal", () => {
+    expect(pbrFromDetail("327503503_gear_detail_metal_brushed_dif", "x_norm", false, 0.16).metalness).toBe(1);
+  });
+  it("battleworn_metal -> metal", () => {
+    expect(pbrFromDetail("3104558709_battleworn_metal_01_dif", "x", false).metalness).toBe(1);
+  });
+  it("galvanized armor -> metal", () => {
+    expect(pbrFromDetail("327503503_gear_detail_armor_galvanized_dif", "x", false).metalness).toBe(1);
+  });
+  it("leather (Lucky Pants slot2) -> dielectric mid-rough", () => {
+    const r = pbrFromDetail("327503503_gear_detail_leather2_dif", "x", false);
+    expect(r.metalness).toBe(0);
+  });
+  it("rubber -> dielectric", () => {
+    expect(pbrFromDetail("3104558709_Rubber_01_dif", "x", false).metalness).toBe(0);
+  });
+  it("cotton_fabric via name (no cloth flag) -> dielectric high-rough", () => {
+    const r = pbrFromDetail("327503503_gear_detail_cotton_fabric_d2_dif", "x", false);
+    expect(r.metalness).toBe(0);
+    expect(r.roughness).toBeGreaterThan(0.6);
+  });
+  it("generic hive_pattern / armor_battleworn -> dielectric default", () => {
+    expect(pbrFromDetail("327503503_gear_detail_hive_pattern_dif", "x", false).metalness).toBe(0);
+    expect(pbrFromDetail("327503503_gear_detail_armor_battleworn_dif", "x", false).metalness).toBe(0);
+  });
+  it("roughness_remap max lowers roughness for metal (gloss hint)", () => {
+    const glossy = pbrFromDetail("metal_dif", "x", false, 0.12).roughness;
+    const noHint = pbrFromDetail("metal_dif", "x", false).roughness;
+    expect(glossy).toBeLessThanOrEqual(noHint);
+  });
+});

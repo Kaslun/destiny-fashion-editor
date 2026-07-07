@@ -19,7 +19,7 @@ export async function GET(
     return NextResponse.json({ error: "Invalid hash" }, { status: 400 });
   }
   try {
-    if (_req.nextUrl.searchParams.get("debug")) {
+    if (_req.nextUrl.searchParams.has("debug")) {
       const gear = await getItemGear(n);
       return NextResponse.json({ hash: n, rawDefaultDyes: gear.rawDefaultDyes });
     }

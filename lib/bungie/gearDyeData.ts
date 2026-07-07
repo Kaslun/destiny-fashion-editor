@@ -59,19 +59,36 @@ function parseDyes(defaultDyes: unknown): GearDyes {
   const dyes = (defaultDyes as {
     slot_type_index?: number;
     material_properties?: Record<string, unknown>;
-    textures?: Record<string, { name?: string }>;
+    textures?: Record<string, { name?: string } | undefined>;
   }[]) ?? [];
   for (const dye of dyes) {
     const slot = dye.slot_type_index ?? 0;
     if (out[slot]) continue; // first group wins
     const mp = dye.material_properties ?? {};
+    const tx = dye.textures ?? {};
     out[slot] = {
       primary: rgb3(mp.primary_albedo_tint, [1, 1, 1]),
       secondary: rgb3(mp.secondary_albedo_tint, [1, 1, 1]),
-      primaryEmissive: rgb3(mp.primary_emissive_tint_color, [0, 0, 0]),
-      secondaryEmissive: rgb3(mp.secondary_emissive_tint_color, [0, 0, 0]),
-      detailDiffuse: dye.textures?.diffuse?.name ?? null,
-      detailNormal: dye.textures?.normal?.name ?? null,
+      // Bungie ships emissive as `*_emissive_tint_color_and_intensity_bias`
+      // (vec4 [r,g,b,i]); older/other dumps use `*_emissive_tint_color`.
+      // rgb3 takes the first three components of whichever exists.
+      primaryEmissive: rgb3(
+        mp.primary_emissive_tint_color_and_intensity_bias ??
+          mp.primary_emissive_tint_color,
+        [0, 0, 0],
+      ),
+      secondaryEmissive: rgb3(
+        mp.secondary_emissive_tint_color_and_intensity_bias ??
+          mp.secondary_emissive_tint_color,
+        [0, 0, 0],
+      ),
+      // Detail-map entry names live in the dye's texture container. The key
+      // varies across dumps (`detail_diffuse`/`detail_normal` in current gear
+      // files, `diffuse`/`normal` in some). Check both.
+      detailDiffuse:
+        tx.detail_diffuse?.name ?? tx.diffuse?.name ?? null,
+      detailNormal:
+        tx.detail_normal?.name ?? tx.normal?.name ?? null,
       detailTransform: xform4(mp.detail_diffuse_transform),
     };
   }
@@ -89,19 +106,44 @@ export async function getItemGear(hash: number): Promise<ItemGear> {
 
   const empty: ItemGear = { dyes: {}, baseGeometryCount: null };
   const gearAsset = await getGearAsset(hash);
+
+  // The gear `.js` filename can sit in a few places depending on the asset
+  // shape. Check all known locations rather than only raw.gear[0]:
+  //   - raw.gear[]            (top-level, common)
+  //   - content[].gear[]      (per-content-entry)
+  // Some assets list multiple gear files; the dye/arrangement data is in the
+  // first that exists.
+  const raw = gearAsset?.raw as
+    | { gear?: string[]; content?: { gear?: string[] }[] }
+    | undefined;
+  const content = gearAsset?.content as { gear?: string[] }[] | undefined;
   const gearFile =
-    (gearAsset?.raw as { gear?: string[] } | undefined)?.gear?.[0] ??
-    gearAsset?.content?.[0]?.gear?.[0];
+    raw?.gear?.[0] ??
+    raw?.content?.[0]?.gear?.[0] ??
+    content?.[0]?.gear?.[0] ??
+    content?.find((c) => c?.gear?.length)?.gear?.[0];
+
   if (!gearFile) {
-    gearCache.set(hash, empty);
-    return empty;
+    // No gear file anywhere on this asset. Cache and return empty — but keep
+    // the raw asset on the result so the debug endpoint can show WHY (the
+    // caller can inspect what shape getGearAsset actually returned).
+    const noGear: ItemGear = {
+      ...empty,
+      rawDefaultDyes: { _noGearFile: true, asset: gearAsset ?? null },
+    };
+    gearCache.set(hash, noGear);
+    return noGear;
   }
 
   const manifest = await getManifest();
   const res = await bungieFetchRaw(cdnUrl(manifest.gearCdn.Gear, gearFile));
   if (!res.ok) {
-    gearCache.set(hash, empty);
-    return empty;
+    const failed: ItemGear = {
+      ...empty,
+      rawDefaultDyes: { _fetchFailed: true, status: res.status, gearFile },
+    };
+    gearCache.set(hash, failed);
+    return failed;
   }
 
   const data = JSON.parse(await res.text()) as {
@@ -117,10 +159,29 @@ export async function getItemGear(hash: number): Promise<ItemGear> {
 
   const base =
     data.art_content_sets?.[0]?.arrangement?.gear_set?.base_art_arrangement;
+  const dyes = parseDyes(data.default_dyes);
+
+  // If the gear file loaded but carried no default_dyes, this is an item whose
+  // default appearance is defined by a shader plug (common for armor). The
+  // item's own gear file has geometry but no colours — the dyes live in the
+  // item definition's translationBlock.defaultDyes, which point at a shader's
+  // gear file. Resolving that requires the item def + a shader-hash -> gear-file
+  // lookup (see Destiny-Collada-Generator generatePresets: translationBlock
+  // .defaultDyes -> shader gear .js). NOT done here because it needs the
+  // manifest item definition, which this function doesn't fetch.
+  //
+  // TODO(shader-default-dyes): when Object.keys(dyes).length === 0, fetch
+  //   DestinyInventoryItemDefinition[hash].translationBlock.defaultDyes, resolve
+  //   each channel's dye hash to its shader gear file, and parseDyes THAT.
+  // Until then such items render with the name-keyword classifier's fallback
+  // (dielectric), which is correct-ish for cloth and avoids the metallic bug.
+
   const result: ItemGear = {
-    dyes: parseDyes(data.default_dyes),
+    dyes,
     baseGeometryCount: base?.geometry_hashes?.length ?? null,
-    rawDefaultDyes: data.default_dyes, // debug: inspect slot_type_index mapping
+    // debug: distinguish "gear file had no dyes" from "parse produced none".
+    rawDefaultDyes:
+      data.default_dyes ?? { _noDefaultDyesInGearFile: true, gearFile },
   };
   gearCache.set(hash, result);
   return result;

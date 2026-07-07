@@ -529,10 +529,11 @@ export async function loadGearModel(
         markGlowGroups(m.geometry, m.groups, built.metadata.plates?.diffuse);
         // Gearstack drives AO/roughness/emissive; the dyeslot plate (or
         // gearstack alpha) masks dye zones; decal groups render additively.
+        const isCloth = Object.values(dyeSet).some((d) => d.cloth);
         const materials = createGearMaterials(m.groups, dyeSet, maps, {
-          useGearstack: true,
+         useGearstack: true,
           applyDye,
-          plated: false,
+          plated: !!built.metadata.plates && !isCloth,
         });
         const mesh = new THREE.Mesh(m.geometry, materials);
         mesh.name = geom.file;

@@ -1,10 +1,12 @@
 /**
- * Gear dye colours.
+ * Gear dye colours + per-slot detail maps.
  *
- * A rendered item has up to 4 dye slots. When a shader is applied, each slot
- * gets primary/secondary albedo tints resolved from the shader's gear `.js`
- * (see lib/bungie/gearDyeData.ts + /api/dyes). Without a shader the item shows
- * its baked textures, and any unresolved slot falls back to a neutral gunmetal.
+ * A rendered item has up to 4 dye slots. Each slot gets primary/secondary
+ * albedo tints, an emissive tint, and tiled DETAIL maps (micro-surface
+ * diffuse/normal, e.g. worn metal or fabric weave) resolved from the item's or
+ * shader's gear `.js` (see lib/bungie/gearDyeData.ts + /api/dyes). Detail map
+ * names are resolved to THREE textures by the loader; unresolved slots fall
+ * back to a neutral gunmetal.
  */
 import * as THREE from "three";
 
@@ -15,18 +17,31 @@ export interface DyeColors {
   roughness: number;
   /** metalness hint 0..1 */
   metalness: number;
-  /** emissive tint (linear RGB); applied where the gearstack emissive mask is set */
+  /** primary/secondary emissive (glow) tints, selected like the albedo tints */
   emissive: THREE.Color;
+  secondaryEmissive: THREE.Color;
+  /** entry names of tiled detail maps (resolved to textures by the loader) */
+  detailDiffuseName: string | null;
+  detailNormalName: string | null;
+  /** [scaleX, scaleY, offsetX, offsetY] detail tiling transform */
+  detailTransform: [number, number, number, number];
+  /** filled in by the loader from the names above */
+  detailDiffuse?: THREE.Texture;
+  detailNormal?: THREE.Texture;
 }
 
 export type DyeSet = Record<number, DyeColors>;
 
 const NEUTRAL: DyeColors = {
-  primary: new THREE.Color(0x8a8f96),
-  secondary: new THREE.Color(0x4a4e54),
-  roughness: 0.6,
-  metalness: 0.4,
+  primary: new THREE.Color(0xffffff),
+  secondary: new THREE.Color(0xffffff),
+  roughness: 0.8,
+  metalness: 0.1,
   emissive: new THREE.Color(0, 0, 0),
+  secondaryEmissive: new THREE.Color(0, 0, 0),
+  detailDiffuseName: null,
+  detailNormalName: null,
+  detailTransform: [1, 1, 0, 0],
 };
 
 /** Colours for a given dye slot, or neutral if unresolved. */
@@ -34,19 +49,25 @@ export function dyeForSlot(set: DyeSet, slot: number): DyeColors {
   return set[slot] ?? NEUTRAL;
 }
 
+interface ApiSlotDye {
+  primary: number[];
+  secondary: number[];
+  primaryEmissive?: number[];
+  secondaryEmissive?: number[];
+  detailDiffuse?: string | null;
+  detailNormal?: string | null;
+  detailTransform?: number[];
+}
+
 /**
- * Build a DyeSet from the /api/dyes response (a shader's per-slot albedo tints).
- * Tints are linear multipliers applied to the (linear) diffuse, so we set the
- * Color components directly without sRGB conversion.
+ * Build a DyeSet from the /api/dyes response. Tints are linear multipliers
+ * applied to the (linear) diffuse, so Color components are set directly
+ * without sRGB conversion.
  */
-export function dyeSetFromGearDyes(
-  slots: Record<
-    string,
-    { primary: number[]; secondary: number[]; primaryEmissive?: number[] }
-  >,
-): DyeSet {
+export function dyeSetFromGearDyes(slots: Record<string, ApiSlotDye>): DyeSet {
   const set: DyeSet = {};
   for (const [key, d] of Object.entries(slots)) {
+    const t = d.detailTransform;
     set[Number(key)] = {
       primary: new THREE.Color().fromArray(d.primary),
       secondary: new THREE.Color().fromArray(d.secondary),
@@ -55,6 +76,15 @@ export function dyeSetFromGearDyes(
       emissive: d.primaryEmissive
         ? new THREE.Color().fromArray(d.primaryEmissive)
         : new THREE.Color(0, 0, 0),
+      secondaryEmissive: d.secondaryEmissive
+        ? new THREE.Color().fromArray(d.secondaryEmissive)
+        : new THREE.Color(0, 0, 0),
+      detailDiffuseName: d.detailDiffuse ?? null,
+      detailNormalName: d.detailNormal ?? null,
+      detailTransform:
+        Array.isArray(t) && t.length >= 4
+          ? [t[0], t[1], t[2], t[3]]
+          : [1, 1, 0, 0],
     };
   }
   return set;

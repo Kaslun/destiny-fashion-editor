@@ -45,6 +45,8 @@ export interface StagePart {
   lodCategory: number;
   gearDyeChangeColorIndex: number;
   flags: number;
+  /** transparent decal pass (flag 0x8): additive blend, black = transparent */
+  decal: boolean;
   raw: Record<string, unknown>;
 }
 
@@ -59,8 +61,38 @@ export interface RenderMesh {
   raw: Record<string, unknown>;
 }
 
+/**
+ * Texture plating: mobile gear splits its material maps into small sub-textures
+ * that get composited onto a fixed-size plate (atlas) at exact positions — the
+ * mesh UVs address the *assembled plate*, not any individual image. Rendering a
+ * raw sub-texture directly produces smeared/misplaced texturing.
+ */
+export interface PlatePlacement {
+  /** entry name inside the item's texture containers (e.g. ..._gbit_384_192_0) */
+  name: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+export interface TexturePlate {
+  size: [number, number];
+  placements: PlatePlacement[];
+}
+
+export interface TexturePlateSet {
+  diffuse?: TexturePlate;
+  normal?: TexturePlate;
+  gearstack?: TexturePlate;
+  /** per-pixel dye-slot mask plate (which dye slot each texel belongs to) */
+  dyeslot?: TexturePlate;
+}
+
 export interface RenderMetadata {
   meshes: RenderMesh[];
+  /** assembled-atlas definitions (null when the item ships no plates) */
+  plates: TexturePlateSet | null;
   raw: unknown;
 }
 
@@ -133,13 +165,15 @@ function parseStageParts(meshRaw: Record<string, unknown>): StagePart[] {
   const list = (meshRaw.stage_part_list as unknown[]) ?? [];
   return list.map((p) => {
     const part = p as Record<string, unknown>;
+    const flags = num(part.flags);
     return {
       startIndex: num(part.start_index),
       indexCount: num(part.index_count),
       primitiveType: num(part.primitive_type, PRIMITIVE_TRIANGLES),
       lodCategory: lodValue(part.lod_category ?? part.lod_category_value),
       gearDyeChangeColorIndex: num(part.gear_dye_change_color_index, -1),
-      flags: num(part.flags),
+      flags,
+      decal: (flags & FLAG_DECAL_PASS) !== 0,
       raw: part,
     };
   });
@@ -149,6 +183,44 @@ function numArray(v: unknown): number[] | null {
   return Array.isArray(v) && v.every((x) => typeof x === "number")
     ? (v as number[])
     : null;
+}
+
+function parsePlate(raw: unknown): TexturePlate | undefined {
+  const p = raw as {
+    plate_size?: number[];
+    texture_placements?: {
+      texture_tag_name?: string;
+      position_x?: number;
+      position_y?: number;
+      texture_size_x?: number;
+      texture_size_y?: number;
+    }[];
+  } | undefined;
+  if (!p?.plate_size || !Array.isArray(p.texture_placements)) return undefined;
+  const placements: PlatePlacement[] = p.texture_placements
+    .filter((t) => typeof t.texture_tag_name === "string")
+    .map((t) => ({
+      name: t.texture_tag_name as string,
+      x: num(t.position_x),
+      y: num(t.position_y),
+      w: num(t.texture_size_x),
+      h: num(t.texture_size_y),
+    }));
+  if (placements.length === 0) return undefined;
+  return { size: [num(p.plate_size[0], 512), num(p.plate_size[1], 512)], placements };
+}
+
+function parsePlates(data: Record<string, unknown>): TexturePlateSet | null {
+  const set = (data.texture_plates as { plate_set?: Record<string, unknown> }[])?.[0]
+    ?.plate_set;
+  if (!set) return null;
+  const plates: TexturePlateSet = {
+    diffuse: parsePlate(set.diffuse),
+    normal: parsePlate(set.normal),
+    gearstack: parsePlate(set.gearstack),
+    dyeslot: parsePlate(set.dyeslot),
+  };
+  return plates.diffuse || plates.normal || plates.gearstack ? plates : null;
 }
 
 export function parseRenderMetadata(json: string): RenderMetadata {
@@ -172,45 +244,48 @@ export function parseRenderMetadata(json: string): RenderMetadata {
     };
   });
 
-  return { meshes, raw: data };
+  return { meshes, plates: parsePlates(data), raw: data };
 }
 
-// Stage-part flag bits (empirically derived from live D2 items). A mesh's
-// index buffer is shared across many stage parts describing different LODs and
-// render passes; without filtering they overlap and z-fight, and secondary
-// passes throw spanning artifacts. Bit 0x8 marks a secondary/decal pass we skip
-// for the main opaque render.
-const FLAG_SECONDARY_PASS = 0x8;
+// Stage-part flag bits (empirically derived from live D2 items). Bit 0x8 marks
+// a transparent decal/glow pass — rendered additively (black = transparent),
+// not skipped.
+const FLAG_DECAL_PASS = 0x8;
 
 /**
- * Stage parts that belong to LOD 0 (highest detail), deduplicated.
+ * Stage parts that belong to LOD 0 (highest detail), without overlaps.
  *
  * `lod_category` values vary per mesh (e.g. {0,4,7,9} vs {1,8}); the lowest
- * value present is the highest-detail LOD. Among those we (a) drop secondary-
- * pass parts (flag 0x8) and (b) dedupe identical draw ranges, since the same
- * geometry is often listed multiple times for different passes/variants.
+ * value present is the highest-detail LOD. The list repeats the same index
+ * ranges in several groupings (coarse whole-mesh parts alongside fine per-dye
+ * parts); drawing both z-fights. We sort by (start asc, count asc) and keep
+ * parts that don't overlap an already-kept range — fine-grained parts win and
+ * coarse containers drop out. Decal parts are kept (flagged) and screened
+ * separately since they intentionally overlay the opaque geometry.
  */
 export function lod0Parts(mesh: RenderMesh): StagePart[] {
   const cats = mesh.stageParts.map((p) => p.lodCategory).filter((c) => c >= 0);
-  if (cats.length === 0) return mesh.stageParts;
-  const min = Math.min(...cats);
+  const min = cats.length > 0 ? Math.min(...cats) : -1;
+  const atLod = mesh.stageParts.filter((p) => min < 0 || p.lodCategory === min);
 
-  const pick = (allowSecondaryFilter: boolean): StagePart[] => {
-    // Keep the largest draw range per start_index (overlapping ranges at the
-    // same start are different LOD runs of the same geometry — take the finest).
-    const byStart = new Map<number, StagePart>();
-    for (const p of mesh.stageParts) {
-      if (p.lodCategory !== min) continue;
-      if (allowSecondaryFilter && (p.flags & FLAG_SECONDARY_PASS) !== 0) continue;
-      const existing = byStart.get(p.startIndex);
-      if (!existing || p.indexCount > existing.indexCount) byStart.set(p.startIndex, p);
+  const pickNonOverlapping = (parts: StagePart[]): StagePart[] => {
+    const sorted = [...parts].sort(
+      (a, b) => a.startIndex - b.startIndex || a.indexCount - b.indexCount,
+    );
+    const kept: StagePart[] = [];
+    let coveredEnd = -1;
+    for (const p of sorted) {
+      if (p.startIndex < coveredEnd) continue; // overlaps a kept range
+      kept.push(p);
+      coveredEnd = p.startIndex + p.indexCount;
     }
-    return [...byStart.values()];
+    return kept;
   };
 
-  const selected = pick(true);
-  // If flag filtering removed everything, retry without it (unknown flag scheme).
-  return selected.length > 0 ? selected : pick(false);
+  return [
+    ...pickNonOverlapping(atLod.filter((p) => !p.decal)),
+    ...pickNonOverlapping(atLod.filter((p) => p.decal)),
+  ];
 }
 
 /** Compact, human-readable summary for the POC debug dump. */

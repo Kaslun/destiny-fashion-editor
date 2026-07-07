@@ -29,18 +29,22 @@ export interface TexImage {
 
 export function classifyTextureRole(name: string): TexRole {
   const n = name.toLowerCase();
-  // Glow / illum textures are dedicated emissive masks (only some items have one).
-  if (n.includes("glow") || n.includes("illum")) return "emissive";
-  if (n.includes("gearstack") || /_2$/.test(n)) return "gearstack";
-  if (n.endsWith("_norm") || n.endsWith("_normal") || /_1$/.test(n)) return "normal";
-  if (
-    /_0$/.test(n) ||
-    n.endsWith("_dif") ||
-    n.endsWith("_overdif") ||
-    n.endsWith("_diffuse")
-  ) {
-    return "diffuse";
+  // gbit plate cells end in a numeric role suffix — that ALWAYS wins, even when
+  // the name contains "glow" (e.g. exotic_hawkeye_glow_gbit_..._0 is a DIFFUSE
+  // plate cell composited into the atlas, NOT a standalone emissive map;
+  // treating it as one stretches it across the whole mesh).
+  const suffix = n.match(/_([0-3])$/);
+  if (suffix) {
+    if (suffix[1] === "0") return "diffuse";
+    if (suffix[1] === "1") return "normal";
+    if (suffix[1] === "2") return "gearstack";
+    return "other"; // _3: auxiliary map (unhandled)
   }
+  // Non-plated names: dedicated glow/illum containers are true emissive maps.
+  if (n.includes("glow") || n.includes("illum")) return "emissive";
+  if (n.includes("gearstack")) return "gearstack";
+  if (n.endsWith("_norm") || n.endsWith("_normal") || n.endsWith("_overnorm")) return "normal";
+  if (n.endsWith("_dif") || n.endsWith("_overdif") || n.endsWith("_diffuse")) return "diffuse";
   return "other";
 }
 

@@ -35,10 +35,23 @@ const SEM_POSITION = "_tfx_vb_semantic_position";
 const SEM_NORMAL = "_tfx_vb_semantic_normal";
 const SEM_TEXCOORD = "_tfx_vb_semantic_texcoord";
 
+export interface GroupInfo {
+  /** gear_dye_change_color_index of the stage part (÷2 = dye slot) */
+  dyeIndex: number;
+  /** transparent decal pass — render additive (black = transparent) */
+  decal: boolean;
+  /**
+   * Self-illuminated glow geometry (e.g. Nighthawk's eye) — the diffuse is a
+   * bright emblem on black. Set by the loader from texture-region analysis;
+   * rendered additively so the black surround is transparent.
+   */
+  glow?: boolean;
+}
+
 export interface BuiltMesh {
   geometry: THREE.BufferGeometry;
-  /** dye slot per geometry group, index-aligned with geometry.groups. */
-  groupDyeIndices: number[];
+  /** per geometry group, index-aligned with geometry.groups. */
+  groups: GroupInfo[];
 }
 
 export interface BuildResult {
@@ -151,6 +164,14 @@ function buildMesh(
   const normals = normalInfo ? new Float32Array(vertexCount * 3) : null;
   const uvs = uvInfo ? new Float32Array(vertexCount * 2) : null;
 
+  // Float positions are already in Destiny's shared character space (Z-up); the
+  // bounding_volume + position_offset confirm e.g. a helmet sits at z≈1.7 (head
+  // height). position_scale/offset only decompress NORMALIZED (short/int)
+  // positions — applying them to float coords collapses each piece into its own
+  // tiny local box, which breaks multi-piece character assembly. So skip the
+  // transform for float positions and keep the real shared-space coordinates.
+  const posIsFloat = posInfo.element.numeric === "float";
+
   for (let v = 0; v < vertexCount; v++) {
     // position
     {
@@ -158,7 +179,9 @@ function buildMesh(
       const base = v * stride + posInfo.element.offset;
       for (let c = 0; c < 3; c++) {
         const raw = readComponent(posView, base, posInfo.element, c);
-        positions[v * 3 + c] = scaleOffset(raw, c, mesh.positionScale, mesh.positionOffset);
+        positions[v * 3 + c] = posIsFloat
+          ? raw
+          : scaleOffset(raw, c, mesh.positionScale, mesh.positionOffset);
       }
     }
     // normal
@@ -190,8 +213,12 @@ function buildMesh(
           mesh.texcoordScale,
           mesh.texcoordOffset,
         );
+        // Destiny UVs are v-down with a top-left origin — the same convention
+        // as the uploaded image rows when textures use flipY=false, so V passes
+        // through unflipped. (Confirmed empirically: plate-atlas placements only
+        // line up in v-down space; a 1-v flip mirrors all sampling vertically.)
         uvs[v * 2] = u;
-        uvs[v * 2 + 1] = 1 - w; // Destiny V is flipped relative to Three.js
+        uvs[v * 2 + 1] = w;
       }
     }
   }
@@ -205,7 +232,7 @@ function buildMesh(
   const readIndex = (i: number) => idxView.getUint16(i * 2, true);
 
   const combined: number[] = [];
-  const groupDyeIndices: number[] = [];
+  const groups: GroupInfo[] = [];
   const geometry = new THREE.BufferGeometry();
 
   for (const part of lod0Parts(mesh)) {
@@ -237,8 +264,8 @@ function buildMesh(
 
     const groupCount = combined.length - groupStart;
     if (groupCount > 0) {
-      geometry.addGroup(groupStart, groupCount, groupDyeIndices.length);
-      groupDyeIndices.push(part.gearDyeChangeColorIndex);
+      geometry.addGroup(groupStart, groupCount, groups.length);
+      groups.push({ dyeIndex: part.gearDyeChangeColorIndex, decal: part.decal });
     }
   }
 
@@ -252,7 +279,7 @@ function buildMesh(
   geometry.computeBoundingBox();
   geometry.computeBoundingSphere();
 
-  return { geometry, groupDyeIndices };
+  return { geometry, groups };
 }
 
 /**

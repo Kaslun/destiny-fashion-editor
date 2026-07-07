@@ -52,13 +52,30 @@ function tierColor(tier: string): string {
 interface Props {
   selectedHash: number | null;
   onSelect: (item: ItemEntry) => void;
+  /** Lock the browser to one slot (hides the slot tabs) — for the character editor. */
+  fixedSlot?: string;
+  /** Lock the class filter (hides the class dropdown) — follows the character's class. */
+  fixedClassType?: number;
 }
 
-export default function ItemBrowser({ selectedHash, onSelect }: Props) {
-  const [slot, setSlot] = useState("kinetic");
+export default function ItemBrowser({
+  selectedHash,
+  onSelect,
+  fixedSlot,
+  fixedClassType,
+}: Props) {
+  const [slot, setSlot] = useState(fixedSlot ?? "kinetic");
   const [q, setQ] = useState("");
-  const [classType, setClassType] = useState(1); // Hunter by default
+  const [classType, setClassType] = useState(fixedClassType ?? 1); // Hunter by default
   const [tier, setTier] = useState(""); // "" = all rarities
+
+  // Follow externally-controlled slot / class when provided.
+  useEffect(() => {
+    if (fixedSlot) setSlot(fixedSlot);
+  }, [fixedSlot]);
+  useEffect(() => {
+    if (fixedClassType !== undefined) setClassType(fixedClassType);
+  }, [fixedClassType]);
   const [items, setItems] = useState<ItemEntry[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -70,7 +87,7 @@ export default function ItemBrowser({ selectedHash, onSelect }: Props) {
     setError(null);
     const t = setTimeout(async () => {
       try {
-        const params = new URLSearchParams({ slot, q, limit: "90" });
+        const params = new URLSearchParams({ slot, q, limit: "500"});
         if (classType !== 3) params.set("classType", String(classType));
         if (tier) params.set("tier", tier);
         const res = await fetch(`/api/items?${params.toString()}`);
@@ -93,25 +110,27 @@ export default function ItemBrowser({ selectedHash, onSelect }: Props) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      {/* Slot tabs */}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 12 }}>
-        {SLOTS.map((s) => (
-          <button
-            key={s.key}
-            onClick={() => setSlot(s.key)}
-            className="d2-btn"
-            style={{
-              padding: "6px 10px",
-              fontSize: 12,
-              ...(slot === s.key
-                ? { borderColor: "var(--d2-cyan)", color: "var(--d2-cyan-bright)" }
-                : {}),
-            }}
-          >
-            {s.label}
-          </button>
-        ))}
-      </div>
+      {/* Slot tabs (hidden when locked to a single slot) */}
+      {!fixedSlot && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 12 }}>
+          {SLOTS.map((s) => (
+            <button
+              key={s.key}
+              onClick={() => setSlot(s.key)}
+              className="d2-btn"
+              style={{
+                padding: "6px 10px",
+                fontSize: 12,
+                ...(slot === s.key
+                  ? { borderColor: "var(--d2-cyan)", color: "var(--d2-cyan-bright)" }
+                  : {}),
+              }}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Search */}
       <input
@@ -124,18 +143,20 @@ export default function ItemBrowser({ selectedHash, onSelect }: Props) {
 
       {/* Filters: class + rarity */}
       <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-        <select
-          className="d2-input"
-          style={{ flex: 1, cursor: "pointer" }}
-          value={classType}
-          onChange={(e) => setClassType(Number(e.target.value))}
-        >
-          {CLASSES.map((c) => (
-            <option key={c.value} value={c.value}>
-              {c.label}
-            </option>
-          ))}
-        </select>
+        {fixedClassType === undefined && (
+          <select
+            className="d2-input"
+            style={{ flex: 1, cursor: "pointer" }}
+            value={classType}
+            onChange={(e) => setClassType(Number(e.target.value))}
+          >
+            {CLASSES.map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.label}
+              </option>
+            ))}
+          </select>
+        )}
         <select
           className="d2-input"
           style={{ flex: 1, cursor: "pointer" }}

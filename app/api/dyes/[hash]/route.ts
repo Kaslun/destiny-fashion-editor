@@ -3,7 +3,7 @@
  * Empty object for items without a gear file.
  */
 import { NextRequest, NextResponse } from "next/server";
-import { getGearDyes } from "@/lib/bungie/gearDyeData";
+import { getGearDyes, getItemGear } from "@/lib/bungie/gearDyeData";
 import { apiError } from "@/lib/http";
 
 export const runtime = "nodejs";
@@ -19,6 +19,10 @@ export async function GET(
     return NextResponse.json({ error: "Invalid hash" }, { status: 400 });
   }
   try {
+    if (_req.nextUrl.searchParams.get("debug")) {
+      const gear = await getItemGear(n);
+      return NextResponse.json({ hash: n, rawDefaultDyes: gear.rawDefaultDyes });
+    }
     const dyes = await getGearDyes(n);
     return NextResponse.json({ hash: n, slots: dyes });
   } catch (err) {

@@ -21,6 +21,11 @@ export interface SlotDye {
   secondary: [number, number, number];
   primaryEmissive: [number, number, number];
   secondaryEmissive: [number, number, number];
+  /** entry names of the tiled per-slot detail maps (inside the item's texture containers) */
+  detailDiffuse: string | null;
+  detailNormal: string | null;
+  /** [scaleX, scaleY, offsetX, offsetY] tiling transform for the detail maps */
+  detailTransform: [number, number, number, number];
 }
 
 export type GearDyes = Record<number, SlotDye>;
@@ -33,6 +38,8 @@ export interface ItemGear {
    * null = no arrangement info (render everything).
    */
   baseGeometryCount: number | null;
+  /** debug: raw default_dyes array (to inspect slot_type_index / change-color mapping) */
+  rawDefaultDyes?: unknown;
 }
 
 function rgb3(v: unknown, fallback: [number, number, number]): [number, number, number] {
@@ -41,9 +48,20 @@ function rgb3(v: unknown, fallback: [number, number, number]): [number, number, 
     : fallback;
 }
 
+function xform4(v: unknown): [number, number, number, number] {
+  return Array.isArray(v) && v.length >= 4
+    ? [Number(v[0]), Number(v[1]), Number(v[2]), Number(v[3])]
+    : [1, 1, 0, 0];
+}
+
 function parseDyes(defaultDyes: unknown): GearDyes {
   const out: GearDyes = {};
-  for (const dye of (defaultDyes as { slot_type_index?: number; material_properties?: Record<string, unknown> }[]) ?? []) {
+  const dyes = (defaultDyes as {
+    slot_type_index?: number;
+    material_properties?: Record<string, unknown>;
+    textures?: Record<string, { name?: string }>;
+  }[]) ?? [];
+  for (const dye of dyes) {
     const slot = dye.slot_type_index ?? 0;
     if (out[slot]) continue; // first group wins
     const mp = dye.material_properties ?? {};
@@ -52,6 +70,9 @@ function parseDyes(defaultDyes: unknown): GearDyes {
       secondary: rgb3(mp.secondary_albedo_tint, [1, 1, 1]),
       primaryEmissive: rgb3(mp.primary_emissive_tint_color, [0, 0, 0]),
       secondaryEmissive: rgb3(mp.secondary_emissive_tint_color, [0, 0, 0]),
+      detailDiffuse: dye.textures?.diffuse?.name ?? null,
+      detailNormal: dye.textures?.normal?.name ?? null,
+      detailTransform: xform4(mp.detail_diffuse_transform),
     };
   }
   return out;
@@ -99,6 +120,7 @@ export async function getItemGear(hash: number): Promise<ItemGear> {
   const result: ItemGear = {
     dyes: parseDyes(data.default_dyes),
     baseGeometryCount: base?.geometry_hashes?.length ?? null,
+    rawDefaultDyes: data.default_dyes, // debug: inspect slot_type_index mapping
   };
   gearCache.set(hash, result);
   return result;

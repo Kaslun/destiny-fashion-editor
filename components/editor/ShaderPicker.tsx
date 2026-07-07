@@ -24,7 +24,7 @@ export default function ShaderPicker({ selectedShaderHash, onSelect }: Props) {
     const t = setTimeout(async () => {
       try {
         const res = await fetch(
-          `/api/items?kind=shader&q=${encodeURIComponent(q)}&limit=90`,
+          `/api/items?kind=shader&q=${encodeURIComponent(q)}&limit=1000`,
         );
         const data = await res.json();
         if (cancelled) return;

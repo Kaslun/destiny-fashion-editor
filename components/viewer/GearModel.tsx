@@ -37,6 +37,8 @@ export default function GearModel({ itemHash, shaderHash, onStatus }: Props) {
     loadGearModel(itemHash, { shaderHash })
       .then(({ group, debug }) => {
         if (disposed) return;
+        // Dev aid: expose the loaded model for console/scene inspection.
+        (window as unknown as Record<string, unknown>).__gear = group;
         setGroup(group);
         onStatus?.({ path: "real", debug });
       })

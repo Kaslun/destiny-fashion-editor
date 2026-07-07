@@ -57,21 +57,31 @@ interface ApiSlotDye {
   detailDiffuse?: string | null;
   detailNormal?: string | null;
   detailTransform?: number[];
+  /** Bungie's authoritative per-slot fabric flag (from default_dyes[].cloth). */
+  cloth?: boolean;
 }
 
 /**
- * Bungie ships no metalness/roughness in the dye payload — surface response is
- * encoded in the NAME of the detail map (e.g. `..._weave_dif`, `..._metal_grunge00`).
- * Classify metalness/roughness from those names. Trust the DIFFUSE name for the
- * metal decision (it's the surface author's albedo intent); the normal map is
- * micro-geometry and is often reused across material types, so it's only a weak
- * secondary hint. Metal is checked first so a metal diffuse wins over a leather
- * normal (e.g. Chatterwhite slot 2 = metal_grunge diffuse + leather_worn normal).
+ * Per-slot metalness/roughness. Bungie ships an authoritative `cloth` boolean
+ * per dye slot in default_dyes — when set, it's the definitive signal (fabric =
+ * dielectric, high roughness) and overrides everything. Bungie does NOT ship a
+ * clean metalness scalar (material_params exists but its channel meanings are
+ * only partly documented and don't cleanly separate metal from cloth), so for
+ * NON-cloth slots we fall back to classifying metal vs painted-plate from the
+ * detail-map NAME: metal diffuse (`metal_grunge00`) → metal, else dielectric.
+ * The name check trusts the diffuse (albedo author's intent); the normal map is
+ * reused across material types and is only a weak hint.
  */
 export function pbrFromDetail(
   diffuse?: string | null,
   normal?: string | null,
+  cloth?: boolean,
 ): { metalness: number; roughness: number } {
+  // Authoritative: Bungie flagged this slot as fabric.
+  if (cloth === true) {
+    return { metalness: 0.0, roughness: 0.85 };
+  }
+
   const dif = (diffuse ?? "").toLowerCase();
   const nrm = (normal ?? "").toLowerCase();
 
@@ -81,8 +91,7 @@ export function pbrFromDetail(
     return { metalness: 1.0, roughness: 0.4 };
   }
 
-  // Cloth / fabric / soft goods: dielectric, high roughness. Check both names —
-  // fabric is frequently only identifiable from the normal (needle_felt, weave).
+  // Non-cloth fabric-ish names (leather, etc.) as a secondary signal.
   const soft = `${dif} ${nrm}`;
   if (/weave|felt|cloth|fabric|leather|linen|wool|canvas|knit|silk|denim|hide|suede/.test(soft)) {
     return { metalness: 0.0, roughness: 0.85 };
@@ -101,7 +110,7 @@ export function dyeSetFromGearDyes(slots: Record<string, ApiSlotDye>): DyeSet {
   const set: DyeSet = {};
   for (const [key, d] of Object.entries(slots)) {
     const t = d.detailTransform;
-    const pbr = pbrFromDetail(d.detailDiffuse, d.detailNormal);
+    const pbr = pbrFromDetail(d.detailDiffuse, d.detailNormal, d.cloth);
     set[Number(key)] = {
       primary: new THREE.Color().fromArray(d.primary),
       secondary: new THREE.Color().fromArray(d.secondary),

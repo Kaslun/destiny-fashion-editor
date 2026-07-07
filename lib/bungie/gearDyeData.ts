@@ -26,6 +26,10 @@ export interface SlotDye {
   detailNormal: string | null;
   /** [scaleX, scaleY, offsetX, offsetY] tiling transform for the detail maps */
   detailTransform: [number, number, number, number];
+  /** Bungie's authoritative per-slot material flag: true = fabric/soft goods. */
+  cloth: boolean;
+  /** raw primary_material_params vec4 (channel meanings partly undocumented). */
+  materialParams: [number, number, number, number];
 }
 
 export type GearDyes = Record<number, SlotDye>;
@@ -58,6 +62,7 @@ function parseDyes(defaultDyes: unknown): GearDyes {
   const out: GearDyes = {};
   const dyes = (defaultDyes as {
     slot_type_index?: number;
+    cloth?: boolean;
     material_properties?: Record<string, unknown>;
     textures?: Record<string, { name?: string } | undefined>;
   }[]) ?? [];
@@ -90,6 +95,8 @@ function parseDyes(defaultDyes: unknown): GearDyes {
       detailNormal:
         tx.detail_normal?.name ?? tx.normal?.name ?? null,
       detailTransform: xform4(mp.detail_diffuse_transform),
+      cloth: dye.cloth === true,
+      materialParams: xform4(mp.primary_material_params),
     };
   }
   return out;

@@ -261,7 +261,13 @@ Gearstack decodeGearstack( vec4 gs ) {
   g.metalness  = clamp( a255 / 32.0, 0.0, 1.0 );
   g.dyeMask    = step( 40.0 / 255.0, gs.a );
   g.wear       = clamp( ( gs.a - 48.0 / 255.0 ) * ( 255.0 / ( 255.0 - 48.0 ) ), 0.0, 1.0 );
-  g.emissive   = clamp( ( gs.b - 40.0 / 255.0 ) * ( 255.0 / ( 255.0 - 40.0 ) ), 0.0, 1.0 );
+  // Emissive lives in the HIGH blue band. The low band (b < 32/255) is
+  // alpha-test data and the 32..~64 range carries structural/edge values that
+  // are NOT glow — decoding the whole >40 range as emissive lights up beak
+  // vents and panel seams as white bars. Start the emissive ramp well above the
+  // alpha-test band and require a real signal (>~0.5 blue) before it counts, so
+  // only genuinely emissive cells (glowing eyes, tech lines) contribute.
+  g.emissive   = clamp( ( gs.b - 128.0 / 255.0 ) * ( 255.0 / ( 255.0 - 128.0 ) ), 0.0, 1.0 );
   g.alphaTest  = clamp( b255 / 32.0, 0.0, 1.0 );
   return g;
 }
@@ -425,15 +431,21 @@ Gearstack decodeGearstack( vec4 gs ) {
       {
         Gearstack egs = decodeGearstack( texture2D( uGearstack, vMapUv ) );
         float glow = egs.emissive;
-        vec3 glowTint;
+        vec3 glowTint = vec3( 0.0 );
+        float glowOn = 0.0;
         if ( uHasDyeslot > 0.5 ) {
           float eq = floor( texture2D( uDyeslot, vMapUv ).r * 3.0 + 0.5 );
           int esi = eq >= 0.5 ? int( eq ) - 1 : 0;
           glowTint = uPrimEmissives[esi];
-        } else {
-          glowTint = uEmissiveOn > 0.5 ? uEmissiveTint : diffuseColor.rgb;
+          glowOn = 1.0;
+        } else if ( uEmissiveOn > 0.5 ) {
+          // Only glow when the dye actually specifies an emissive tint. The old
+          // fallback lit non-emissive cells in their own albedo colour, which on
+          // the gold/white beak seam read as bright white bars.
+          glowTint = uEmissiveTint;
+          glowOn = 1.0;
         }
-        totalEmissiveRadiance += glowTint * glow * 1.25;
+        totalEmissiveRadiance += glowTint * glow * glowOn * 1.25;
       }`,
     );
     } // end if (wantGearstack)

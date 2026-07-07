@@ -13,6 +13,7 @@
 import { promises as fs } from "fs";
 import path from "path";
 import { bungieFetch } from "./client";
+import { cacheDir } from "@/lib/cacheDir";
 
 export interface GearAssetDatabase {
   version: number;
@@ -46,7 +47,7 @@ export interface ResolvedManifest {
   fetchedAt: string;
 }
 
-const CACHE_DIR = path.join(process.cwd(), "data", "cache");
+const CACHE_DIR = cacheDir();
 const MANIFEST_CACHE = path.join(CACHE_DIR, "manifest.json");
 
 let memo: ResolvedManifest | null = null;

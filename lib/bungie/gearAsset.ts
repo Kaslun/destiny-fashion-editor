@@ -20,8 +20,9 @@ import { promises as fs } from "fs";
 import path from "path";
 import { bungieFetchRaw } from "./client";
 import { getManifest, type GearAssetDatabase } from "./manifest";
+import { cacheDir } from "@/lib/cacheDir";
 
-const CACHE_DIR = path.join(process.cwd(), "data", "cache", "gearassets");
+const CACHE_DIR = cacheDir("gearassets");
 
 export interface GearAssetContent {
   platform?: string;

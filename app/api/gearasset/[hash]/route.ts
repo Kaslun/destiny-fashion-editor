@@ -16,6 +16,8 @@ import { getManifest, cdnUrl } from "@/lib/bungie/manifest";
 import { apiError } from "@/lib/http";
 
 export const runtime = "nodejs"; // needs fs + sql.js wasm
+// Cold starts download + open a large gear-asset SQLite DB — allow headroom.
+export const maxDuration = 60;
 
 function proxied(cdnPath: string): string {
   return `/api/asset?path=${encodeURIComponent(cdnPath)}`;

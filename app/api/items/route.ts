@@ -8,6 +8,8 @@ import { apiError } from "@/lib/http";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// First call downloads + trims the ~tens-of-MB item definitions table.
+export const maxDuration = 60;
 
 const SLOTS = new Set<SlotKey>([
   "kinetic",

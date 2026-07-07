@@ -5,6 +5,12 @@ const nextConfig = {
   // server bundle ("Cannot set properties of undefined (setting 'exports')").
   // Keep it external so Next requires it from node_modules at runtime.
   serverExternalPackages: ["sql.js"],
+  // sql.js loads its .wasm at runtime via a constructed fs path, so Next's file
+  // tracer can't see it. Force-include it (+ the wasm-JS glue) in the serverless
+  // function bundle so gear-asset SQLite queries work on Vercel.
+  outputFileTracingIncludes: {
+    "/api/**": ["./node_modules/sql.js/dist/sql-wasm.wasm"],
+  },
   // sql.js ships a .wasm file we load at runtime; make sure webpack doesn't try
   // to bundle the node-only `fs`/`path` fallbacks into the client build.
   webpack: (config) => {

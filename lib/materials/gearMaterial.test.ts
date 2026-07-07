@@ -39,30 +39,32 @@ describe("createGearMaterials — decal/overlay handling", () => {
   });
 });
 
-describe("createGearMaterials — detail-diffuse gate (Nighthawk weave fix)", () => {
-  // A resolved detail texture + base diffuse triggers the detail branch.
+describe("createGearMaterials — detail-strength weighting (Nighthawk weave fix)", () => {
   const tex = () => new THREE.Texture();
-  const dyesWithDetail = {
-    0: {
-      primary: new THREE.Color(0xffffff),
-      secondary: new THREE.Color(0xffffff),
-      roughness: 0.6, metalness: 0,
-      emissive: new THREE.Color(0, 0, 0),
-      secondaryEmissive: new THREE.Color(0, 0, 0),
-      detailDiffuseName: "x_weave_dif", detailNormalName: null,
-      detailTransform: [1, 1, 0, 0] as [number, number, number, number],
-      cloth: false,
-      detailDiffuse: tex(),
-    },
-  };
+  function dyeWithStrength(strength: number) {
+    return {
+      0: {
+        primary: new THREE.Color(0xffffff),
+        secondary: new THREE.Color(0xffffff),
+        roughness: 0.6, metalness: 0,
+        emissive: new THREE.Color(0, 0, 0),
+        secondaryEmissive: new THREE.Color(0, 0, 0),
+        detailDiffuseName: "kevlar_dif", detailNormalName: null,
+        detailTransform: [7.5, 7.5, 0, 0] as [number, number, number, number],
+        cloth: false,
+        detailStrength: strength,
+        detailDiffuse: tex(),
+      },
+    };
+  }
 
-  function fragmentFor(plated: boolean): string {
+  function fragmentFor(strength: number): string {
     const maps = { diffuse: tex(), gearstack: tex() };
     const mats = createGearMaterials(
       [{ dyeIndex: 0, decal: false }],
-      dyesWithDetail as any,
+      dyeWithStrength(strength) as any,
       maps as any,
-      { useGearstack: true, applyDye: true, plated },
+      { useGearstack: true, applyDye: true },
     );
     const m = mats[0] as THREE.MeshStandardMaterial;
     const shader: any = { uniforms: {}, fragmentShader: `
@@ -72,14 +74,23 @@ describe("createGearMaterials — detail-diffuse gate (Nighthawk weave fix)", ()
       #include <metalnessmap_fragment>
       #include <emissivemap_fragment>` };
     (m.onBeforeCompile as any)?.(shader);
-    return shader.fragmentShader;
+    return JSON.stringify({ src: shader.fragmentShader, strength: shader.uniforms.uDetailStrength?.value });
   }
 
-  it("non-plated item injects the detail-diffuse multiply (vest keeps its weave)", () => {
-    expect(fragmentFor(false)).toContain("diffuseColor.rgb *= detail");
+  it("detail-diffuse branch is present and gated by uDetailStrength at runtime", () => {
+    const out = fragmentFor(1);
+    expect(out).toContain("uDetailStrength > 0.001");
+    expect(out).toContain("diffuseColor.rgb *= mod");
   });
 
-  it("plated baked-art item does NOT inject detail diffuse (Nighthawk: no weave over gold/emblem)", () => {
-    expect(fragmentFor(true)).not.toContain("diffuseColor.rgb *= detail");
+  it("zero-strength slot (gold plate) passes detailStrength=0, suppressing the weave at runtime", () => {
+    // The branch compiles in, but the uniform is 0 so it's a no-op in-shader.
+    const out = JSON.parse(fragmentFor(0));
+    expect(out.strength).toBe(0);
+  });
+
+  it("cloth slot passes full detailStrength=1", () => {
+    const out = JSON.parse(fragmentFor(1));
+    expect(out.strength).toBe(1);
   });
 });

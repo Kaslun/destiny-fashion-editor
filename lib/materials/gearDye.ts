@@ -27,6 +27,12 @@ export interface DyeColors {
   detailTransform: [number, number, number, number];
   /** Bungie's authoritative per-slot fabric flag (default_dyes[].cloth). */
   cloth: boolean;
+  /**
+   * Per-slot detail-map blend strength, from material_params[0]. 0 = no detail
+   * contribution (e.g. Nighthawk's gold faceplate), 1 = full (cloth). Gates how
+   * strongly the tiled detail diffuse/normal modulate the base surface.
+   */
+  detailStrength: number;
   /** filled in by the loader from the names above */
   detailDiffuse?: THREE.Texture;
   detailNormal?: THREE.Texture;
@@ -45,6 +51,7 @@ const NEUTRAL: DyeColors = {
   detailNormalName: null,
   detailTransform: [1, 1, 0, 0],
   cloth: false,
+  detailStrength: 0,
 };
 
 /** Colours for a given dye slot, or neutral if unresolved. */
@@ -62,6 +69,8 @@ interface ApiSlotDye {
   detailTransform?: number[];
   /** Bungie's authoritative per-slot fabric flag (from default_dyes[].cloth). */
   cloth?: boolean;
+  /** raw primary_material_params vec4; channel 0 used as detail-blend strength. */
+  materialParams?: number[];
 }
 
 /**
@@ -132,6 +141,12 @@ export function dyeSetFromGearDyes(slots: Record<string, ApiSlotDye>): DyeSet {
           ? [t[0], t[1], t[2], t[3]]
           : [1, 1, 0, 0],
       cloth: d.cloth === true,
+      detailStrength:
+        Array.isArray(d.materialParams) && d.materialParams.length > 0
+          ? Math.max(0, Math.min(1, Number(d.materialParams[0])))
+          : d.cloth === true
+            ? 1
+            : 0,
     };
   }
   return set;

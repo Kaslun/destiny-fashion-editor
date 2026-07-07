@@ -154,9 +154,12 @@ function makeOpaque(
   // woven. Detail NORMAL is micro-relief only (no albedo stamping) and is
   // comparatively safe, but on baked-art plate it also adds a woven bump to the
   // gold reflections, so gate it the same way.
-  const bakedArtPlate = !!opts.plated;
-  const hasDetailDiffuse = !!detailDiffuse && !bakedArtPlate;
-  const hasDetailNormal = !!detailNormal && !bakedArtPlate;
+  // Detail maps are weighted per-slot by detailStrength (material_params[0]) in
+  // the shader below: strength 0 (e.g. Nighthawk's gold plate) contributes
+  // nothing, so no coarse plated gate is needed — the weight handles baked-art
+  // and cloth correctly from the same data.
+  const hasDetailDiffuse = !!detailDiffuse;
+  const hasDetailNormal = !!detailNormal;
   const dt = dye.detailTransform;
 
   // Gearstack/detail injection needs the diffuse map's UV varying (vMapUv).
@@ -194,6 +197,7 @@ function makeOpaque(
     shader.uniforms.uDetailDiffuse = { value: detailDiffuse };
     shader.uniforms.uDetailNormal = { value: detailNormal };
     shader.uniforms.uHasDetailDiffuse = { value: hasDetailDiffuse ? 1 : 0 };
+    shader.uniforms.uDetailStrength = { value: dye.detailStrength ?? 0 };
     shader.uniforms.uHasDetailNormal = { value: hasDetailNormal ? 1 : 0 };
     // xy = tiling scale, zw = offset.
     shader.uniforms.uDetailTransform = {
@@ -218,6 +222,7 @@ uniform vec3 uSecEmissives[3];
 uniform sampler2D uDetailDiffuse;
 uniform sampler2D uDetailNormal;
 uniform float uHasDetailDiffuse;
+uniform float uDetailStrength;
 uniform float uHasDetailNormal;
 uniform vec4 uDetailTransform;
 ` +
@@ -227,30 +232,38 @@ uniform vec4 uDetailTransform;
     // tinting. Tiled by uDetailTransform. Centered around 1.0 (a detail map is a
     // multiplier: ~0.5 grey = neutral) via 2x so it darkens AND brightens the
     // weave/grain rather than only darkening. Skipped if unresolved.
+    // Detail DIFFUSE: a tiled micro-surface luminance overlay (kevlar weave,
+    // fabric grain), NOT a replacement albedo. Bungie weights its contribution
+    // per slot via material_params[0] (uDetailStrength): 0 = none (Nighthawk's
+    // gold faceplate), 1 = full (cloth). Blend as a soft multiply around 1.0 so
+    // it modulates rather than stamps, then lerp by strength so zero-strength
+    // slots keep their base albedo untouched. This replaces the earlier flat
+    // 2x multiply, which crushed baked art (gold/emblem) under the weave.
     if (hasDetailDiffuse) {
       shader.fragmentShader = shader.fragmentShader.replace(
         "#include <map_fragment>",
         `#include <map_fragment>
-        if ( uHasDetailDiffuse > 0.5 ) {
+        if ( uHasDetailDiffuse > 0.5 && uDetailStrength > 0.001 ) {
           vec2 dUv = vMapUv * uDetailTransform.xy + uDetailTransform.zw;
-          vec3 detail = texture2D( uDetailDiffuse, dUv ).rgb;
-          diffuseColor.rgb *= detail * 2.0;
+          float dl = dot( texture2D( uDetailDiffuse, dUv ).rgb, vec3(0.299,0.587,0.114) );
+          // Modulate around neutral (0.5 detail luminance = no change), scaled
+          // by strength. Gentle range so even full-strength cloth keeps colour.
+          float mod = 1.0 + ( dl - 0.5 ) * 0.8 * uDetailStrength;
+          diffuseColor.rgb *= mod;
         }`,
       );
     }
 
-    // Detail NORMAL blend: perturb the surface normal with the tiled detail
-    // normal (whiteout blend — cheap, stable, good enough for micro-relief).
-    // Injected after three's normal-map application. Skipped if unresolved.
+    // Detail NORMAL: micro-relief, also weighted by detail strength so flat
+    // slots (gold) don't get a woven bump in their reflections.
     if (hasDetailNormal) {
       shader.fragmentShader = shader.fragmentShader.replace(
         "#include <normal_fragment_maps>",
         `#include <normal_fragment_maps>
-        if ( uHasDetailNormal > 0.5 ) {
+        if ( uHasDetailNormal > 0.5 && uDetailStrength > 0.001 ) {
           vec2 dnUv = vMapUv * uDetailTransform.xy + uDetailTransform.zw;
           vec3 dn = texture2D( uDetailNormal, dnUv ).xyz * 2.0 - 1.0;
-          // Whiteout blend: add tangent-space xy, keep base z dominant.
-          normal = normalize( vec3( normal.xy + dn.xy, normal.z ) );
+          normal = normalize( vec3( normal.xy + dn.xy * uDetailStrength, normal.z ) );
         }`,
       );
     }

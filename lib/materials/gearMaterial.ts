@@ -140,8 +140,23 @@ function makeOpaque(
   if (detailNormal) {
     detailNormal.wrapS = detailNormal.wrapT = THREE.RepeatWrapping;
   }
-  const hasDetailDiffuse = !!detailDiffuse;
-  const hasDetailNormal = !!detailNormal;
+
+  // The detail DIFFUSE is a change-colour micro-surface (cloth weave, worn
+  // grain). It belongs ONLY on dyeable greyscale-shell surfaces. On baked-art
+  // plate items (Celestial Nighthawk: gold faceplate, white/red emblem, brown
+  // crown) the base diffuse is the FINISHED art — multiplying a tiled weave
+  // over it stamps fabric across the gold and emblem (visibly wrong). Bungie's
+  // shader gates the detail contribution to the change-colour region; we don't
+  // have that per-pixel gate available before the dye block runs, so use the
+  // coarse but correct rule: skip detail diffuse on plated (baked-art) items.
+  // Cloth/greyscale-shell items (plated=false) are fully dyeable shell, so the
+  // detail diffuse applies across them — which is what makes the vest read as
+  // woven. Detail NORMAL is micro-relief only (no albedo stamping) and is
+  // comparatively safe, but on baked-art plate it also adds a woven bump to the
+  // gold reflections, so gate it the same way.
+  const bakedArtPlate = !!opts.plated;
+  const hasDetailDiffuse = !!detailDiffuse && !bakedArtPlate;
+  const hasDetailNormal = !!detailNormal && !bakedArtPlate;
   const dt = dye.detailTransform;
 
   // Gearstack/detail injection needs the diffuse map's UV varying (vMapUv).

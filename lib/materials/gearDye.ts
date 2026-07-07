@@ -25,6 +25,8 @@ export interface DyeColors {
   detailNormalName: string | null;
   /** [scaleX, scaleY, offsetX, offsetY] detail tiling transform */
   detailTransform: [number, number, number, number];
+  /** Bungie's authoritative per-slot fabric flag (default_dyes[].cloth). */
+  cloth: boolean;
   /** filled in by the loader from the names above */
   detailDiffuse?: THREE.Texture;
   detailNormal?: THREE.Texture;
@@ -42,6 +44,7 @@ const NEUTRAL: DyeColors = {
   detailDiffuseName: null,
   detailNormalName: null,
   detailTransform: [1, 1, 0, 0],
+  cloth: false,
 };
 
 /** Colours for a given dye slot, or neutral if unresolved. */
@@ -128,6 +131,7 @@ export function dyeSetFromGearDyes(slots: Record<string, ApiSlotDye>): DyeSet {
         Array.isArray(t) && t.length >= 4
           ? [t[0], t[1], t[2], t[3]]
           : [1, 1, 0, 0],
+      cloth: d.cloth === true,
     };
   }
   return set;

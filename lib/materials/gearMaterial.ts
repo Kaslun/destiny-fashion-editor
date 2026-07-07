@@ -175,6 +175,7 @@ function makeOpaque(
   // glow) — the dyeslot plate selects the slot per pixel.
   const primaries = [0, 1, 2].map((s) => dyeForSlot(dyes, s).primary);
   const secondaries = [0, 1, 2].map((s) => dyeForSlot(dyes, s).secondary);
+  const worns = [0, 1, 2].map((s) => dyeForSlot(dyes, s).worn);
   const primEmissives = [0, 1, 2].map((s) => dyeForSlot(dyes, s).emissive);
   const secEmissives = [0, 1, 2].map((s) => dyeForSlot(dyes, s).secondaryEmissive);
 
@@ -190,6 +191,8 @@ function makeOpaque(
     shader.uniforms.uHasDyeslot = { value: hasDyeslot ? 1 : 0 };
     shader.uniforms.uPrimaries = { value: primaries };
     shader.uniforms.uSecondaries = { value: secondaries };
+    shader.uniforms.uWorns = { value: worns };
+    shader.uniforms.uWornTint = { value: dye.worn };
     shader.uniforms.uPrimEmissives = { value: primEmissives };
     shader.uniforms.uSecEmissives = { value: secEmissives };
     shader.uniforms.uSlotIndex = { value: slot };
@@ -218,6 +221,8 @@ uniform sampler2D uDyeslot;
 uniform float uHasDyeslot;
 uniform vec3 uPrimaries[3];
 uniform vec3 uSecondaries[3];
+uniform vec3 uWorns[3];
+uniform vec3 uWornTint;
 uniform vec3 uPrimEmissives[3];
 uniform vec3 uSecEmissives[3];
 uniform sampler2D uDetailDiffuse;
@@ -227,6 +232,39 @@ uniform float uDetailStrength;
 uniform float uSlotCloth;
 uniform float uHasDetailNormal;
 uniform vec4 uDetailTransform;
+
+// --- Destiny 2 gearstack decode --------------------------------------------
+// Channel meanings confirmed by Bungie's Graphics Tech Art Lead (via lowlines'
+// Spasm port):
+//   R = ambient occlusion
+//   G = smoothness            (roughness = 1 - G, remapped)
+//   B = encoded alpha-test + emissive
+//   A = encoded dye mask + non-dyed metalness + wear mask
+// The alpha channel packs three signals into value bands (the /32, 40/255,
+// 48/255 constants are Bungie's, ported verbatim). Decoding it gives us the
+// per-pixel metalness and wear the name classifier could only guess at.
+struct Gearstack {
+  float ao;
+  float smoothness;
+  float metalness;   // non-dyed metalness, 0..1
+  float dyeMask;     // 1 where the surface is dyeable, 0 on baked art
+  float wear;        // 0..1 worn amount
+  float emissive;    // 0..1 emissive strength
+  float alphaTest;   // 0..1 (for cut-out geometry)
+};
+Gearstack decodeGearstack( vec4 gs ) {
+  Gearstack g;
+  float a255 = gs.a * 255.0;
+  float b255 = gs.b * 255.0;
+  g.ao         = gs.r;
+  g.smoothness = gs.g;
+  g.metalness  = clamp( a255 / 32.0, 0.0, 1.0 );
+  g.dyeMask    = step( 40.0 / 255.0, gs.a );
+  g.wear       = clamp( ( gs.a - 48.0 / 255.0 ) * ( 255.0 / ( 255.0 - 48.0 ) ), 0.0, 1.0 );
+  g.emissive   = clamp( ( gs.b - 40.0 / 255.0 ) * ( 255.0 / ( 255.0 - 40.0 ) ), 0.0, 1.0 );
+  g.alphaTest  = clamp( b255 / 32.0, 0.0, 1.0 );
+  return g;
+}
 ` +
       shader.fragmentShader;
 
@@ -277,23 +315,21 @@ uniform vec4 uDetailTransform;
         "#include <map_fragment>",
         `#include <map_fragment>
         {
-          vec4 gs = texture2D( uGearstack, vMapUv );
-          // Brightness/saturation for the dye gate, measured on the RAW albedo
-          // BEFORE AO darkening — otherwise AO pushes shaded parts of the white
-          // panel below the threshold and the gold dye bleeds over them.
+          vec4 gsRaw = texture2D( uGearstack, vMapUv );
+          Gearstack gs = decodeGearstack( gsRaw );
+          // Brightness/saturation for the baked-art gate, measured on the RAW
+          // albedo BEFORE AO darkening — otherwise AO pushes shaded parts of a
+          // white panel below the threshold and dye bleeds over them.
           float albLum = dot( diffuseColor.rgb, vec3( 0.299, 0.587, 0.114 ) );
           float albSat = max( diffuseColor.r, max( diffuseColor.g, diffuseColor.b ) )
             - min( diffuseColor.r, min( diffuseColor.g, diffuseColor.b ) );
-          // R = ambient occlusion -> darken albedo.
-          diffuseColor.rgb *= mix( 1.0, 1.0, gs.r );
 
           if ( uApplyDye > 0.5 ) {
-            // Which dye slot's colours apply here. A per-pixel dyeslot plate
-            // (R = 1-based slot index {1/3,2/3,1}) when present; else this
-            // part's single slot. R quantizing to 0 = a BAKED region (emblem,
-            // glow) — leave its painted colour untouched.
+            // Slot colours for this pixel. A per-pixel dyeslot plate (R = 1-based
+            // slot index) when present; else this part's single slot.
             vec3 pri = uPrimaryTint;
             vec3 sec = uSecondaryTint;
+            vec3 wrn = uWornTint;
             int si = -1;
             bool doDye = true;
             if ( uHasDyeslot > 0.5 ) {
@@ -304,138 +340,100 @@ uniform vec4 uDetailTransform;
                 si = int( q ) - 1;
                 pri = uPrimaries[si];
                 sec = uSecondaries[si];
+                wrn = uWorns[si];
               }
             }
+
+            // Decoded dye mask is the authoritative "is this pixel dyeable"
+            // signal (0 on baked emblems/glows, 1 on the change-colour shell).
+            // For plated baked-art items we AND it with the saturation gate as a
+            // belt-and-braces guard, since some mobile plates carry imperfect
+            // masks; for everything else the decoded mask stands on its own.
+            float dyeMask = gs.dyeMask;
+
             if ( doDye ) {
               if ( uPlated > 0.5 ) {
-                // Plate armor: the diffuse is greyscale "change-colour" shell
-                // MIXED with baked-colour cells (gold eye, red/white emblem) that
-                // must survive. Gate the dye by saturation: near-grey texels take
-                // the tint, saturated texels pass through untouched.
-                // The nighthawk emblem (white panel + red trim + BLACK hawk) is
-                // baked art bounded by the red line — none of it should be dyed.
-                // Preserve it by its three signatures so the gold only covers the
-                // mid-grey base outside the red line:
-                //   * bright  -> white panel + tick marks (sRGB ~224 vs base ~128)
-                //   * saturated -> red trim (handled by albSat)
-                //   * very dark -> the black hawk (else the brightness gate would
-                //     dye it gold and pull the surrounding white down with it)
-                // Gate on PRE-AO albedo so AO shading doesn't drop the panel below
-                // the line.
+                // Baked-art plate: keep saturated/bright/very-dark cells (emblem,
+                // trim, hawk) intact; dye only the near-grey shell. Combine the
+                // decoded mask with the saturation gate.
                 float greyMask = ( 1.0 - smoothstep( 0.06, 0.16, albSat ) )
                   * ( 1.0 - smoothstep( 0.30, 0.48, albLum ) )
                   * smoothstep( 0.04, 0.11, albLum );
-                // The gold faceplate (slot 0) reads as its PRIMARY (gold) across
-                // the plate — bias toward primary. Other slots use the normal
-                // primary(low A)/secondary(high A) split (brown crown, etc.).
-                vec3 tint = ( uSlotIndex < 0.5 )
-                  ? mix( pri, sec, gs.a * 0.35 )
-                  : mix( pri, sec, gs.a );
+                float m = dyeMask * greyMask;
+                vec3 tint = ( uSlotIndex < 0.5 ) ? pri : mix( pri, sec, 0.0 );
                 vec3 dyed = clamp( diffuseColor.rgb * 1.7, 0.0, 1.1 ) * tint;
-                diffuseColor.rgb = mix( diffuseColor.rgb, dyed, greyMask );
+                diffuseColor.rgb = mix( diffuseColor.rgb, dyed, m );
+                // Wear: blend the dyed shell toward the worn tint where the wear
+                // mask is high (scratched/edge-worn metal reads darker/duller).
+                diffuseColor.rgb = mix( diffuseColor.rgb,
+                  diffuseColor.rgb * wrn, gs.wear * m );
               } else {
-                // Baked-colour item (weapon): tint only the dye-masked trim and
-                // keep the painted body, so the diffuse's own colours survive.
-                float dyed = smoothstep( 0.10, 0.25, gs.a );
-                float primSel = smoothstep( 0.55, 0.75, gs.a );
-                vec3 tint = mix( sec, pri, primSel );
-                diffuseColor.rgb = mix( diffuseColor.rgb, diffuseColor.rgb * tint, dyed );
+                // Change-colour shell (weapons, cloth): dye the masked region,
+                // preserving painted body. Tint multiplies the shell albedo.
+                vec3 tint = pri;
+                diffuseColor.rgb = mix( diffuseColor.rgb,
+                  diffuseColor.rgb * tint, dyeMask );
+                diffuseColor.rgb = mix( diffuseColor.rgb,
+                  diffuseColor.rgb * wrn, gs.wear * dyeMask );
               }
             }
           }
         }`,
       );
 
-      // G = smoothness -> roughness (inverted).
+      // G = smoothness -> roughness (inverted). This is Bungie's per-pixel gloss
+      // source; the dye's roughness_remap endpoints refine the range but the
+      // gearstack green channel carries the spatial detail (polished vs brushed).
       shader.fragmentShader = shader.fragmentShader.replace(
       "#include <roughnessmap_fragment>",
       `#include <roughnessmap_fragment>
       {
-        float smoothness = texture2D( uGearstack, vMapUv ).g;
-        roughnessFactor *= clamp( 1.0 - smoothness, 0.05, 1.0 );
-        if ( uPlated > 0.5 && uSlotCloth < 0.5 ) {
-          if ( uSlotIndex < 0.5 ) {
-            // Gold faceplate (slot 0): polished near-mirror metal.
-            roughnessFactor = min( roughnessFactor * 0.3, 0.12 );
-          } else {
-            // Crown (brown leather) + tech: matte — floor the roughness so the
-            // brighter environment doesn't turn them glossy.
-            roughnessFactor = clamp( roughnessFactor, 0.6, 1.0 );
-          }
+        Gearstack gsR = decodeGearstack( texture2D( uGearstack, vMapUv ) );
+        roughnessFactor *= clamp( 1.0 - gsR.smoothness, 0.05, 1.0 );
+        // Worn areas are rougher (scratched-up), scaled by the decoded wear mask.
+        roughnessFactor = mix( roughnessFactor, min( 1.0, roughnessFactor + 0.35 ), gsR.wear );
+        if ( uSlotCloth > 0.5 ) {
+          // Fabric floor: cloth is never glossy, even if the gearstack green is
+          // noisy on a low-res mobile plate.
+          roughnessFactor = clamp( roughnessFactor, 0.6, 1.0 );
         }
       }`,
     );
 
-    // Metalness (plate armor): the greyscale ceramic shell is a DIELECTRIC (a
-    // flat 0.5 metalness made white armor read grey metal). Only warm/GOLD trim
-    // is metallic. Restricting to gold (not just any saturation) keeps the red
-    // trim and the antialiased pink emblem edges dielectric — otherwise those
-    // edge pixels turn metallic and reflect the scene's coloured lights as
-    // green/cyan/magenta specular speckles. Weapons keep their baked metalness.
+    // Metalness — now sourced from the gearstack alpha channel (decoded), which
+    // is Bungie's authoritative per-pixel non-dyed metalness. This replaces the
+    // previous gold-hue/saturation heuristic that guessed metal from albedo
+    // colour (and threw coloured specular speckles on antialiased emblem edges).
+    // Cloth slots are forced dielectric regardless (fabric is never metal).
     shader.fragmentShader = shader.fragmentShader.replace(
       "#include <metalnessmap_fragment>",
       `#include <metalnessmap_fragment>
-      if ( uPlated > 0.5 && uSlotCloth < 0.5 ) {
-        // The gold faceplate (slot 0) is polished METAL — make it fully metallic
-        // so it reflects the environment; the painted brown crown / grey slots
-        // stay mostly dielectric. Baked WHITE art (emblem panel + ticks) is paint,
-        // never metal — force it dielectric so its edges don't throw coloured
-        // specular speckles. CLOTH slots are excluded entirely (uSlotCloth) so a
-        // mixed item like Nighthawk (gold + cloth + rubber) keeps the gold's
-        // metal reflection without forcing its fabric slot metallic.
-        float bright = smoothstep( 0.5, 0.75, dot( diffuseColor.rgb, vec3( 0.299, 0.587, 0.114 ) ) );
-        float mmx = max( diffuseColor.r, max( diffuseColor.g, diffuseColor.b ) );
-        float mmn = min( diffuseColor.r, min( diffuseColor.g, diffuseColor.b ) );
-        // Baked red/coloured trim (saturated, LOW green) is paint, not metal —
-        // keep it dielectric so its edges don't spark coloured speckles. Gold
-        // (HIGH green) stays metallic.
-        float redish = smoothstep( 0.18, 0.4, mmx - mmn ) * ( 1.0 - smoothstep( 0.45, 0.65, diffuseColor.g ) );
-        // Only the gold faceplate (slot 0) is real metal; the painted ceramic
-        // crown + tech are dielectric.
-        float base = ( uSlotIndex < 0.5 ) ? 0.9 : 0.03;
-        metalnessFactor = base * ( 1.0 - bright ) * ( 1.0 - redish );
+      {
+        Gearstack gsM = decodeGearstack( texture2D( uGearstack, vMapUv ) );
+        float m = gsM.metalness;
+        if ( uSlotCloth > 0.5 ) m = 0.0;   // fabric is dielectric
+        metalnessFactor = m;
       }`,
     );
 
-    // B = emissive mask (low floor; smoothstep isolates the glowing regions).
-    // Glow colour is per dye slot with primary/secondary variants (see shader
-    // anatomy: Primary/Secondary Glow), selected exactly like the albedo tints.
-    // Modulating by the surface albedo keeps texture patterning visible instead
-    // of a flat saturated wash (e.g. Bushido's glowing hood keeps its weave).
+    // B = emissive (decoded band). Glow colour is per dye slot; select the slot
+    // from the dyeslot plate when present, else this part's slot. Modulating by
+    // albedo keeps texture patterning visible instead of a flat wash.
     shader.fragmentShader = shader.fragmentShader.replace(
       "#include <emissivemap_fragment>",
       `#include <emissivemap_fragment>
       {
-        vec4 egs = texture2D( uGearstack, vMapUv );
-        float glow = smoothstep( 0.45, 0.85, egs.b );
+        Gearstack egs = decodeGearstack( texture2D( uGearstack, vMapUv ) );
+        float glow = egs.emissive;
         vec3 glowTint;
         if ( uHasDyeslot > 0.5 ) {
           float eq = floor( texture2D( uDyeslot, vMapUv ).r * 3.0 + 0.5 );
           int esi = eq >= 0.5 ? int( eq ) - 1 : 0;
-          glowTint = mix( uPrimEmissives[esi], uSecEmissives[esi], egs.a );
+          glowTint = uPrimEmissives[esi];
         } else {
           glowTint = uEmissiveOn > 0.5 ? uEmissiveTint : diffuseColor.rgb;
         }
         totalEmissiveRadiance += glowTint * glow * 1.25;
-
-        // Some plate cells (e.g. Nighthawk's gold eye) are baked bright glows
-        // with NO gearstack emissive mask. Self-illuminate the bright, saturated
-        // baked colours that the dye left intact — but ONLY warm/gold ones.
-        // Restricting to gold excludes the antialiased pink edges between the
-        // white emblem and its red trim, which are bright + saturated but not
-        // gold and were blooming as magenta/cyan speckles. Plate armor only.
-        if ( uPlated > 0.5 ) {
-          float bmx = max( diffuseColor.r, max( diffuseColor.g, diffuseColor.b ) );
-          float bmn = min( diffuseColor.r, min( diffuseColor.g, diffuseColor.b ) );
-          float bsat = bmx - bmn;
-          float blum = dot( diffuseColor.rgb, vec3( 0.299, 0.587, 0.114 ) );
-          // Gold = red & green both high, blue low.
-          float warm = min( diffuseColor.r, diffuseColor.g );
-          float goldHue = smoothstep( 0.55, 0.8, warm ) * ( 1.0 - smoothstep( 0.35, 0.6, diffuseColor.b ) );
-          float bakedGlow = smoothstep( 0.18, 0.4, bsat ) * smoothstep( 0.5, 0.85, blum ) * goldHue;
-          // Subtle — the in-game eye is a warm-lit slit, not a bright bloom.
-          totalEmissiveRadiance += diffuseColor.rgb * bakedGlow * 0.4;
-        }
       }`,
     );
     } // end if (wantGearstack)

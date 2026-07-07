@@ -19,6 +19,12 @@ export interface SlotDye {
   /** linear RGB albedo tints (0..1) */
   primary: [number, number, number];
   secondary: [number, number, number];
+  /**
+   * Worn albedo tint — the colour a surface takes in its worn/scratched areas,
+   * blended in by the gearstack wear mask (alpha channel). Falls back to the
+   * secondary tint when the dye doesn't ship one.
+   */
+  worn: [number, number, number];
   primaryEmissive: [number, number, number];
   secondaryEmissive: [number, number, number];
   /** entry names of the tiled per-slot detail maps (inside the item's texture containers) */
@@ -76,6 +82,13 @@ function parseDyes(defaultDyes: unknown): GearDyes {
     out[slot] = {
       primary: rgb3(mp.primary_albedo_tint, [1, 1, 1]),
       secondary: rgb3(mp.secondary_albedo_tint, [1, 1, 1]),
+      // Worn tint: the colour scratched/worn regions take (gearstack wear mask
+      // blends toward it). Bungie ships `worn_albedo_tint`; when absent, wear
+      // just darkens toward the secondary tint, so fall back to that.
+      worn: rgb3(
+        mp.worn_albedo_tint,
+        rgb3(mp.secondary_albedo_tint, [1, 1, 1]),
+      ),
       // Bungie ships emissive as `*_emissive_tint_color_and_intensity_bias`
       // (vec4 [r,g,b,i]); older/other dumps use `*_emissive_tint_color`.
       // rgb3 takes the first three components of whichever exists.

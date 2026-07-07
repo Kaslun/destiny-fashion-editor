@@ -13,6 +13,8 @@ import * as THREE from "three";
 export interface DyeColors {
   primary: THREE.Color;
   secondary: THREE.Color;
+  /** worn/scratched-area tint, blended in by the gearstack wear mask (alpha) */
+  worn: THREE.Color;
   /** roughness hint 0..1 */
   roughness: number;
   /** metalness hint 0..1 */
@@ -43,6 +45,7 @@ export type DyeSet = Record<number, DyeColors>;
 const NEUTRAL: DyeColors = {
   primary: new THREE.Color(0xffffff),
   secondary: new THREE.Color(0xffffff),
+  worn: new THREE.Color(0xffffff),
   roughness: 0.8,
   metalness: 0.1,
   emissive: new THREE.Color(0, 0, 0),
@@ -62,6 +65,8 @@ export function dyeForSlot(set: DyeSet, slot: number): DyeColors {
 interface ApiSlotDye {
   primary: number[];
   secondary: number[];
+  /** worn_albedo_tint (falls back to secondary server-side) */
+  worn?: number[];
   primaryEmissive?: number[];
   secondaryEmissive?: number[];
   detailDiffuse?: string | null;
@@ -158,6 +163,9 @@ export function dyeSetFromGearDyes(slots: Record<string, ApiSlotDye>): DyeSet {
     set[Number(key)] = {
       primary: new THREE.Color().fromArray(d.primary),
       secondary: new THREE.Color().fromArray(d.secondary),
+      worn: d.worn
+        ? new THREE.Color().fromArray(d.worn)
+        : new THREE.Color().fromArray(d.secondary),
       roughness: pbr.roughness,
       metalness: pbr.metalness,
       emissive: d.primaryEmissive

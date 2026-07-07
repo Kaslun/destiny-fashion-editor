@@ -126,8 +126,14 @@ describe("createGearMaterials — plated metalness gated per-slot by cloth", () 
     return { src: shader.fragmentShader, uSlotCloth: shader.uniforms.uSlotCloth?.value };
   }
 
-  it("plated metalness override is gated by uSlotCloth in-shader", () => {
-    expect(frag(false).src).toContain("uPlated > 0.5 && uSlotCloth < 0.5");
+  it("metalness comes from the decoded gearstack alpha channel", () => {
+    const src = frag(false).src;
+    expect(src).toContain("decodeGearstack");
+    expect(src).toContain("metalnessFactor = m;");
+  });
+
+  it("cloth slots are forced dielectric in the metalness block", () => {
+    expect(frag(false).src).toContain("if ( uSlotCloth > 0.5 ) m = 0.0;");
   });
 
   it("non-cloth slot passes uSlotCloth=0 so gold gets the metal override", () => {

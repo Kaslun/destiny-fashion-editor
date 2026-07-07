@@ -94,3 +94,47 @@ describe("createGearMaterials — detail-strength weighting (Nighthawk weave fix
     expect(out.strength).toBe(1);
   });
 });
+
+describe("createGearMaterials — plated metalness gated per-slot by cloth", () => {
+  const tex = () => new THREE.Texture();
+  function slot(cloth: boolean) {
+    return {
+      0: {
+        primary: new THREE.Color(0xffd700), secondary: new THREE.Color(0xffffff),
+        roughness: cloth ? 0.85 : 0.6, metalness: 0,
+        emissive: new THREE.Color(0, 0, 0), secondaryEmissive: new THREE.Color(0, 0, 0),
+        detailDiffuseName: null, detailNormalName: null,
+        detailTransform: [1, 1, 0, 0] as [number, number, number, number],
+        cloth, detailStrength: cloth ? 1 : 0,
+      },
+    };
+  }
+  function frag(cloth: boolean): { src: string; uSlotCloth: number } {
+    const mats = createGearMaterials(
+      [{ dyeIndex: 0, decal: false }], slot(cloth) as any,
+      { diffuse: tex(), gearstack: tex() } as any,
+      { useGearstack: true, applyDye: true, plated: true },
+    );
+    const m = mats[0] as THREE.MeshStandardMaterial;
+    const shader: any = { uniforms: {}, fragmentShader: `
+      #include <map_fragment>
+      #include <normal_fragment_maps>
+      #include <roughnessmap_fragment>
+      #include <metalnessmap_fragment>
+      #include <emissivemap_fragment>` };
+    (m.onBeforeCompile as any)?.(shader);
+    return { src: shader.fragmentShader, uSlotCloth: shader.uniforms.uSlotCloth?.value };
+  }
+
+  it("plated metalness override is gated by uSlotCloth in-shader", () => {
+    expect(frag(false).src).toContain("uPlated > 0.5 && uSlotCloth < 0.5");
+  });
+
+  it("non-cloth slot passes uSlotCloth=0 so gold gets the metal override", () => {
+    expect(frag(false).uSlotCloth).toBe(0);
+  });
+
+  it("cloth slot passes uSlotCloth=1 so the override is skipped (fabric stays dielectric)", () => {
+    expect(frag(true).uSlotCloth).toBe(1);
+  });
+});

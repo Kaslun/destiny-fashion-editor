@@ -198,6 +198,7 @@ function makeOpaque(
     shader.uniforms.uDetailNormal = { value: detailNormal };
     shader.uniforms.uHasDetailDiffuse = { value: hasDetailDiffuse ? 1 : 0 };
     shader.uniforms.uDetailStrength = { value: dye.detailStrength ?? 0 };
+    shader.uniforms.uSlotCloth = { value: dye.cloth ? 1 : 0 };
     shader.uniforms.uHasDetailNormal = { value: hasDetailNormal ? 1 : 0 };
     // xy = tiling scale, zw = offset.
     shader.uniforms.uDetailTransform = {
@@ -223,6 +224,7 @@ uniform sampler2D uDetailDiffuse;
 uniform sampler2D uDetailNormal;
 uniform float uHasDetailDiffuse;
 uniform float uDetailStrength;
+uniform float uSlotCloth;
 uniform float uHasDetailNormal;
 uniform vec4 uDetailTransform;
 ` +
@@ -351,7 +353,7 @@ uniform vec4 uDetailTransform;
       {
         float smoothness = texture2D( uGearstack, vMapUv ).g;
         roughnessFactor *= clamp( 1.0 - smoothness, 0.05, 1.0 );
-        if ( uPlated > 0.5 ) {
+        if ( uPlated > 0.5 && uSlotCloth < 0.5 ) {
           if ( uSlotIndex < 0.5 ) {
             // Gold faceplate (slot 0): polished near-mirror metal.
             roughnessFactor = min( roughnessFactor * 0.3, 0.12 );
@@ -373,12 +375,14 @@ uniform vec4 uDetailTransform;
     shader.fragmentShader = shader.fragmentShader.replace(
       "#include <metalnessmap_fragment>",
       `#include <metalnessmap_fragment>
-      if ( uPlated > 0.5 ) {
+      if ( uPlated > 0.5 && uSlotCloth < 0.5 ) {
         // The gold faceplate (slot 0) is polished METAL — make it fully metallic
         // so it reflects the environment; the painted brown crown / grey slots
         // stay mostly dielectric. Baked WHITE art (emblem panel + ticks) is paint,
         // never metal — force it dielectric so its edges don't throw coloured
-        // specular speckles.
+        // specular speckles. CLOTH slots are excluded entirely (uSlotCloth) so a
+        // mixed item like Nighthawk (gold + cloth + rubber) keeps the gold's
+        // metal reflection without forcing its fabric slot metallic.
         float bright = smoothstep( 0.5, 0.75, dot( diffuseColor.rgb, vec3( 0.299, 0.587, 0.114 ) ) );
         float mmx = max( diffuseColor.r, max( diffuseColor.g, diffuseColor.b ) );
         float mmn = min( diffuseColor.r, min( diffuseColor.g, diffuseColor.b ) );

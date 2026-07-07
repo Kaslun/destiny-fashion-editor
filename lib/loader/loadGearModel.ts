@@ -532,7 +532,7 @@ export async function loadGearModel(
         const materials = createGearMaterials(m.groups, dyeSet, maps, {
           useGearstack: true,
           applyDye,
-          plated: !!built.metadata.plates,
+          plated: false,
         });
         const mesh = new THREE.Mesh(m.geometry, materials);
         mesh.name = geom.file;

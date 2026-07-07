@@ -60,6 +60,39 @@ interface ApiSlotDye {
 }
 
 /**
+ * Bungie ships no metalness/roughness in the dye payload — surface response is
+ * encoded in the NAME of the detail map (e.g. `..._weave_dif`, `..._metal_grunge00`).
+ * Classify metalness/roughness from those names. Trust the DIFFUSE name for the
+ * metal decision (it's the surface author's albedo intent); the normal map is
+ * micro-geometry and is often reused across material types, so it's only a weak
+ * secondary hint. Metal is checked first so a metal diffuse wins over a leather
+ * normal (e.g. Chatterwhite slot 2 = metal_grunge diffuse + leather_worn normal).
+ */
+export function pbrFromDetail(
+  diffuse?: string | null,
+  normal?: string | null,
+): { metalness: number; roughness: number } {
+  const dif = (diffuse ?? "").toLowerCase();
+  const nrm = (normal ?? "").toLowerCase();
+
+  // Metal: decided on the diffuse name only. `grunge0` catches Bungie's
+  // `metal_grunge00` family; `\bmetal\b` is the primary anchor.
+  if (/\bmetal\b|chrome|steel|iron|\bgold\b|brass|bronze|silver|grunge0/.test(dif)) {
+    return { metalness: 1.0, roughness: 0.4 };
+  }
+
+  // Cloth / fabric / soft goods: dielectric, high roughness. Check both names —
+  // fabric is frequently only identifiable from the normal (needle_felt, weave).
+  const soft = `${dif} ${nrm}`;
+  if (/weave|felt|cloth|fabric|leather|linen|wool|canvas|knit|silk|denim|hide|suede/.test(soft)) {
+    return { metalness: 0.0, roughness: 0.85 };
+  }
+
+  // Default: painted / ceramic / worn armor plate — dielectric, mid roughness.
+  return { metalness: 0.0, roughness: 0.6 };
+}
+
+/**
  * Build a DyeSet from the /api/dyes response. Tints are linear multipliers
  * applied to the (linear) diffuse, so Color components are set directly
  * without sRGB conversion.
@@ -68,11 +101,12 @@ export function dyeSetFromGearDyes(slots: Record<string, ApiSlotDye>): DyeSet {
   const set: DyeSet = {};
   for (const [key, d] of Object.entries(slots)) {
     const t = d.detailTransform;
+    const pbr = pbrFromDetail(d.detailDiffuse, d.detailNormal);
     set[Number(key)] = {
       primary: new THREE.Color().fromArray(d.primary),
       secondary: new THREE.Color().fromArray(d.secondary),
-      roughness: 0.5,
-      metalness: 0.5,
+      roughness: pbr.roughness,
+      metalness: pbr.metalness,
       emissive: d.primaryEmissive
         ? new THREE.Color().fromArray(d.primaryEmissive)
         : new THREE.Color(0, 0, 0),

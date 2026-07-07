@@ -64,7 +64,7 @@ function makeGlow(maps: GearTextureMaps): THREE.Material {
     alphaMap: maps.diffuse ?? null,
     transparent: true,
     alphaTest: 0.01,
-    metalness: 1,
+    metalness: 0,
     roughness: 0,
     emissiveMap: maps.diffuse ?? null,
     emissive: new THREE.Color(0xffffff),
@@ -121,9 +121,35 @@ function makeOpaque(
   if (maps.diffuse) maps.diffuse.colorSpace = THREE.SRGBColorSpace;
   if (maps.emissive) maps.emissive.colorSpace = THREE.SRGBColorSpace;
 
+  // Per-slot tiled detail maps (resolved from names by the loader). The detail
+  // DIFFUSE is a linear micro-surface albedo (cloth weave, metal grain) that
+  // MULTIPLIES the base albedo; the detail NORMAL adds micro-relief. These are
+  // what make cloth read as cloth rather than smooth plastic. Tiling comes from
+  // detailTransform = [scaleX, scaleY, offsetX, offsetY].
+  // NOTE: this applies the CURRENT GROUP's slot detail map uniformly. With a
+  // per-pixel dyeslot plate, different pixels are different slots (each with its
+  // own detail map); blending all three per-pixel is possible but heavy, and the
+  // per-group slot matches how dyeing already resolves. Good enough for the
+  // common case; revisit if a single group visibly mixes cloth + metal regions.
+  const detailDiffuse = dye.detailDiffuse ?? null;
+  const detailNormal = dye.detailNormal ?? null;
+  if (detailDiffuse) detailDiffuse.colorSpace = THREE.LinearSRGBColorSpace;
+  if (detailDiffuse) {
+    detailDiffuse.wrapS = detailDiffuse.wrapT = THREE.RepeatWrapping;
+  }
+  if (detailNormal) {
+    detailNormal.wrapS = detailNormal.wrapT = THREE.RepeatWrapping;
+  }
+  const hasDetailDiffuse = !!detailDiffuse;
+  const hasDetailNormal = !!detailNormal;
+  const dt = dye.detailTransform;
+
   // Gearstack/detail injection needs the diffuse map's UV varying (vMapUv).
   const wantGearstack = opts.useGearstack && !!maps.gearstack && !!maps.diffuse;
-  if (!wantGearstack) return mat;
+  // Detail maps also need vMapUv (they tile over the base UVs). Run the custom
+  // compile if EITHER gearstack or detail maps are in play.
+  const wantDetail = (hasDetailDiffuse || hasDetailNormal) && !!maps.diffuse;
+  if (!wantGearstack && !wantDetail) return mat;
 
   const hasDyeslot = !!maps.dyeslot;
   // All three slots' tints (albedo AND glow, per the shader anatomy: each slot
@@ -135,7 +161,7 @@ function makeOpaque(
   const secEmissives = [0, 1, 2].map((s) => dyeForSlot(dyes, s).secondaryEmissive);
 
   mat.onBeforeCompile = (shader) => {
-    shader.uniforms.uGearstack = { value: maps.gearstack };
+    shader.uniforms.uGearstack = { value: maps.gearstack ?? null };
     shader.uniforms.uPrimaryTint = { value: dye.primary };
     shader.uniforms.uSecondaryTint = { value: dye.secondary };
     shader.uniforms.uApplyDye = { value: dyeOn ? 1 : 0 };
@@ -149,6 +175,15 @@ function makeOpaque(
     shader.uniforms.uPrimEmissives = { value: primEmissives };
     shader.uniforms.uSecEmissives = { value: secEmissives };
     shader.uniforms.uSlotIndex = { value: slot };
+    // Detail-map uniforms.
+    shader.uniforms.uDetailDiffuse = { value: detailDiffuse };
+    shader.uniforms.uDetailNormal = { value: detailNormal };
+    shader.uniforms.uHasDetailDiffuse = { value: hasDetailDiffuse ? 1 : 0 };
+    shader.uniforms.uHasDetailNormal = { value: hasDetailNormal ? 1 : 0 };
+    // xy = tiling scale, zw = offset.
+    shader.uniforms.uDetailTransform = {
+      value: new THREE.Vector4(dt[0], dt[1], dt[2], dt[3]),
+    };
 
     shader.fragmentShader =
       `uniform float uSlotIndex;
@@ -165,8 +200,50 @@ uniform vec3 uPrimaries[3];
 uniform vec3 uSecondaries[3];
 uniform vec3 uPrimEmissives[3];
 uniform vec3 uSecEmissives[3];
+uniform sampler2D uDetailDiffuse;
+uniform sampler2D uDetailNormal;
+uniform float uHasDetailDiffuse;
+uniform float uHasDetailNormal;
+uniform vec4 uDetailTransform;
 ` +
-      shader.fragmentShader.replace(
+      shader.fragmentShader;
+
+    // Detail DIFFUSE blend: runs first, modulating the base albedo before dye
+    // tinting. Tiled by uDetailTransform. Centered around 1.0 (a detail map is a
+    // multiplier: ~0.5 grey = neutral) via 2x so it darkens AND brightens the
+    // weave/grain rather than only darkening. Skipped if unresolved.
+    if (hasDetailDiffuse) {
+      shader.fragmentShader = shader.fragmentShader.replace(
+        "#include <map_fragment>",
+        `#include <map_fragment>
+        if ( uHasDetailDiffuse > 0.5 ) {
+          vec2 dUv = vMapUv * uDetailTransform.xy + uDetailTransform.zw;
+          vec3 detail = texture2D( uDetailDiffuse, dUv ).rgb;
+          diffuseColor.rgb *= detail * 2.0;
+        }`,
+      );
+    }
+
+    // Detail NORMAL blend: perturb the surface normal with the tiled detail
+    // normal (whiteout blend — cheap, stable, good enough for micro-relief).
+    // Injected after three's normal-map application. Skipped if unresolved.
+    if (hasDetailNormal) {
+      shader.fragmentShader = shader.fragmentShader.replace(
+        "#include <normal_fragment_maps>",
+        `#include <normal_fragment_maps>
+        if ( uHasDetailNormal > 0.5 ) {
+          vec2 dnUv = vMapUv * uDetailTransform.xy + uDetailTransform.zw;
+          vec3 dn = texture2D( uDetailNormal, dnUv ).xyz * 2.0 - 1.0;
+          // Whiteout blend: add tangent-space xy, keep base z dominant.
+          normal = normalize( vec3( normal.xy + dn.xy, normal.z ) );
+        }`,
+      );
+    }
+
+    // Gearstack dye + AO block. Only when the item actually has a gearstack
+    // texture — detail-only items (e.g. many cloth pieces) skip all of this.
+    if (wantGearstack) {
+      shader.fragmentShader = shader.fragmentShader.replace(
         "#include <map_fragment>",
         `#include <map_fragment>
         {
@@ -239,8 +316,8 @@ uniform vec3 uSecEmissives[3];
         }`,
       );
 
-    // G = smoothness -> roughness (inverted).
-    shader.fragmentShader = shader.fragmentShader.replace(
+      // G = smoothness -> roughness (inverted).
+      shader.fragmentShader = shader.fragmentShader.replace(
       "#include <roughnessmap_fragment>",
       `#include <roughnessmap_fragment>
       {
@@ -329,6 +406,7 @@ uniform vec3 uSecEmissives[3];
         }
       }`,
     );
+    } // end if (wantGearstack)
 
     mat.userData.shader = shader; // dev aid: live uniform toggling
   };

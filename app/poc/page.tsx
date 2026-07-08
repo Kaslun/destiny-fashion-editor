@@ -8,10 +8,16 @@
  * reports whether we're on the REAL asset path or the stylized FALLBACK, plus
  * the resolved files and metadata summary for empirical tuning.
  */
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
+import type * as THREE from "three";
 import GearModel, { type LoadPath } from "@/components/viewer/GearModel";
 import type { GearModelDebug } from "@/lib/loader/loadGearModel";
+import {
+  GEARSTACK_CHANNELS,
+  setGearstackDebugChannel,
+  type GearstackDebugChannel,
+} from "@/lib/materials/gearMaterial";
 
 // Three.js can't render on the server — load the canvas client-only.
 const ModelViewer = dynamic(() => import("@/components/viewer/ModelViewer"), {
@@ -29,6 +35,23 @@ export default function PocPage() {
   const [debug, setDebug] = useState<GearModelDebug | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [itemName, setItemName] = useState<string | null>(null);
+  const [debugChannel, setDebugChannelState] = useState<GearstackDebugChannel>(0);
+  const modelRef = useRef<THREE.Group | null>(null);
+
+  const onModel = useCallback(
+    (group: THREE.Group | null) => {
+      modelRef.current = group;
+      // A freshly loaded model's materials start at channel 0 — re-apply the
+      // currently selected channel so switching items doesn't silently reset it.
+      if (group && debugChannel !== 0) setGearstackDebugChannel(group, debugChannel);
+    },
+    [debugChannel],
+  );
+
+  const selectDebugChannel = useCallback((ch: GearstackDebugChannel) => {
+    setDebugChannelState(ch);
+    if (modelRef.current) setGearstackDebugChannel(modelRef.current, ch);
+  }, []);
 
   const load = useCallback(() => {
     const n = Number(input.trim());
@@ -63,7 +86,7 @@ export default function PocPage() {
       <section className="poc-viewport">
         {activeHash ? (
           <ModelViewer>
-            <GearModel itemHash={activeHash} onStatus={onStatus} />
+            <GearModel itemHash={activeHash} onStatus={onStatus} onModel={onModel} />
           </ModelViewer>
         ) : (
           <div
@@ -116,6 +139,29 @@ export default function PocPage() {
           <button className="d2-btn d2-btn--primary" onClick={load}>
             Load
           </button>
+        </div>
+
+        <div style={{ marginTop: 16 }}>
+          <label style={{ fontSize: 12, color: "var(--d2-text-dim)" }}>
+            GEARSTACK CHANNEL
+          </label>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
+            {GEARSTACK_CHANNELS.map((label, ch) => (
+              <button
+                key={label}
+                className="d2-btn"
+                style={{
+                  fontSize: 11,
+                  padding: "4px 8px",
+                  borderColor: debugChannel === ch ? "var(--d2-cyan)" : undefined,
+                  color: debugChannel === ch ? "var(--d2-cyan)" : undefined,
+                }}
+                onClick={() => selectDebugChannel(ch as GearstackDebugChannel)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {error && (

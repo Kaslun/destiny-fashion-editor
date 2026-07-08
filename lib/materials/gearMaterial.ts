@@ -26,6 +26,31 @@ import * as THREE from "three";
 import { dyeForSlot, type DyeSet } from "./gearDye";
 import type { GroupInfo } from "@/lib/geometry/buildGeometry";
 
+/**
+ * Live gearstack-channel viewer. 0 = normal rendering; 1-4 override every pixel
+ * with a greyscale view of the gearstack R/G/B/A channel (bright = high value),
+ * so material boundaries baked into the texture (dye mask, metalness, wear
+ * bands) can be inspected directly instead of guessed at from the lit render.
+ * Wired to a uniform (not compiled in/out) so `setGearstackDebugChannel` can
+ * flip it on an already-loaded model without rebuilding materials.
+ */
+export const GEARSTACK_CHANNELS = ["off", "r (ao)", "g (smoothness)", "b (emissive/alpha-test)", "a (dye mask / metalness / wear)"] as const;
+export type GearstackDebugChannel = 0 | 1 | 2 | 3 | 4;
+
+/** Push a debug-channel selection to every gearstack-enabled material under `root`. */
+export function setGearstackDebugChannel(root: THREE.Object3D, channel: GearstackDebugChannel): void {
+  root.traverse((obj) => {
+    const mesh = obj as THREE.Mesh;
+    if (!mesh.isMesh) return;
+    const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+    for (const m of mats) {
+      const shader = (m.userData as { shader?: { uniforms: Record<string, { value: unknown }> } }).shader;
+      if (shader?.uniforms.uDebugChannel) shader.uniforms.uDebugChannel.value = channel;
+    }
+  });
+}
+
+
 export interface GearTextureMaps {
   diffuse?: THREE.Texture;
   normal?: THREE.Texture;
@@ -80,11 +105,21 @@ function makeOpaque(
   opts: GearMaterialOptions,
   overlay = false,
 ): THREE.Material {
-  // gear_dye_change_color_index -> dye slot. Empirically slot = (cc * 2) % 3 for
-  // Nighthawk: cc {0,5,1} on the face / crown / visor -> slots {0,1,2} =
-  // gold faceplate / brown crown / grey. (The mobile asset ships no per-pixel
-  // dye mask, so the slot is per geometry group.)
-  const slot = dyeIndex >= 0 ? (dyeIndex * 2) % 3 : 0;
+  // gear_dye_change_color_index -> dye slot, when no per-pixel dyeslot plate
+  // exists (the common case: many items ship a `dyeslot` plate entry with zero
+  // placements, so it never assembles into a real mask). We used to force this
+  // through `(cc * 2) % 3`, a formula reverse-engineered to fit exactly one
+  // item (Nighthawk: cc {0,5,1} on the face/crown/visor -> slots {0,1,2}) — it
+  // silently wraps any out-of-range index into an unrelated slot, which on
+  // Cover of the Exile (a single group, cc=3, only 3 known slots) tinted the
+  // entire cloth/leather shell with slot 0's gold-metal primary. Index the dye
+  // set directly instead: a cc with no matching resolved slot skips dyeing
+  // (dyeForSlot's NEUTRAL fallback is white/no-op), letting the baked diffuse
+  // show through untouched, rather than borrowing an unrelated slot's colour.
+  // Known trade-off: this changes Nighthawk's group->slot assignment too (cc=5
+  // no longer wraps to slot 1, cc=1 no longer wraps to slot 2) since it relied
+  // on the same wraparound.
+  const slot = dyeIndex;
   const dye = dyeForSlot(dyes, slot);
 
   // Emissive tint: dyes carry the glow colour (e.g. Nighthawk's red eye,
@@ -178,9 +213,19 @@ function makeOpaque(
   const worns = [0, 1, 2].map((s) => dyeForSlot(dyes, s).worn);
   const primEmissives = [0, 1, 2].map((s) => dyeForSlot(dyes, s).emissive);
   const secEmissives = [0, 1, 2].map((s) => dyeForSlot(dyes, s).secondaryEmissive);
+  // Per-slot metalness/cloth (e.g. slot 0 = metal buckle, slot 1 = cloth shell,
+  // slot 2 = leather trim). The group-level `slot`/`uSlotCloth` below is a
+  // single-value fallback derived from an empirical dyeIndex heuristic that
+  // doesn't hold across items; when a real per-pixel dyeslot plate exists, the
+  // metalness/roughness blocks index these arrays per-pixel instead so a group
+  // whose UVs span multiple material slots doesn't get painted with one slot's
+  // metalness across its whole surface.
+  const metalnesses = [0, 1, 2].map((s) => dyeForSlot(dyes, s).metalness);
+  const cloths = [0, 1, 2].map((s) => (dyeForSlot(dyes, s).cloth ? 1 : 0));
 
   mat.onBeforeCompile = (shader) => {
     shader.uniforms.uGearstack = { value: maps.gearstack ?? null };
+    shader.uniforms.uDebugChannel = { value: 0 };
     shader.uniforms.uPrimaryTint = { value: dye.primary };
     shader.uniforms.uSecondaryTint = { value: dye.secondary };
     shader.uniforms.uApplyDye = { value: dyeOn ? 1 : 0 };
@@ -196,6 +241,8 @@ function makeOpaque(
     shader.uniforms.uPrimEmissives = { value: primEmissives };
     shader.uniforms.uSecEmissives = { value: secEmissives };
     shader.uniforms.uSlotIndex = { value: slot };
+    shader.uniforms.uMetalnesses = { value: metalnesses };
+    shader.uniforms.uCloths = { value: cloths };
     // Detail-map uniforms.
     shader.uniforms.uDetailDiffuse = { value: detailDiffuse };
     shader.uniforms.uDetailNormal = { value: detailNormal };
@@ -203,6 +250,7 @@ function makeOpaque(
     shader.uniforms.uDetailStrength = { value: dye.detailStrength ?? 0 };
     shader.uniforms.uSlotCloth = { value: dye.cloth ? 1 : 0 };
     shader.uniforms.uHasDetailNormal = { value: hasDetailNormal ? 1 : 0 };
+    shader.uniforms.uDetailNormalScale = { value: 0.4 };
     // xy = tiling scale, zw = offset.
     shader.uniforms.uDetailTransform = {
       value: new THREE.Vector4(dt[0], dt[1], dt[2], dt[3]),
@@ -210,6 +258,7 @@ function makeOpaque(
 
     shader.fragmentShader =
       `uniform float uSlotIndex;
+uniform float uDebugChannel;
 uniform sampler2D uGearstack;
 uniform vec3 uPrimaryTint;
 uniform vec3 uSecondaryTint;
@@ -225,12 +274,15 @@ uniform vec3 uWorns[3];
 uniform vec3 uWornTint;
 uniform vec3 uPrimEmissives[3];
 uniform vec3 uSecEmissives[3];
+uniform float uMetalnesses[3];
+uniform float uCloths[3];
 uniform sampler2D uDetailDiffuse;
 uniform sampler2D uDetailNormal;
 uniform float uHasDetailDiffuse;
 uniform float uDetailStrength;
 uniform float uSlotCloth;
 uniform float uHasDetailNormal;
+uniform float uDetailNormalScale;
 uniform vec4 uDetailTransform;
 
 // --- Destiny 2 gearstack decode --------------------------------------------
@@ -293,15 +345,19 @@ Gearstack decodeGearstack( vec4 gs ) {
           vec2 dUv = vMapUv * uDetailTransform.xy + uDetailTransform.zw;
           float dl = dot( texture2D( uDetailDiffuse, dUv ).rgb, vec3(0.299,0.587,0.114) );
           // Modulate around neutral (0.5 detail luminance = no change), scaled
-          // by strength. Gentle range so even full-strength cloth keeps colour.
-          float mod = 1.0 + ( dl - 0.5 ) * 0.8 * uDetailStrength;
+          // by strength. Range reduced from 0.8 -> 0.5 so the tiled grain reads
+          // as a subtle surface texture, not a hard printed pattern.
+          float mod = 1.0 + ( dl - 0.5 ) * 0.5 * uDetailStrength;
           diffuseColor.rgb *= mod;
         }`,
       );
     }
 
-    // Detail NORMAL: micro-relief, also weighted by detail strength so flat
-    // slots (gold) don't get a woven bump in their reflections.
+    // Detail NORMAL: micro-relief, weighted by detail strength AND a global
+    // scale (uDetailNormalScale). The raw detail normal on leather/fabric slots
+    // is authored strong; at full contribution the crown's grain reads as an
+    // over-obvious stamped pattern. Scale it down to a subtle micro-relief.
+    // Exposed as a uniform so it can be dialled live via userData.shader.
     if (hasDetailNormal) {
       shader.fragmentShader = shader.fragmentShader.replace(
         "#include <normal_fragment_maps>",
@@ -309,7 +365,7 @@ Gearstack decodeGearstack( vec4 gs ) {
         if ( uHasDetailNormal > 0.5 && uDetailStrength > 0.001 ) {
           vec2 dnUv = vMapUv * uDetailTransform.xy + uDetailTransform.zw;
           vec3 dn = texture2D( uDetailNormal, dnUv ).xyz * 2.0 - 1.0;
-          normal = normalize( vec3( normal.xy + dn.xy * uDetailStrength, normal.z ) );
+          normal = normalize( vec3( normal.xy + dn.xy * uDetailStrength * uDetailNormalScale, normal.z ) );
         }`,
       );
     }
@@ -390,6 +446,11 @@ Gearstack decodeGearstack( vec4 gs ) {
       // G = smoothness -> roughness (inverted). This is Bungie's per-pixel gloss
       // source; the dye's roughness_remap endpoints refine the range but the
       // gearstack green channel carries the spatial detail (polished vs brushed).
+      // The cloth floor is PER-PIXEL when a dyeslot plate exists — a group's UVs
+      // can span multiple material slots (metal buckle + cloth shell + leather
+      // trim in one mesh group), so a single group-wide uSlotCloth would clamp
+      // the whole group to one slot's floor. Fall back to uSlotCloth only when
+      // there's no per-pixel plate to consult.
       shader.fragmentShader = shader.fragmentShader.replace(
       "#include <roughnessmap_fragment>",
       `#include <roughnessmap_fragment>
@@ -398,7 +459,12 @@ Gearstack decodeGearstack( vec4 gs ) {
         roughnessFactor *= clamp( 1.0 - gsR.smoothness, 0.05, 1.0 );
         // Worn areas are rougher (scratched-up), scaled by the decoded wear mask.
         roughnessFactor = mix( roughnessFactor, min( 1.0, roughnessFactor + 0.35 ), gsR.wear );
-        if ( uSlotCloth > 0.5 ) {
+        float clothFloorR = uSlotCloth;
+        if ( uHasDyeslot > 0.5 ) {
+          float qR = floor( texture2D( uDyeslot, vMapUv ).r * 3.0 + 0.5 );
+          if ( qR >= 0.5 ) clothFloorR = uCloths[ int( qR ) - 1 ];
+        }
+        if ( clothFloorR > 0.5 ) {
           // Fabric floor: cloth is never glossy, even if the gearstack green is
           // noisy on a low-res mobile plate.
           roughnessFactor = clamp( roughnessFactor, 0.6, 1.0 );
@@ -406,19 +472,41 @@ Gearstack decodeGearstack( vec4 gs ) {
       }`,
     );
 
-    // Metalness — now sourced from the gearstack alpha channel (decoded), which
-    // is Bungie's authoritative per-pixel non-dyed metalness. This replaces the
-    // previous gold-hue/saturation heuristic that guessed metal from albedo
-    // colour (and threw coloured specular speckles on antialiased emblem edges).
-    // Cloth slots are forced dielectric regardless (fabric is never metal).
+    // Metalness. Two independent per-pixel signals feed this, in priority order:
+    //  1. A real dyeslot plate (when present) is the AUTHORITATIVE per-pixel
+    //     material-slot mask (see comment above `hasDyeslot`) — far more precise
+    //     than the single group-wide slot the material was built with, since one
+    //     geometry group's UVs commonly span metal + cloth + leather regions.
+    //     Its slot selects uMetalnesses[slot]/uCloths[slot] (the dye's OWN
+    //     resolved metalness from pbrFromDetail), and R=0 cells (baked/non-dyed
+    //     art per the plate) fall through to the gearstack-decoded metalness.
+    //  2. Without a dyeslot plate, fall back to the group-level heuristic: the
+    //     gearstack alpha channel only encodes metalness for NON-DYED
+    //     (baked-art) pixels (see Gearstack.metalness doc above) — on the
+    //     dyeable shell that same alpha band is the dye/wear signal, not
+    //     metalness — so only override where dyeMask is 0 (baked trim/buckles);
+    //     the dyeable shell keeps the material's base metalness (this group's
+    //     single resolved slot).
     shader.fragmentShader = shader.fragmentShader.replace(
       "#include <metalnessmap_fragment>",
       `#include <metalnessmap_fragment>
       {
         Gearstack gsM = decodeGearstack( texture2D( uGearstack, vMapUv ) );
-        float m = gsM.metalness;
-        if ( uSlotCloth > 0.5 ) m = 0.0;   // fabric is dielectric
-        metalnessFactor = m;
+        float clothFloorM = uSlotCloth;
+        if ( uHasDyeslot > 0.5 ) {
+          float qM = floor( texture2D( uDyeslot, vMapUv ).r * 3.0 + 0.5 );
+          if ( qM < 0.5 ) {
+            metalnessFactor = gsM.metalness;   // baked/non-dyed art
+            clothFloorM = 0.0;
+          } else {
+            int siM = int( qM ) - 1;
+            metalnessFactor = uMetalnesses[siM];
+            clothFloorM = uCloths[siM];
+          }
+        } else if ( gsM.dyeMask < 0.5 ) {
+          metalnessFactor = gsM.metalness;
+        }
+        if ( clothFloorM > 0.5 ) metalnessFactor = 0.0;   // fabric is dielectric
       }`,
     );
 
@@ -449,6 +537,28 @@ Gearstack decodeGearstack( vec4 gs ) {
       }`,
     );
     } // end if (wantGearstack)
+
+    // Live channel viewer — overwrite the final colour with one gearstack
+    // channel as greyscale when uDebugChannel is set (see setGearstackDebugChannel
+    // above). Runs even when wantGearstack is false, as long as a gearstack map
+    // exists, so it's usable on any item that ships one.
+    if (maps.gearstack) {
+      shader.uniforms.uGearstack = shader.uniforms.uGearstack ?? {
+        value: maps.gearstack,
+      };
+      shader.fragmentShader = shader.fragmentShader.replace(
+        "#include <dithering_fragment>",
+        `#include <dithering_fragment>
+        if ( uDebugChannel > 0.5 ) {
+          vec4 dbgTex = texture2D( uGearstack, vMapUv );
+          vec3 dbgChan = uDebugChannel < 1.5 ? vec3( dbgTex.r )
+            : uDebugChannel < 2.5 ? vec3( dbgTex.g )
+            : uDebugChannel < 3.5 ? vec3( dbgTex.b )
+            : vec3( dbgTex.a );
+          gl_FragColor = vec4( dbgChan, 1.0 );
+        }`,
+      );
+    }
 
     mat.userData.shader = shader; // dev aid: live uniform toggling
   };

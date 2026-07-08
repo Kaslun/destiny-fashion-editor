@@ -22,9 +22,12 @@ interface Props {
     debug?: GearModelDebug;
     error?: string;
   }) => void;
+  /** Fires with the loaded group (or null on reset/failure) — lets a parent
+   * reach into the live scene, e.g. to toggle the gearstack debug channel. */
+  onModel?: (group: THREE.Group | null) => void;
 }
 
-export default function GearModel({ itemHash, shaderHash, onStatus }: Props) {
+export default function GearModel({ itemHash, shaderHash, onStatus, onModel }: Props) {
   const [group, setGroup] = useState<THREE.Group | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -33,6 +36,7 @@ export default function GearModel({ itemHash, shaderHash, onStatus }: Props) {
     setGroup(null);
     setFailed(false);
     onStatus?.({ path: "loading" });
+    onModel?.(null);
 
     loadGearModel(itemHash, { shaderHash })
       .then(({ group, debug }) => {
@@ -41,6 +45,7 @@ export default function GearModel({ itemHash, shaderHash, onStatus }: Props) {
         (window as unknown as Record<string, unknown>).__gear = group;
         setGroup(group);
         onStatus?.({ path: "real", debug });
+        onModel?.(group);
       })
       .catch((err: unknown) => {
         if (disposed) return;

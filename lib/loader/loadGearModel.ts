@@ -524,6 +524,12 @@ export async function loadGearModel(
       }
       const hasTex = !!(maps.diffuse || maps.normal || maps.gearstack);
 
+      console.log("NIGHTHAWK MAPS", {
+  diffuse: maps.diffuse?.name ?? maps.diffuse?.userData?.name,
+  normal: maps.normal?.name,
+  gearstack: maps.gearstack?.name,
+});
+
       for (const m of built.meshes) {
         // Flag glow geometry (Nighthawk's eye) so it renders additively.
         markGlowGroups(m.geometry, m.groups, built.metadata.plates?.diffuse);

@@ -11,6 +11,7 @@ import { OrbitControls, Grid } from "@react-three/drei";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { Suspense, useEffect } from "react";
 
+
 /**
  * Smooth studio IBL for metals. Metallic surfaces (gold trim/visors) reflect
  * their surroundings — with only sharp coloured point lights and no environment
@@ -18,7 +19,7 @@ import { Suspense, useEffect } from "react";
  * confetti along edges). A low-intensity PMREM of RoomEnvironment gives them a
  * smooth neutral reflection instead. Generated locally (no HDR/network fetch).
  */
-function StudioEnvironment({ intensity = 0.35 }: { intensity?: number }) {
+function StudioEnvironment({ intensity = 1 }: { intensity?: number }) {
   const gl = useThree((s) => s.gl);
   const scene = useThree((s) => s.scene);
   useEffect(() => {
@@ -44,7 +45,7 @@ export default function ModelViewer({ children }: { children?: React.ReactNode }
       dpr={[1, 2]}
     >
       {/* Smooth IBL so metals reflect a neutral studio, not firefly speculars */}
-      <StudioEnvironment intensity={0.5} />
+      <StudioEnvironment intensity={1} />
 
       {/* Studio-ish 3-point rig. The key/fill are neutral-white to avoid tinting
           metallic speculars; the cool accent is kept subtle. */}

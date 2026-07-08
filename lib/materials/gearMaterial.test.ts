@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import * as THREE from "three";
-import { createGearMaterials } from "./gearMaterial";
+import { createGearMaterials, setGearstackDebugChannel, GEARSTACK_CHANNELS } from "./gearMaterial";
 import type { DyeSet } from "./gearDye";
 import type { GroupInfo } from "@/lib/geometry/buildGeometry";
 
@@ -126,14 +126,15 @@ describe("createGearMaterials — plated metalness gated per-slot by cloth", () 
     return { src: shader.fragmentShader, uSlotCloth: shader.uniforms.uSlotCloth?.value };
   }
 
-  it("metalness comes from the decoded gearstack alpha channel", () => {
+  it("metalness comes from the decoded gearstack alpha channel on non-dyed pixels only", () => {
     const src = frag(false).src;
     expect(src).toContain("decodeGearstack");
-    expect(src).toContain("metalnessFactor = m;");
+    expect(src).toContain("if ( gsM.dyeMask < 0.5 ) {");
+    expect(src).toContain("metalnessFactor = gsM.metalness;");
   });
 
   it("cloth slots are forced dielectric in the metalness block", () => {
-    expect(frag(false).src).toContain("if ( uSlotCloth > 0.5 ) m = 0.0;");
+    expect(frag(false).src).toContain("if ( clothFloorM > 0.5 ) metalnessFactor = 0.0;");
   });
 
   it("non-cloth slot passes uSlotCloth=0 so gold gets the metal override", () => {
@@ -142,5 +143,70 @@ describe("createGearMaterials — plated metalness gated per-slot by cloth", () 
 
   it("cloth slot passes uSlotCloth=1 so the override is skipped (fabric stays dielectric)", () => {
     expect(frag(true).uSlotCloth).toBe(1);
+  });
+});
+
+describe("gearstack debug-channel viewer", () => {
+  const tex = () => new THREE.Texture();
+
+  it("wires a live uDebugChannel uniform + dithering override when a gearstack map exists", () => {
+    const mats = createGearMaterials(
+      [{ dyeIndex: 0, decal: false }], noDyes,
+      { diffuse: tex(), gearstack: tex() },
+      { useGearstack: true, applyDye: true },
+    );
+    const m = mats[0] as THREE.MeshStandardMaterial;
+    const shader: any = { uniforms: {}, fragmentShader: `
+      #include <map_fragment>
+      #include <normal_fragment_maps>
+      #include <roughnessmap_fragment>
+      #include <metalnessmap_fragment>
+      #include <emissivemap_fragment>
+      #include <dithering_fragment>` };
+    (m.onBeforeCompile as any)?.(shader);
+
+    expect(shader.uniforms.uDebugChannel).toEqual({ value: 0 });
+    expect(shader.fragmentShader).toContain("uniform float uDebugChannel;");
+    expect(shader.fragmentShader).toContain("if ( uDebugChannel > 0.5 )");
+    // m.userData.shader is what setGearstackDebugChannel mutates live.
+    expect((m.userData as any).shader).toBe(shader);
+  });
+
+  it("has no debug-channel wiring when the item ships no gearstack map", () => {
+    const mats = createGearMaterials(
+      [{ dyeIndex: 0, decal: false }], noDyes,
+      { diffuse: tex() },
+      { useGearstack: true, applyDye: true },
+    );
+    const m = mats[0] as THREE.MeshStandardMaterial;
+    // No gearstack, no detail maps -> onBeforeCompile is never assigned at all.
+    expect(m.onBeforeCompile).toBe(THREE.Material.prototype.onBeforeCompile);
+  });
+
+  it("setGearstackDebugChannel updates every gearstack-enabled material under a group", () => {
+    const groups: GroupInfo[] = [{ dyeIndex: 0, decal: false }];
+    const mats = createGearMaterials(groups, noDyes, { diffuse: tex(), gearstack: tex() }, {
+      useGearstack: true,
+      applyDye: true,
+    });
+    const m = mats[0] as THREE.MeshStandardMaterial;
+    const shader: any = { uniforms: {}, fragmentShader: "#include <dithering_fragment>" };
+    (m.onBeforeCompile as any)?.(shader);
+
+    const geom = new THREE.BufferGeometry();
+    const mesh = new THREE.Mesh(geom, m);
+    const root = new THREE.Group();
+    root.add(mesh);
+
+    setGearstackDebugChannel(root, 3);
+    expect(shader.uniforms.uDebugChannel.value).toBe(3);
+
+    setGearstackDebugChannel(root, 0);
+    expect(shader.uniforms.uDebugChannel.value).toBe(0);
+  });
+
+  it("exposes exactly 5 channel labels (off + r/g/b/a)", () => {
+    expect(GEARSTACK_CHANNELS).toHaveLength(5);
+    expect(GEARSTACK_CHANNELS[0]).toBe("off");
   });
 });

@@ -35,6 +35,20 @@ export interface DyeColors {
    * strongly the tiled detail diffuse/normal modulate the base surface.
    */
   detailStrength: number;
+  /**
+   * (in_min, in_max, out_min, out_max) range remap applied to the gearstack
+   * smoothness channel at runtime: maps the raw channel value from
+   * [in_min,in_max] into [out_min,out_max] (clamped). hasRoughnessRemap=false
+   * when the dye ships no such field, so absent data is a no-op against the
+   * existing gearstack-driven roughness.
+   */
+  roughnessRemap: [number, number, number, number];
+  hasRoughnessRemap: boolean;
+  /** Same remap form, applied to the raw gearstack wear signal. */
+  wearRemap: [number, number, number, number];
+  hasWearRemap: boolean;
+  /** Subsurface-scattering strength hint (0 = none, the common case). */
+  sssStrength: number;
   /** filled in by the loader from the names above */
   detailDiffuse?: THREE.Texture;
   detailNormal?: THREE.Texture;
@@ -55,6 +69,11 @@ const NEUTRAL: DyeColors = {
   detailTransform: [1, 1, 0, 0],
   cloth: false,
   detailStrength: 0,
+  roughnessRemap: [1, 0, 0, 1],
+  hasRoughnessRemap: false,
+  wearRemap: [1, 0, 0, 1],
+  hasWearRemap: false,
+  sssStrength: 0,
 };
 
 /** Colours for a given dye slot, or neutral if unresolved. */
@@ -78,6 +97,14 @@ interface ApiSlotDye {
   materialParams?: number[];
   /** primary_roughness_remap[3] (output max): low = glossy/metal, high = matte. */
   roughnessRemapMax?: number;
+  /** primary_roughness_remap as (scale, bias, min, max), when the dye ships it. */
+  roughnessRemap?: number[];
+  hasRoughnessRemap?: boolean;
+  /** primary_wear_remap as (scale, bias, min, max), when the dye ships it. */
+  wearRemap?: number[];
+  hasWearRemap?: boolean;
+  /** subsurface-scattering strength hint (0 = none). */
+  sssStrength?: number;
 }
 
 /**
@@ -187,7 +214,32 @@ export function dyeSetFromGearDyes(slots: Record<string, ApiSlotDye>): DyeSet {
           : d.cloth === true
             ? 1
             : 0,
+      roughnessRemap: xform4Tuple(d.roughnessRemap),
+      hasRoughnessRemap: d.hasRoughnessRemap === true,
+      wearRemap: xform4Tuple(d.wearRemap),
+      hasWearRemap: d.hasWearRemap === true,
+      sssStrength: typeof d.sssStrength === "number" ? d.sssStrength : 0,
     };
   }
   return set;
+}
+
+function xform4Tuple(v?: number[]): [number, number, number, number] {
+  return Array.isArray(v) && v.length >= 4
+    ? [v[0], v[1], v[2], v[3]]
+    : [1, 0, 0, 1];
+}
+
+/**
+ * Merge default/custom/locked dye sets per Bungie's documented resolution
+ * order: defaultDyes -> customDyes -> lockedDyes, with locked always winning
+ * (exotics that ignore an applied shader on certain slots). A slot only
+ * present in one set falls through to the others; empty sets are safe.
+ */
+export function resolveDyeSet(
+  defaultDyes: DyeSet,
+  customDyes: DyeSet,
+  lockedDyes: DyeSet,
+): DyeSet {
+  return { ...defaultDyes, ...customDyes, ...lockedDyes };
 }

@@ -21,6 +21,23 @@
  * OPAQUE overlay geometry with their own baked texture, not additive glows.
  * They render opaque with a polygon offset so they sit on the shell without
  * z-fighting, and are NOT dyed (the emblem art is fixed).
+ *
+ * Per-dye PBR refinements, from Bungie's documented `material_properties`
+ * schema (GDC 2018 "Translating Art into Technology"):
+ *  - roughness/wear use the dye's `(in_min, in_max, out_min, out_max)` range
+ *    remap applied to the gearstack smoothness/wear channels at runtime, when
+ *    a dye ships the field (falls back to the existing gearstack-driven
+ *    formula otherwise). NOT a scale+bias+clamp — that reading saturates to a
+ *    constant for every real dye checked (see `applyRemap4`).
+ *  - cloth-flagged slots get a subtle glTF `sheen` term approximating
+ *    Bungie's "fuzz" (negative-smoothness inverted GGX lobe used for thin
+ *    fabric) — coarse, per-material, not texture-driven (we have no per-pixel
+ *    fuzz-amount data).
+ *  - dyes carrying a subsurface-scattering strength get a faint fresnel-rim
+ *    self-illumination approximating Bungie's wrapped-diffuse translucency.
+ *  - Iridescence (Bungie's N·V-indexed specular-colour LUT) is NOT
+ *    implemented: the documented `material_properties` field list has no
+ *    iridescence-index entry, so there's no data to drive it from.
  */
 import * as THREE from "three";
 import { dyeForSlot, type DyeSet } from "./gearDye";
@@ -104,6 +121,7 @@ function makeOpaque(
   maps: GearTextureMaps,
   opts: GearMaterialOptions,
   overlay = false,
+  meshHasResolvedSlot = true,
 ): THREE.Material {
   // gear_dye_change_color_index -> dye slot, when no per-pixel dyeslot plate
   // exists (the common case: many items ship a `dyeslot` plate entry with zero
@@ -122,13 +140,46 @@ function makeOpaque(
   const slot = dyeIndex;
   const dye = dyeForSlot(dyes, slot);
 
+  // Fallback for orphan groups (dyeIndex matches no dye slot, e.g. Cover of
+  // the Exile's single head group with dyeIndex=3 against only slots 0-2) on
+  // items that ALSO ship no real per-pixel dyeslot plate AND where NO OTHER
+  // group in the same mesh resolves either — i.e. the whole item would
+  // otherwise render fully undyed. Gating on meshHasResolvedSlot matters:
+  // Nighthawk's crown decal is ALSO an orphan (dyeIndex 5, only slots 0/1/2
+  // exist), but its OTHER groups (dyeIndex 0, 1) already carry the item's
+  // real colour — that crown is deliberately-undyed baked white art, and
+  // guessing at it repaints art that was already correct. When the dye set
+  // has both a cloth-flagged and a non-cloth slot,
+  // split per-pixel using the raw gearstack alpha channel as a coarse
+  // material-type proxy: both regions are already above the dye-mask
+  // threshold (so this isn't the documented dye-mask/metalness use of the
+  // channel), but empirically the alpha value — nominally "wear" — clusters
+  // measurably lower on cloth regions than metal/plate regions within a
+  // single baked texture (verified against Cover of the Exile: cloth ~0.57,
+  // metal ~0.78 normalized), likely because artists author distinct wear
+  // baselines per material. This is a brightness heuristic, not a real
+  // material id — expect it to be wrong on items where wear varies for
+  // reasons other than material (heavy scripted damage, etc).
+  const existingSlots = [0, 1, 2].filter((s) => dyes[s] !== undefined);
+  const clothSlotIdx = existingSlots.find((s) => dyeForSlot(dyes, s).cloth);
+  const metalSlotIdx = existingSlots.find((s) => !dyeForSlot(dyes, s).cloth);
+  const isOrphanSlot = dyes[slot] === undefined;
+  const hasClothMetalSplit =
+    clothSlotIdx !== undefined && metalSlotIdx !== undefined && clothSlotIdx !== metalSlotIdx;
+  const useAChannelSplit =
+    isOrphanSlot && hasClothMetalSplit && !maps.dyeslot && !meshHasResolvedSlot;
+
   // Emissive tint: dyes carry the glow colour (e.g. Nighthawk's red eye,
   // Bushido's blue emblem); glowing regions self-illuminate in their albedo
   // colour when the dye specifies none.
   const emissiveOn = dye.emissive.r + dye.emissive.g + dye.emissive.b > 0.02;
   const emissiveTint = emissiveOn ? dye.emissive.clone() : new THREE.Color(0xffffff);
 
-  const mat = new THREE.MeshStandardMaterial({
+  // MeshPhysicalMaterial is a strict superset of MeshStandardMaterial (same
+  // fragment-shader chunk names, so every onBeforeCompile replacement below
+  // keeps working unchanged) — used so cloth slots can carry a glTF `sheen`
+  // term (fuzz approximation) without a second material type.
+  const mat = new THREE.MeshPhysicalMaterial({
     map: maps.diffuse ?? null,
     normalMap: maps.normal ?? null,
     color: maps.diffuse ? new THREE.Color(0xffffff) : dye.primary.clone(),
@@ -138,6 +189,13 @@ function makeOpaque(
     emissive: maps.emissive ? emissiveTint : new THREE.Color(0, 0, 0),
     emissiveIntensity: maps.emissive ? 1.5 : 1,
     side: THREE.DoubleSide, // Destiny meshes aren't always consistently wound
+    // Fuzz/cloth approximation (Stage 3, doc §H "fuzz"): coarse per-material
+    // sheen for fabric-flagged slots. Bungie's fuzz is a per-pixel "fuzz
+    // amount" control we don't have texture data for, so this is a flat
+    // group-level hint — subtle by design, not meant to be exact.
+    sheen: dye.cloth ? 0.35 : 0,
+    sheenRoughness: 0.7,
+    sheenColor: dye.cloth ? dye.primary.clone() : new THREE.Color(0, 0, 0),
   });
 
   // Overlay (decal) geometry sits on top of the shell — nudge it toward the
@@ -222,6 +280,20 @@ function makeOpaque(
   // metalness across its whole surface.
   const metalnesses = [0, 1, 2].map((s) => dyeForSlot(dyes, s).metalness);
   const cloths = [0, 1, 2].map((s) => (dyeForSlot(dyes, s).cloth ? 1 : 0));
+  // Per-slot documented remaps (roughness/wear) for the per-pixel dyeslot path;
+  // the group's own dye (below) is the fallback when no dyeslot plate exists.
+  // `?? identity` guards DyeColors values built by hand (tests) that predate
+  // these fields — dyeSetFromGearDyes always populates them in production.
+  const remapVec4 = (v?: [number, number, number, number]) =>
+    new THREE.Vector4(...(v ?? [1, 0, 0, 1]));
+  const roughnessRemaps = [0, 1, 2].map((s) => remapVec4(dyeForSlot(dyes, s).roughnessRemap));
+  const hasRoughnessRemaps = [0, 1, 2].map((s) => (dyeForSlot(dyes, s).hasRoughnessRemap ? 1 : 0));
+  const wearRemaps = [0, 1, 2].map((s) => remapVec4(dyeForSlot(dyes, s).wearRemap));
+  const hasWearRemaps = [0, 1, 2].map((s) => (dyeForSlot(dyes, s).hasWearRemap ? 1 : 0));
+  // Subsurface-scattering strength (Stage 3 approximation): normalized into a
+  // 0..1 dial. Bungie's raw values run well past 1 (doc's sample is ~32), and
+  // the exact scale isn't documented, so this is clamped rather than trusted.
+  const sssStrength = Math.max(0, Math.min(1, (dye.sssStrength || 0) / 50));
 
   mat.onBeforeCompile = (shader) => {
     shader.uniforms.uGearstack = { value: maps.gearstack ?? null };
@@ -234,6 +306,10 @@ function makeOpaque(
     shader.uniforms.uEmissiveOn = { value: emissiveOn ? 1 : 0 };
     shader.uniforms.uDyeslot = { value: maps.dyeslot ?? null };
     shader.uniforms.uHasDyeslot = { value: hasDyeslot ? 1 : 0 };
+    // Orphan-slot A-channel material-split fallback (see comment above).
+    shader.uniforms.uUseAChannelSplit = { value: useAChannelSplit ? 1 : 0 };
+    shader.uniforms.uClothSlot = { value: clothSlotIdx ?? 0 };
+    shader.uniforms.uMetalSlot = { value: metalSlotIdx ?? 0 };
     shader.uniforms.uPrimaries = { value: primaries };
     shader.uniforms.uSecondaries = { value: secondaries };
     shader.uniforms.uWorns = { value: worns };
@@ -243,6 +319,18 @@ function makeOpaque(
     shader.uniforms.uSlotIndex = { value: slot };
     shader.uniforms.uMetalnesses = { value: metalnesses };
     shader.uniforms.uCloths = { value: cloths };
+    // Documented per-dye roughness/wear remap: group fallback (uSlot*) plus
+    // per-slot arrays for the per-pixel dyeslot-plate path.
+    shader.uniforms.uSlotRoughnessRemap = { value: remapVec4(dye.roughnessRemap) };
+    shader.uniforms.uSlotHasRoughnessRemap = { value: dye.hasRoughnessRemap ? 1 : 0 };
+    shader.uniforms.uRoughnessRemaps = { value: roughnessRemaps };
+    shader.uniforms.uHasRoughnessRemaps = { value: hasRoughnessRemaps };
+    shader.uniforms.uSlotWearRemap = { value: remapVec4(dye.wearRemap) };
+    shader.uniforms.uSlotHasWearRemap = { value: dye.hasWearRemap ? 1 : 0 };
+    shader.uniforms.uWearRemaps = { value: wearRemaps };
+    shader.uniforms.uHasWearRemaps = { value: hasWearRemaps };
+    // SSS/translucency approximation (Stage 3).
+    shader.uniforms.uSssStrength = { value: sssStrength };
     // Detail-map uniforms.
     shader.uniforms.uDetailDiffuse = { value: detailDiffuse };
     shader.uniforms.uDetailNormal = { value: detailNormal };
@@ -268,6 +356,9 @@ uniform vec3 uEmissiveTint;
 uniform float uEmissiveOn;
 uniform sampler2D uDyeslot;
 uniform float uHasDyeslot;
+uniform float uUseAChannelSplit;
+uniform float uClothSlot;
+uniform float uMetalSlot;
 uniform vec3 uPrimaries[3];
 uniform vec3 uSecondaries[3];
 uniform vec3 uWorns[3];
@@ -284,6 +375,45 @@ uniform float uSlotCloth;
 uniform float uHasDetailNormal;
 uniform float uDetailNormalScale;
 uniform vec4 uDetailTransform;
+uniform vec4 uSlotRoughnessRemap;
+uniform float uSlotHasRoughnessRemap;
+uniform vec4 uRoughnessRemaps[3];
+uniform float uHasRoughnessRemaps[3];
+uniform vec4 uSlotWearRemap;
+uniform float uSlotHasWearRemap;
+uniform vec4 uWearRemaps[3];
+uniform float uHasWearRemaps[3];
+uniform float uSssStrength;
+
+// Standard shader range-remap: r = (in_min, in_max, out_min, out_max). Maps
+// raw from [in_min, in_max] into [out_min, out_max], clamped.
+//   t = clamp( (raw - in_min) / (in_max - in_min), 0, 1 );  output = mix( out_min, out_max, t );
+// NOT clamp(scale*raw+bias, min, max) — verified empirically against real dye
+// data (Cover of the Exile 571925067, Bushido Cowl 1465235089): the
+// scale+bias+clamp reading saturates to a hard constant for every dye's own
+// remap vec4 checked so far, regardless of the per-pixel input, which can't be
+// what a per-pixel "remap" is for. This range form instead produces a smooth,
+// materially-plausible gradient across the input domain — e.g. Cover of the
+// Exile's metal slot lands ~47% worn vs its cloth slot's ~26% at the same
+// pixels' raw gearstack wear signal, matching the visibly different wear
+// baked into the metal vs cloth regions of that item's gearstack alpha.
+// Absent data (has < 0.5) passes the raw value through unchanged.
+float applyRemap4( float raw, vec4 r, float has ) {
+  if ( has < 0.5 ) return raw;
+  float t = clamp( ( raw - r.x ) / max( r.y - r.x, 1e-5 ), 0.0, 1.0 );
+  return mix( r.z, r.w, t );
+}
+
+// Orphan-slot fallback: pick a per-pixel material slot from the raw gearstack
+// alpha value when no per-pixel dyeslot plate exists and this group's own
+// dyeIndex matched nothing. Coarse brightness heuristic, not a real material
+// id — see the comment above uUseAChannelSplit's assignment in gearMaterial.ts.
+// A soft-edged threshold (not a hard step) so the material boundary it
+// implies doesn't look like a stamped-in cliff.
+int aChannelMaterialSlot( float rawA ) {
+  float metalWeight = smoothstep( 0.60, 0.70, rawA );
+  return metalWeight > 0.5 ? int( uMetalSlot ) : int( uClothSlot );
+}
 
 // --- Destiny 2 gearstack decode --------------------------------------------
 // Channel meanings confirmed by Bungie's Graphics Tech Art Lead (via lowlines'
@@ -300,7 +430,7 @@ struct Gearstack {
   float smoothness;
   float metalness;   // non-dyed metalness, 0..1
   float dyeMask;     // 1 where the surface is dyeable, 0 on baked art
-  float wear;        // 0..1 worn amount
+  float wearRaw;      // 0..1 raw worn amount, before a dye's wear_remap
   float emissive;    // 0..1 emissive strength
   float alphaTest;   // 0..1 (for cut-out geometry)
 };
@@ -312,7 +442,7 @@ Gearstack decodeGearstack( vec4 gs ) {
   g.smoothness = gs.g;
   g.metalness  = clamp( a255 / 32.0, 0.0, 1.0 );
   g.dyeMask    = step( 40.0 / 255.0, gs.a );
-  g.wear       = clamp( ( gs.a - 48.0 / 255.0 ) * ( 255.0 / ( 255.0 - 48.0 ) ), 0.0, 1.0 );
+  g.wearRaw    = clamp( ( gs.a - 48.0 / 255.0 ) * ( 255.0 / ( 255.0 - 48.0 ) ), 0.0, 1.0 );
   // Emissive lives in the HIGH blue band. The low band (b < 32/255) is
   // alpha-test data and the 32..~64 range carries structural/edge values that
   // are NOT glow — decoding the whole >40 range as emissive lights up beak
@@ -392,6 +522,8 @@ Gearstack decodeGearstack( vec4 gs ) {
             vec3 pri = uPrimaryTint;
             vec3 sec = uSecondaryTint;
             vec3 wrn = uWornTint;
+            vec4 wearRemapT = uSlotWearRemap;
+            float hasWearRemapT = uSlotHasWearRemap;
             int si = -1;
             bool doDye = true;
             if ( uHasDyeslot > 0.5 ) {
@@ -403,7 +535,16 @@ Gearstack decodeGearstack( vec4 gs ) {
                 pri = uPrimaries[si];
                 sec = uSecondaries[si];
                 wrn = uWorns[si];
+                wearRemapT = uWearRemaps[si];
+                hasWearRemapT = uHasWearRemaps[si];
               }
+            } else if ( uUseAChannelSplit > 0.5 ) {
+              si = aChannelMaterialSlot( gsRaw.a );
+              pri = uPrimaries[si];
+              sec = uSecondaries[si];
+              wrn = uWorns[si];
+              wearRemapT = uWearRemaps[si];
+              hasWearRemapT = uHasWearRemaps[si];
             }
 
             // Decoded dye mask is the authoritative "is this pixel dyeable"
@@ -412,6 +553,9 @@ Gearstack decodeGearstack( vec4 gs ) {
             // belt-and-braces guard, since some mobile plates carry imperfect
             // masks; for everything else the decoded mask stands on its own.
             float dyeMask = gs.dyeMask;
+            // Documented per-dye wear_remap over the raw gearstack wear signal;
+            // passes the raw value through when a dye ships no remap.
+            float wearAmt = applyRemap4( gs.wearRaw, wearRemapT, hasWearRemapT );
 
             if ( doDye ) {
               if ( uPlated > 0.5 ) {
@@ -428,7 +572,7 @@ Gearstack decodeGearstack( vec4 gs ) {
                 // Wear: blend the dyed shell toward the worn tint where the wear
                 // mask is high (scratched/edge-worn metal reads darker/duller).
                 diffuseColor.rgb = mix( diffuseColor.rgb,
-                  diffuseColor.rgb * wrn, gs.wear * m );
+                  diffuseColor.rgb * wrn, wearAmt * m );
               } else {
                 // Change-colour shell (weapons, cloth): dye the masked region,
                 // preserving painted body. Tint multiplies the shell albedo.
@@ -436,7 +580,7 @@ Gearstack decodeGearstack( vec4 gs ) {
                 diffuseColor.rgb = mix( diffuseColor.rgb,
                   diffuseColor.rgb * tint, dyeMask );
                 diffuseColor.rgb = mix( diffuseColor.rgb,
-                  diffuseColor.rgb * wrn, gs.wear * dyeMask );
+                  diffuseColor.rgb * wrn, wearAmt * dyeMask );
               }
             }
           }
@@ -456,14 +600,46 @@ Gearstack decodeGearstack( vec4 gs ) {
       `#include <roughnessmap_fragment>
       {
         Gearstack gsR = decodeGearstack( texture2D( uGearstack, vMapUv ) );
-        roughnessFactor *= clamp( 1.0 - gsR.smoothness, 0.05, 1.0 );
-        // Worn areas are rougher (scratched-up), scaled by the decoded wear mask.
-        roughnessFactor = mix( roughnessFactor, min( 1.0, roughnessFactor + 0.35 ), gsR.wear );
+        vec4 roughRemapR = uSlotRoughnessRemap;
+        float hasRoughRemapR = uSlotHasRoughnessRemap;
+        vec4 wearRemapR = uSlotWearRemap;
+        float hasWearRemapR = uSlotHasWearRemap;
         float clothFloorR = uSlotCloth;
         if ( uHasDyeslot > 0.5 ) {
           float qR = floor( texture2D( uDyeslot, vMapUv ).r * 3.0 + 0.5 );
-          if ( qR >= 0.5 ) clothFloorR = uCloths[ int( qR ) - 1 ];
+          if ( qR >= 0.5 ) {
+            int siR = int( qR ) - 1;
+            clothFloorR = uCloths[siR];
+            roughRemapR = uRoughnessRemaps[siR];
+            hasRoughRemapR = uHasRoughnessRemaps[siR];
+            wearRemapR = uWearRemaps[siR];
+            hasWearRemapR = uHasWearRemaps[siR];
+          }
+        } else if ( uUseAChannelSplit > 0.5 ) {
+          int siR = aChannelMaterialSlot( texture2D( uGearstack, vMapUv ).a );
+          clothFloorR = uCloths[siR];
+          roughRemapR = uRoughnessRemaps[siR];
+          hasRoughRemapR = uHasRoughnessRemaps[siR];
+          wearRemapR = uWearRemaps[siR];
+          hasWearRemapR = uHasWearRemaps[siR];
         }
+        // Documented per-dye roughness_remap REPLACES the naive gearstack
+        // smoothness->roughness inversion when the dye ships the field; falls
+        // back to the existing formula (unchanged) otherwise. The remap's
+        // output endpoints are in Bungie's native SMOOTHNESS space (the doc
+        // confirms D2 authors smoothness, not roughness), so the remapped
+        // value needs the same 1-x inversion as the raw gearstack channel —
+        // using it directly as roughness was pinning e.g. cloth to ~0.1-0.35
+        // (near-mirror gloss), the opposite of the matte fabric it should be.
+        if ( hasRoughRemapR > 0.5 ) {
+          float remappedSmoothness = applyRemap4( gsR.smoothness, roughRemapR, 1.0 );
+          roughnessFactor = clamp( 1.0 - remappedSmoothness, 0.0, 1.0 );
+        } else {
+          roughnessFactor *= clamp( 1.0 - gsR.smoothness, 0.05, 1.0 );
+        }
+        // Worn areas are rougher (scratched-up), scaled by the remapped wear amount.
+        float wearAmtR = applyRemap4( gsR.wearRaw, wearRemapR, hasWearRemapR );
+        roughnessFactor = mix( roughnessFactor, min( 1.0, roughnessFactor + 0.35 ), wearAmtR );
         if ( clothFloorR > 0.5 ) {
           // Fabric floor: cloth is never glossy, even if the gearstack green is
           // noisy on a low-res mobile plate.
@@ -503,6 +679,10 @@ Gearstack decodeGearstack( vec4 gs ) {
             metalnessFactor = uMetalnesses[siM];
             clothFloorM = uCloths[siM];
           }
+        } else if ( uUseAChannelSplit > 0.5 ) {
+          int siM = aChannelMaterialSlot( texture2D( uGearstack, vMapUv ).a );
+          metalnessFactor = uMetalnesses[siM];
+          clothFloorM = uCloths[siM];
         } else if ( gsM.dyeMask < 0.5 ) {
           metalnessFactor = gsM.metalness;
         }
@@ -534,6 +714,18 @@ Gearstack decodeGearstack( vec4 gs ) {
           glowOn = 1.0;
         }
         totalEmissiveRadiance += glowTint * glow * glowOn * 1.25;
+        // SSS/translucency approximation (Stage 3, doc §H): Bungie's wrapped-
+        // diffuse SSS has no cheap glTF equivalent, so this fakes its dominant
+        // visual cue — a soft glow at grazing angles — as a fresnel-rim self-
+        // illumination in the dye's own colour. Subtle by construction
+        // (uSssStrength is pre-clamped 0..1 and scaled down again here); 0 for
+        // the vast majority of dyes, which don't carry this field.
+        if ( uSssStrength > 0.001 ) {
+          vec3 viewDir = normalize( vViewPosition );
+          float rimNoV = clamp( dot( normal, viewDir ), 0.0, 1.0 );
+          float fresnelRim = pow( 1.0 - rimNoV, 3.0 );
+          totalEmissiveRadiance += diffuseColor.rgb * fresnelRim * uSssStrength * 0.15;
+        }
       }`,
     );
     } // end if (wantGearstack)
@@ -577,9 +769,16 @@ export function createGearMaterials(
   opts: GearMaterialOptions = {},
 ): THREE.Material[] {
   if (groups.length === 0) {
-    return [makeOpaque(-1, dyes, maps, opts)];
+    return [makeOpaque(-1, dyes, maps, opts, false, false)];
   }
+  // Whether ANY group in this mesh resolves to a real dye slot (e.g.
+  // Nighthawk: dyeIndex 0/1 resolve, its dyeIndex-5 crown decal doesn't). The
+  // orphan-slot A-channel guess (see makeOpaque) is only for meshes where NO
+  // group resolves at all — otherwise an orphan group is deliberately
+  // undyed baked art (like that crown), and guessing at it repaints art that
+  // was already correct.
+  const meshHasResolvedSlot = groups.some((g) => !g.glow && dyes[g.dyeIndex] !== undefined);
   return groups.map((g) =>
-    g.glow ? makeGlow(maps) : makeOpaque(g.dyeIndex, dyes, maps, opts, g.decal),
+    g.glow ? makeGlow(maps) : makeOpaque(g.dyeIndex, dyes, maps, opts, g.decal, meshHasResolvedSlot),
   );
 }

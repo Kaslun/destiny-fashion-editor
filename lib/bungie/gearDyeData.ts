@@ -38,12 +38,33 @@ export interface SlotDye {
   materialParams: [number, number, number, number];
   /** primary_roughness_remap[3] output max — soft gloss hint (low = glossy). */
   roughnessRemapMax: number;
+  /**
+   * primary_roughness_remap as a (in_min, in_max, out_min, out_max) range
+   * remap applied to the gearstack smoothness channel at runtime — maps the
+   * raw channel value from [in_min,in_max] into [out_min,out_max] (clamped),
+   * with the output in Bungie's native smoothness space (inverted to
+   * roughness in the shader). NOT scale+bias+clamp — see gearMaterial.ts
+   * applyRemap4 for why. Present only when the dye actually ships the field —
+   * absent means the material-family heuristic (roughnessRemapMax hint) is
+   * the only signal.
+   */
+  roughnessRemap: [number, number, number, number];
+  hasRoughnessRemap: boolean;
+  /** primary_wear_remap as (in_min, in_max, out_min, out_max), applied to the
+   * raw gearstack wear signal. Absent = the fixed wear formula stands as-is. */
+  wearRemap: [number, number, number, number];
+  hasWearRemap: boolean;
+  /** primary_subsurface_scattering_strength_and_emissive[0] — SSS strength hint,
+   * 0 when the dye doesn't carry the field (the common case for armor/weapons). */
+  sssStrength: number;
 }
 
 export type GearDyes = Record<number, SlotDye>;
 
 export interface ItemGear {
   dyes: GearDyes;
+  /** locked_dyes — always render regardless of an applied shader (exotics). */
+  lockedDyes: GearDyes;
   /**
    * Number of geometry entries that make up the base arrangement. Content lists
    * base + override geometries; we render only the first `baseGeometryCount`.
@@ -116,6 +137,14 @@ function parseDyes(defaultDyes: unknown): GearDyes {
         const rr = mp.primary_roughness_remap;
         return Array.isArray(rr) && rr.length >= 4 ? Number(rr[3]) : 0;
       })(),
+      roughnessRemap: xform4(mp.primary_roughness_remap),
+      hasRoughnessRemap: Array.isArray(mp.primary_roughness_remap) && mp.primary_roughness_remap.length >= 4,
+      wearRemap: xform4(mp.primary_wear_remap),
+      hasWearRemap: Array.isArray(mp.primary_wear_remap) && mp.primary_wear_remap.length >= 4,
+      sssStrength: (() => {
+        const sss = mp.primary_subsurface_scattering_strength_and_emissive;
+        return Array.isArray(sss) && sss.length > 0 ? Number(sss[0]) : 0;
+      })(),
     };
   }
   return out;
@@ -130,7 +159,7 @@ export async function getItemGear(hash: number): Promise<ItemGear> {
   const cached = gearCache.get(hash);
   if (cached) return cached;
 
-  const empty: ItemGear = { dyes: {}, baseGeometryCount: null };
+  const empty: ItemGear = { dyes: {}, lockedDyes: {}, baseGeometryCount: null };
   const gearAsset = await getGearAsset(hash);
 
   // The gear `.js` filename can sit in a few places depending on the asset
@@ -174,6 +203,7 @@ export async function getItemGear(hash: number): Promise<ItemGear> {
 
   const data = JSON.parse(await res.text()) as {
     default_dyes?: unknown;
+    locked_dyes?: unknown;
     art_content_sets?: {
       arrangement?: {
         gear_set?: {
@@ -186,6 +216,9 @@ export async function getItemGear(hash: number): Promise<ItemGear> {
   const base =
     data.art_content_sets?.[0]?.arrangement?.gear_set?.base_art_arrangement;
   const dyes = parseDyes(data.default_dyes);
+  // Locked dyes always render regardless of an applied shader (exotics that
+  // ignore shaders on certain regions). Same schema as default_dyes.
+  const lockedDyes = parseDyes(data.locked_dyes);
 
   // If the gear file loaded but carried no default_dyes, this is an item whose
   // default appearance is defined by a shader plug (common for armor). The
@@ -204,6 +237,7 @@ export async function getItemGear(hash: number): Promise<ItemGear> {
 
   const result: ItemGear = {
     dyes,
+    lockedDyes,
     baseGeometryCount: base?.geometry_hashes?.length ?? null,
     // debug: distinguish "gear file had no dyes" from "parse produced none".
     rawDefaultDyes:
@@ -216,4 +250,9 @@ export async function getItemGear(hash: number): Promise<ItemGear> {
 /** Convenience: just the per-slot dye colours for a hash. */
 export async function getGearDyes(hash: number): Promise<GearDyes> {
   return (await getItemGear(hash)).dyes;
+}
+
+/** Convenience: just the locked-dye slots for a hash (usually empty). */
+export async function getLockedDyes(hash: number): Promise<GearDyes> {
+  return (await getItemGear(hash)).lockedDyes;
 }

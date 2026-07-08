@@ -24,7 +24,7 @@ import {
   pickBestByRole,
   type TexImage,
 } from "@/lib/geometry/textureContainer";
-import { dyeSetFromGearDyes, type DyeSet } from "@/lib/materials/gearDye";
+import { dyeSetFromGearDyes, resolveDyeSet, type DyeSet } from "@/lib/materials/gearDye";
 import {
   createGearMaterials,
   type GearTextureMaps,
@@ -75,16 +75,23 @@ interface GearAssetResponse {
   renderGeometryIndices: number[] | null;
 }
 
-async function fetchDyeSet(hash: number): Promise<DyeSet | null> {
+interface FetchedDyes {
+  default: DyeSet;
+  /** locked_dyes — always render regardless of an applied shader (exotics). */
+  locked: DyeSet;
+}
+
+async function fetchDyeSet(hash: number): Promise<FetchedDyes> {
   try {
     const res = await fetch(`/api/dyes/${hash}`).then((r) => r.json());
-    if (res.slots && Object.keys(res.slots).length > 0) {
-      return dyeSetFromGearDyes(res.slots);
-    }
+    return {
+      default: res.slots ? dyeSetFromGearDyes(res.slots) : {},
+      locked: res.locked ? dyeSetFromGearDyes(res.locked) : {},
+    };
   } catch {
     /* ignore — model still renders with baked textures */
   }
-  return null;
+  return { default: {}, locked: {} };
 }
 
 /** geometryIndex -> texture-container indices, from region_index_sets. */
@@ -241,21 +248,18 @@ export async function loadGearModel(
     data.content.find((c) => c.geometry.length > 0) ?? data.content[0];
 
   // Dye colours + emissive: the item's own gear file gives its default look
-  // (armor colour, glow); a shader, if applied, overrides those colours.
-  let dyeSet: DyeSet = {};
-  let applyDye = false;
-  const baseDyes = await fetchDyeSet(itemHash);
-  if (baseDyes) {
-    dyeSet = baseDyes;
-    applyDye = true;
-  }
-  if (opts.shaderHash) {
-    const shaderDyes = await fetchDyeSet(opts.shaderHash);
-    if (shaderDyes) {
-      dyeSet = shaderDyes;
-      applyDye = true;
-    }
-  }
+  // (armor colour, glow); a shader, if applied, overrides those colours — EXCEPT
+  // slots the item's own gear file marks as locked_dyes, which always win
+  // regardless of the applied shader (Bungie's documented resolution order:
+  // defaultDyes -> customDyes -> lockedDyes, locked last = highest priority).
+  const itemDyes = await fetchDyeSet(itemHash);
+  const shaderDyes = opts.shaderHash ? await fetchDyeSet(opts.shaderHash) : null;
+  const dyeSet: DyeSet = resolveDyeSet(
+    itemDyes.default,
+    shaderDyes?.default ?? {},
+    itemDyes.locked,
+  );
+  const applyDye = Object.keys(dyeSet).length > 0;
 
   // Which geometry to render (skip gender/class body overrides that overlap).
   const renderSet = data.renderGeometryIndices

@@ -146,6 +146,173 @@ describe("createGearMaterials — plated metalness gated per-slot by cloth", () 
   });
 });
 
+describe("createGearMaterials — orphan-slot A-channel material split", () => {
+  const tex = () => new THREE.Texture();
+  // Mirrors Cover of the Exile (571925067): slot 0 metal, slot 1 cloth, no
+  // per-pixel dyeslot plate.
+  const clothMetalDyes: DyeSet = {
+    0: {
+      primary: new THREE.Color(0xffa032), secondary: new THREE.Color(0xffffff),
+      roughness: 0.5, metalness: 1,
+      emissive: new THREE.Color(0, 0, 0), secondaryEmissive: new THREE.Color(0, 0, 0),
+      detailDiffuseName: null, detailNormalName: null,
+      detailTransform: [1, 1, 0, 0], cloth: false, detailStrength: 0,
+      roughnessRemap: [1, 0, 0, 1], hasRoughnessRemap: false,
+      wearRemap: [1, 0, 0, 1], hasWearRemap: false, sssStrength: 0,
+    } as any,
+    1: {
+      primary: new THREE.Color(0x0d4849), secondary: new THREE.Color(0xffffff),
+      roughness: 0.85, metalness: 0,
+      emissive: new THREE.Color(0, 0, 0), secondaryEmissive: new THREE.Color(0, 0, 0),
+      detailDiffuseName: null, detailNormalName: null,
+      detailTransform: [1, 1, 0, 0], cloth: true, detailStrength: 1,
+      roughnessRemap: [1, 0, 0, 1], hasRoughnessRemap: false,
+      wearRemap: [1, 0, 0, 1], hasWearRemap: false, sssStrength: 0,
+    } as any,
+  };
+
+  function compile(groups: GroupInfo[], groupIndex: number) {
+    const mats = createGearMaterials(groups, clothMetalDyes, { diffuse: tex(), gearstack: tex() }, {
+      useGearstack: true,
+      applyDye: true,
+    });
+    const m = mats[groupIndex] as THREE.MeshPhysicalMaterial;
+    const shader: any = { uniforms: {}, fragmentShader: `
+      #include <map_fragment>
+      #include <normal_fragment_maps>
+      #include <roughnessmap_fragment>
+      #include <metalnessmap_fragment>
+      #include <emissivemap_fragment>` };
+    (m.onBeforeCompile as any)?.(shader);
+    return shader;
+  }
+
+  it("fires when a single-group mesh's dyeIndex matches no slot (Cover of the Exile: single group, dyeIndex=3)", () => {
+    const shader = compile([{ dyeIndex: 3, decal: false }], 0);
+    expect(shader.uniforms.uUseAChannelSplit.value).toBe(1);
+    expect(shader.fragmentShader).toContain("aChannelMaterialSlot");
+  });
+
+  it("does NOT fire on an orphan group when a sibling group in the same mesh already resolves (Nighthawk regression: dyeIndex 0/1 resolve, dyeIndex 5 crown decal doesn't)", () => {
+    const groups: GroupInfo[] = [
+      { dyeIndex: 0, decal: false },
+      { dyeIndex: 1, decal: false },
+      { dyeIndex: 5, decal: true },
+    ];
+    const orphanShader = compile(groups, 2);
+    expect(orphanShader.uniforms.uUseAChannelSplit.value).toBe(0);
+    // The resolving groups should never get the split either.
+    expect(compile(groups, 0).uniforms.uUseAChannelSplit.value).toBe(0);
+  });
+
+  it("does not fire when the dye set has no cloth/metal split available", () => {
+    const oneMaterialDyes: DyeSet = { 0: clothMetalDyes[0] };
+    const mats = createGearMaterials([{ dyeIndex: 3, decal: false }], oneMaterialDyes, { diffuse: tex(), gearstack: tex() }, {
+      useGearstack: true,
+      applyDye: true,
+    });
+    const m = mats[0] as THREE.MeshPhysicalMaterial;
+    const shader: any = { uniforms: {}, fragmentShader: `
+      #include <map_fragment>
+      #include <normal_fragment_maps>
+      #include <roughnessmap_fragment>
+      #include <metalnessmap_fragment>
+      #include <emissivemap_fragment>` };
+    (m.onBeforeCompile as any)?.(shader);
+    expect(shader.uniforms.uUseAChannelSplit.value).toBe(0);
+  });
+});
+
+describe("createGearMaterials — documented roughness/wear remap", () => {
+  const tex = () => new THREE.Texture();
+  function dyeWithRemap(hasRoughnessRemap: boolean, hasWearRemap: boolean) {
+    return {
+      0: {
+        primary: new THREE.Color(0xffffff), secondary: new THREE.Color(0xffffff),
+        roughness: 0.6, metalness: 0,
+        emissive: new THREE.Color(0, 0, 0), secondaryEmissive: new THREE.Color(0, 0, 0),
+        detailDiffuseName: null, detailNormalName: null,
+        detailTransform: [1, 1, 0, 0] as [number, number, number, number],
+        cloth: false, detailStrength: 0,
+        roughnessRemap: [2, 0.1, 0.05, 0.9] as [number, number, number, number],
+        hasRoughnessRemap,
+        wearRemap: [1.5, 0, 0, 1] as [number, number, number, number],
+        hasWearRemap,
+        sssStrength: 0,
+      },
+    };
+  }
+  function frag(hasRoughnessRemap: boolean, hasWearRemap: boolean): string {
+    const mats = createGearMaterials(
+      [{ dyeIndex: 0, decal: false }], dyeWithRemap(hasRoughnessRemap, hasWearRemap) as any,
+      { diffuse: tex(), gearstack: tex() } as any,
+      { useGearstack: true, applyDye: true },
+    );
+    const m = mats[0] as THREE.MeshPhysicalMaterial;
+    const shader: any = { uniforms: {}, fragmentShader: `
+      #include <map_fragment>
+      #include <normal_fragment_maps>
+      #include <roughnessmap_fragment>
+      #include <metalnessmap_fragment>
+      #include <emissivemap_fragment>` };
+    (m.onBeforeCompile as any)?.(shader);
+    return shader.fragmentShader;
+  }
+
+  it("roughness remap branch is present, gated by uHasRoughnessRemap, and inverts the remapped smoothness to roughness", () => {
+    const src = frag(true, false);
+    expect(src).toContain("applyRemap4");
+    expect(src).toContain("if ( hasRoughRemapR > 0.5 )");
+    expect(src).toContain("float remappedSmoothness = applyRemap4( gsR.smoothness, roughRemapR, 1.0 );");
+    expect(src).toContain("roughnessFactor = clamp( 1.0 - remappedSmoothness, 0.0, 1.0 );");
+  });
+
+  it("applyRemap4 is a range remap (in_min,in_max,out_min,out_max), not scale+bias+clamp", () => {
+    const src = frag(true, false);
+    expect(src).toContain("float t = clamp( ( raw - r.x ) / max( r.y - r.x, 1e-5 ), 0.0, 1.0 );");
+    expect(src).toContain("return mix( r.z, r.w, t );");
+  });
+
+  it("wear remap is applied via applyRemap4 in both the dye-tint and roughness blocks", () => {
+    const src = frag(false, true);
+    expect(src).toContain("float wearAmt = applyRemap4( gs.wearRaw, wearRemapT, hasWearRemapT );");
+    expect(src).toContain("float wearAmtR = applyRemap4( gsR.wearRaw, wearRemapR, hasWearRemapR );");
+  });
+
+  it("compiles the same branches regardless of has-flags (runtime gate, not a compile-time toggle)", () => {
+    expect(frag(false, false)).toContain("if ( hasRoughRemapR > 0.5 )");
+  });
+});
+
+describe("createGearMaterials — fuzz/sheen for cloth-flagged slots", () => {
+  const tex = () => new THREE.Texture();
+  function dyeCloth(cloth: boolean) {
+    return {
+      0: {
+        primary: new THREE.Color(0xff0000), secondary: new THREE.Color(0xffffff),
+        roughness: 0.8, metalness: 0,
+        emissive: new THREE.Color(0, 0, 0), secondaryEmissive: new THREE.Color(0, 0, 0),
+        detailDiffuseName: null, detailNormalName: null,
+        detailTransform: [1, 1, 0, 0] as [number, number, number, number],
+        cloth, detailStrength: cloth ? 1 : 0,
+      },
+    };
+  }
+
+  it("cloth-flagged group gets a non-zero sheen", () => {
+    const mats = createGearMaterials([{ dyeIndex: 0, decal: false }], dyeCloth(true) as any, {}, {});
+    const m = mats[0] as THREE.MeshPhysicalMaterial;
+    expect(m).toBeInstanceOf(THREE.MeshPhysicalMaterial);
+    expect(m.sheen).toBeGreaterThan(0);
+  });
+
+  it("non-cloth group gets zero sheen", () => {
+    const mats = createGearMaterials([{ dyeIndex: 0, decal: false }], dyeCloth(false) as any, {}, {});
+    const m = mats[0] as THREE.MeshPhysicalMaterial;
+    expect(m.sheen).toBe(0);
+  });
+});
+
 describe("gearstack debug-channel viewer", () => {
   const tex = () => new THREE.Texture();
 

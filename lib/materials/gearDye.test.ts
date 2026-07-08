@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { pbrFromDetail, dyeSetFromGearDyes } from "./gearDye";
+import { pbrFromDetail, dyeSetFromGearDyes, resolveDyeSet } from "./gearDye";
+import type { DyeSet } from "./gearDye";
 
 describe("pbrFromDetail — material classification", () => {
   it("cloth flag is authoritative — fabric regardless of detail name", () => {
@@ -87,6 +88,44 @@ describe("dyeSetFromGearDyes — detailStrength from material_params[0] (Nightha
   it("cloth (slot 1) gets full detail strength", () => {
     const set = dyeSetFromGearDyes(nighthawk as any);
     expect(set[1].detailStrength).toBe(1);
+  });
+});
+
+describe("resolveDyeSet — locked > custom > default dye priority", () => {
+  const tag = (t: string) => ({ tag: t }) as unknown as DyeSet[number];
+
+  it("locked wins over custom and default for the same slot", () => {
+    const defaultDyes: DyeSet = { 0: tag("default") };
+    const customDyes: DyeSet = { 0: tag("custom") };
+    const lockedDyes: DyeSet = { 0: tag("locked") };
+    const resolved = resolveDyeSet(defaultDyes, customDyes, lockedDyes);
+    expect((resolved[0] as unknown as { tag: string }).tag).toBe("locked");
+  });
+
+  it("custom wins over default when the slot isn't locked", () => {
+    const defaultDyes: DyeSet = { 0: tag("default") };
+    const customDyes: DyeSet = { 0: tag("custom") };
+    const resolved = resolveDyeSet(defaultDyes, customDyes, {});
+    expect((resolved[0] as unknown as { tag: string }).tag).toBe("custom");
+  });
+
+  it("a slot present only in default falls through untouched", () => {
+    const defaultDyes: DyeSet = { 1: tag("default-slot1") };
+    const resolved = resolveDyeSet(defaultDyes, {}, {});
+    expect((resolved[1] as unknown as { tag: string }).tag).toBe("default-slot1");
+  });
+
+  it("locked can override just one slot while others resolve to custom/default", () => {
+    const defaultDyes: DyeSet = { 0: tag("default0"), 1: tag("default1") };
+    const customDyes: DyeSet = { 0: tag("custom0"), 1: tag("custom1") };
+    const lockedDyes: DyeSet = { 1: tag("locked1") };
+    const resolved = resolveDyeSet(defaultDyes, customDyes, lockedDyes);
+    expect((resolved[0] as unknown as { tag: string }).tag).toBe("custom0");
+    expect((resolved[1] as unknown as { tag: string }).tag).toBe("locked1");
+  });
+
+  it("empty maps are safe (no dyes at all)", () => {
+    expect(resolveDyeSet({}, {}, {})).toEqual({});
   });
 });
 

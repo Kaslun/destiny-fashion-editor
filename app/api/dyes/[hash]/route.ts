@@ -3,7 +3,7 @@
  * Empty object for items without a gear file.
  */
 import { NextRequest, NextResponse } from "next/server";
-import { getGearDyes, getItemGear } from "@/lib/bungie/gearDyeData";
+import { getItemGear } from "@/lib/bungie/gearDyeData";
 import { apiError } from "@/lib/http";
 
 export const runtime = "nodejs";
@@ -23,8 +23,8 @@ export async function GET(
       const gear = await getItemGear(n);
       return NextResponse.json({ hash: n, rawDefaultDyes: gear.rawDefaultDyes });
     }
-    const dyes = await getGearDyes(n);
-    return NextResponse.json({ hash: n, slots: dyes });
+    const gear = await getItemGear(n);
+    return NextResponse.json({ hash: n, slots: gear.dyes, locked: gear.lockedDyes });
   } catch (err) {
     return apiError(err, 500, "dyes");
   }

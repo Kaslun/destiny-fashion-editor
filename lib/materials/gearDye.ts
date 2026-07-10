@@ -1,233 +1,202 @@
 /**
- * Gear dye colours + per-slot detail maps.
+ * Client-side gear dye model.
  *
- * A rendered item has up to 4 dye slots. Each slot gets primary/secondary
- * albedo tints, an emissive tint, and tiled DETAIL maps (micro-surface
- * diffuse/normal, e.g. worn metal or fabric weave) resolved from the item's or
- * shader's gear `.js` (see lib/bungie/gearDyeData.ts + /api/dyes). Detail map
- * names are resolved to THREE textures by the loader; unresolved slots fall
- * back to a neutral gunmetal.
+ * A rendered item has up to 4 dye slots (0/1/2 recolourable, 3 = investment
+ * decal). Each slot carries a PRIMARY and a SECONDARY tint — full independent
+ * PBR parameter sets (albedo, worn albedo, metalness, remaps, fuzz, emissive,
+ * SSS) straight from Bungie's Destiny 2 dye schema — plus tiled DETAIL maps
+ * (micro-surface diffuse/normal, e.g. worn metal or fabric weave). Which tint
+ * a surface uses is decided per stage part by the low bit of
+ * `gear_dye_change_color_index` (see gearMaterial.ts).
+ *
+ * Data comes from /api/dyes (lib/bungie/gearDyeData.ts); detail map names are
+ * resolved to THREE textures by the loader.
  */
 import * as THREE from "three";
 
-export interface DyeColors {
-  primary: THREE.Color;
-  secondary: THREE.Color;
+export type Vec4 = [number, number, number, number];
+
+/** One tint (primary or secondary) of a dye slot. */
+export interface DyeTint {
+  albedo: THREE.Color;
   /** worn/scratched-area tint, blended in by the gearstack wear mask (alpha) */
-  worn: THREE.Color;
-  /** roughness hint 0..1 */
-  roughness: number;
-  /** metalness hint 0..1 */
+  wornAlbedo: THREE.Color;
+  /** material_params[3] — 0 dielectric .. 1 metal (real data, not a heuristic) */
   metalness: number;
-  /** primary/secondary emissive (glow) tints, selected like the albedo tints */
+  /** worn_material_parameters[3] — metalness of the worn state */
+  wornMetalness: number;
+  /** material_params[0] — how strongly the tiled detail maps blend over the base */
+  detailBlend: number;
+  /** material_advanced_params[1] — Bungie's fuzz (cloth) amount, mapped to sheen */
+  fuzz: number;
+  /** roughness_remap vec4 for the gearstack smoothness channel */
+  roughnessRemap: Vec4;
+  /** worn_roughness_remap vec4 (worn-state smoothness) */
+  wornRoughnessRemap: Vec4;
+  /** wear_remap vec4 for the gearstack wear signal */
+  wearRemap: Vec4;
   emissive: THREE.Color;
-  secondaryEmissive: THREE.Color;
+  emissiveIntensity: number;
+  /** subsurface scattering strength (0 = none, the common case) */
+  sss: number;
+}
+
+export interface DyeSlot {
+  /** Bungie's authoritative per-slot fabric flag (default_dyes[].cloth). */
+  cloth: boolean;
   /** entry names of tiled detail maps (resolved to textures by the loader) */
   detailDiffuseName: string | null;
   detailNormalName: string | null;
-  /** [scaleX, scaleY, offsetX, offsetY] detail tiling transform */
-  detailTransform: [number, number, number, number];
-  /** Bungie's authoritative per-slot fabric flag (default_dyes[].cloth). */
-  cloth: boolean;
-  /**
-   * Per-slot detail-map blend strength, from material_params[0]. 0 = no detail
-   * contribution (e.g. Nighthawk's gold faceplate), 1 = full (cloth). Gates how
-   * strongly the tiled detail diffuse/normal modulate the base surface.
-   */
-  detailStrength: number;
-  /**
-   * (in_min, in_max, out_min, out_max) range remap applied to the gearstack
-   * smoothness channel at runtime: maps the raw channel value from
-   * [in_min,in_max] into [out_min,out_max] (clamped). hasRoughnessRemap=false
-   * when the dye ships no such field, so absent data is a no-op against the
-   * existing gearstack-driven roughness.
-   */
-  roughnessRemap: [number, number, number, number];
-  hasRoughnessRemap: boolean;
-  /** Same remap form, applied to the raw gearstack wear signal. */
-  wearRemap: [number, number, number, number];
-  hasWearRemap: boolean;
-  /** Subsurface-scattering strength hint (0 = none, the common case). */
-  sssStrength: number;
+  /** [scaleX, scaleY, offsetX, offsetY] detail tiling transforms */
+  detailDiffuseTransform: Vec4;
+  detailNormalTransform: Vec4;
+  primary: DyeTint;
+  secondary: DyeTint;
   /** filled in by the loader from the names above */
   detailDiffuse?: THREE.Texture;
   detailNormal?: THREE.Texture;
 }
 
-export type DyeSet = Record<number, DyeColors>;
+export type DyeSet = Record<number, DyeSlot>;
 
-const NEUTRAL: DyeColors = {
-  primary: new THREE.Color(0xffffff),
-  secondary: new THREE.Color(0xffffff),
-  worn: new THREE.Color(0xffffff),
-  roughness: 0.8,
-  metalness: 0.1,
-  emissive: new THREE.Color(0, 0, 0),
-  secondaryEmissive: new THREE.Color(0, 0, 0),
-  detailDiffuseName: null,
-  detailNormalName: null,
-  detailTransform: [1, 1, 0, 0],
-  cloth: false,
-  detailStrength: 0,
-  roughnessRemap: [1, 0, 0, 1],
-  hasRoughnessRemap: false,
-  wearRemap: [1, 0, 0, 1],
-  hasWearRemap: false,
-  sssStrength: 0,
-};
+const IDENTITY_REMAP: Vec4 = [0, 1, 0, 1];
 
-/** Colours for a given dye slot, or neutral if unresolved. */
-export function dyeForSlot(set: DyeSet, slot: number): DyeColors {
-  return set[slot] ?? NEUTRAL;
+function neutralTint(): DyeTint {
+  return {
+    albedo: new THREE.Color(1, 1, 1),
+    wornAlbedo: new THREE.Color(1, 1, 1),
+    metalness: 0.1,
+    wornMetalness: 0.1,
+    detailBlend: 0,
+    fuzz: 0,
+    roughnessRemap: IDENTITY_REMAP,
+    wornRoughnessRemap: IDENTITY_REMAP,
+    wearRemap: [0, 0, 0, 0], // no wear
+    emissive: new THREE.Color(0, 0, 0),
+    emissiveIntensity: 0,
+    sss: 0,
+  };
+}
+
+/** Neutral gunmetal fallback for unresolved slots. */
+export function neutralSlot(): DyeSlot {
+  return {
+    cloth: false,
+    detailDiffuseName: null,
+    detailNormalName: null,
+    detailDiffuseTransform: [1, 1, 0, 0],
+    detailNormalTransform: [1, 1, 0, 0],
+    primary: neutralTint(),
+    secondary: neutralTint(),
+  };
+}
+
+/** Slot data for a given dye slot, or neutral if unresolved. */
+export function dyeForSlot(set: DyeSet, slot: number): DyeSlot {
+  return set[slot] ?? neutralSlot();
+}
+
+/**
+ * All slots present in the set, ranked softest to hardest: cloth-flagged
+ * always first, remaining slots by ascending primary metalness (so e.g.
+ * leather sits below metal). Not limited to 0-2 — an item defines however
+ * many slots its gear file ships (Bungie's recolourable set is 3 slots × 2
+ * tints, but the data drives it). Used by the POC materials panel and the
+ * threshold band split.
+ */
+export function rankSlotsSoftToHard(dyes: DyeSet): number[] {
+  const existingSlots = Object.keys(dyes)
+    .map(Number)
+    .filter((s) => Number.isFinite(s))
+    .sort((a, b) => a - b);
+  return [...existingSlots].sort((a, b) => {
+    const da = dyeForSlot(dyes, a);
+    const db = dyeForSlot(dyes, b);
+    const rankA = da.cloth ? -1 : da.primary.metalness;
+    const rankB = db.cloth ? -1 : db.primary.metalness;
+    return rankB - rankA;
+  });
+}
+
+/** Wire shape of one tint in the /api/dyes response (lib/bungie/gearDyeData). */
+interface ApiTint {
+  albedo?: number[];
+  wornAlbedo?: number[];
+  metalness?: number;
+  wornMetalness?: number;
+  detailBlend?: number;
+  fuzz?: number;
+  roughnessRemap?: number[];
+  wornRoughnessRemap?: number[];
+  wearRemap?: number[];
+  emissive?: number[];
+  emissiveIntensity?: number;
+  sss?: number;
 }
 
 interface ApiSlotDye {
-  primary: number[];
-  secondary: number[];
-  /** worn_albedo_tint (falls back to secondary server-side) */
-  worn?: number[];
-  primaryEmissive?: number[];
-  secondaryEmissive?: number[];
+  cloth?: boolean;
   detailDiffuse?: string | null;
   detailNormal?: string | null;
-  detailTransform?: number[];
-  /** Bungie's authoritative per-slot fabric flag (from default_dyes[].cloth). */
-  cloth?: boolean;
-  /** raw primary_material_params vec4; channel 0 used as detail-blend strength. */
-  materialParams?: number[];
-  /** primary_roughness_remap[3] (output max): low = glossy/metal, high = matte. */
-  roughnessRemapMax?: number;
-  /** primary_roughness_remap as (scale, bias, min, max), when the dye ships it. */
-  roughnessRemap?: number[];
-  hasRoughnessRemap?: boolean;
-  /** primary_wear_remap as (scale, bias, min, max), when the dye ships it. */
-  wearRemap?: number[];
-  hasWearRemap?: boolean;
-  /** subsurface-scattering strength hint (0 = none). */
-  sssStrength?: number;
+  detailDiffuseTransform?: number[];
+  detailNormalTransform?: number[];
+  primary?: ApiTint;
+  secondary?: ApiTint;
 }
 
-/**
- * Per-slot metalness/roughness, derived empirically from ~15 items' default_dyes.
- *
- * What the data showed (and did NOT show):
- *  - Bungie ships NO clean per-slot metalness scalar. material_params is a
- *    wear/blend control set (Monochromatic, a uniform-neutral shader, has it all
- *    zeroed), and material_advanced_params[0] is a shader MATERIAL-TYPE id (-1,
- *    23, 25, 35, 36, 40, 49, 51, 99...), not a value we can interpret directly.
- *  - The reliable signals are: the `cloth` boolean (authoritative fabric flag),
- *    the detail-map NAME (clusters cleanly by material across the corpus), and
- *    roughness_remap[3] (output max) as a soft gloss hint — metal slots land low
- *    (gold 0.15, brushed/carbon 0.16-0.23), matte slots high.
- *
- * So: metalness comes from the name (only reliable metal signal); roughness
- * starts from the material class and is refined by roughnessRemapMax when present.
- */
-export function pbrFromDetail(
-  diffuse?: string | null,
-  normal?: string | null,
-  cloth?: boolean,
-  roughnessRemapMax?: number,
-): { metalness: number; roughness: number } {
-  const dif = (diffuse ?? "").toLowerCase();
-  const nrm = (normal ?? "").toLowerCase();
+function color3(v: number[] | undefined, fallback: THREE.Color): THREE.Color {
+  // Tints are linear multipliers applied to the (linear) diffuse, so Color
+  // components are set directly without sRGB conversion.
+  return Array.isArray(v) && v.length >= 3
+    ? new THREE.Color(v[0], v[1], v[2])
+    : fallback.clone();
+}
 
-  // Refine a base roughness with the remap-max hint when it's present and sane.
-  // Blend rather than replace: the remap is a curve over a texture channel we
-  // may not have, so it's a nudge, not ground truth.
-  const refine = (base: number): number => {
-    if (typeof roughnessRemapMax === "number" && roughnessRemapMax > 0 && roughnessRemapMax <= 1) {
-      return Math.max(0.05, Math.min(1, base * 0.5 + roughnessRemapMax * 0.5));
-    }
-    return base;
+function tuple4(v: number[] | undefined, fallback: Vec4): Vec4 {
+  return Array.isArray(v) && v.length >= 4 ? [v[0], v[1], v[2], v[3]] : fallback;
+}
+
+function tintFromApi(t: ApiTint | undefined): DyeTint {
+  const base = neutralTint();
+  if (!t) return base;
+  const albedo = color3(t.albedo, base.albedo);
+  return {
+    albedo,
+    wornAlbedo: color3(t.wornAlbedo, albedo),
+    metalness: typeof t.metalness === "number" ? t.metalness : base.metalness,
+    wornMetalness:
+      typeof t.wornMetalness === "number" ? t.wornMetalness : base.wornMetalness,
+    detailBlend: typeof t.detailBlend === "number" ? t.detailBlend : 0,
+    fuzz: typeof t.fuzz === "number" ? t.fuzz : 0,
+    roughnessRemap: tuple4(t.roughnessRemap, IDENTITY_REMAP),
+    wornRoughnessRemap: tuple4(
+      t.wornRoughnessRemap,
+      tuple4(t.roughnessRemap, IDENTITY_REMAP),
+    ),
+    wearRemap: tuple4(t.wearRemap, [0, 0, 0, 0]),
+    emissive: color3(t.emissive, new THREE.Color(0, 0, 0)),
+    emissiveIntensity:
+      typeof t.emissiveIntensity === "number" ? t.emissiveIntensity : 0,
+    sss: typeof t.sss === "number" ? t.sss : 0,
   };
-
-  // Authoritative: Bungie flagged this slot as fabric. Always dielectric + rough.
-  if (cloth === true) {
-    return { metalness: 0.0, roughness: refine(0.85) };
-  }
-
-  // Metal family (from the corpus: metal, metal_brushed, metal_cubes,
-  // carbon_fiber, battleworn_metal, armor_galvanized, plus classic keywords).
-  // Decided on the diffuse name — the albedo author's material intent.
-  if (/\bmetal\b|metal_brushed|metal_cubes|carbon_fiber|battleworn_metal|galvaniz|chrome|steel|iron|\bgold\b|brass|bronze|silver|grunge0/.test(dif)) {
-    // Metal is glossy; trust a low remap-max strongly here.
-    return { metalness: 1.0, roughness: refine(0.3) };
-  }
-
-  // Leather (dielectric, mid roughness) — corpus: leather, leather2, leather_worn.
-  if (/leather|suede|hide/.test(dif)) {
-    return { metalness: 0.0, roughness: refine(0.6) };
-  }
-
-  // Rubber / tech (dielectric, matte) — corpus: rubber.
-  if (/rubber|vinyl|tech/.test(dif)) {
-    return { metalness: 0.0, roughness: refine(0.8) };
-  }
-
-  // Fabric-ish names as a secondary cloth signal when the flag is absent
-  // (weave, felt, cotton_fabric, fabric01, gore-tex).
-  const soft = `${dif} ${nrm}`;
-  if (/weave|felt|cloth|fabric|cotton|linen|wool|canvas|knit|silk|denim|gore-tex/.test(soft)) {
-    return { metalness: 0.0, roughness: refine(0.85) };
-  }
-
-  // Default: painted / ceramic / worn armor plate / generic detail
-  // (armor_battleworn, crust, hive_pattern, grime, noise, speckle, edz_common).
-  return { metalness: 0.0, roughness: refine(0.6) };
 }
 
-/**
- * Build a DyeSet from the /api/dyes response. Tints are linear multipliers
- * applied to the (linear) diffuse, so Color components are set directly
- * without sRGB conversion.
- */
+/** Build a DyeSet from the /api/dyes response. */
 export function dyeSetFromGearDyes(slots: Record<string, ApiSlotDye>): DyeSet {
   const set: DyeSet = {};
   for (const [key, d] of Object.entries(slots)) {
-    const t = d.detailTransform;
-    const pbr = pbrFromDetail(d.detailDiffuse, d.detailNormal, d.cloth, d.roughnessRemapMax);
+    const diffuseTransform = tuple4(d.detailDiffuseTransform, [1, 1, 0, 0]);
     set[Number(key)] = {
-      primary: new THREE.Color().fromArray(d.primary),
-      secondary: new THREE.Color().fromArray(d.secondary),
-      worn: d.worn
-        ? new THREE.Color().fromArray(d.worn)
-        : new THREE.Color().fromArray(d.secondary),
-      roughness: pbr.roughness,
-      metalness: pbr.metalness,
-      emissive: d.primaryEmissive
-        ? new THREE.Color().fromArray(d.primaryEmissive)
-        : new THREE.Color(0, 0, 0),
-      secondaryEmissive: d.secondaryEmissive
-        ? new THREE.Color().fromArray(d.secondaryEmissive)
-        : new THREE.Color(0, 0, 0),
+      cloth: d.cloth === true,
       detailDiffuseName: d.detailDiffuse ?? null,
       detailNormalName: d.detailNormal ?? null,
-      detailTransform:
-        Array.isArray(t) && t.length >= 4
-          ? [t[0], t[1], t[2], t[3]]
-          : [1, 1, 0, 0],
-      cloth: d.cloth === true,
-      detailStrength:
-        Array.isArray(d.materialParams) && d.materialParams.length > 0
-          ? Math.max(0, Math.min(1, Number(d.materialParams[0])))
-          : d.cloth === true
-            ? 1
-            : 0,
-      roughnessRemap: xform4Tuple(d.roughnessRemap),
-      hasRoughnessRemap: d.hasRoughnessRemap === true,
-      wearRemap: xform4Tuple(d.wearRemap),
-      hasWearRemap: d.hasWearRemap === true,
-      sssStrength: typeof d.sssStrength === "number" ? d.sssStrength : 0,
+      detailDiffuseTransform: diffuseTransform,
+      detailNormalTransform: tuple4(d.detailNormalTransform, diffuseTransform),
+      primary: tintFromApi(d.primary),
+      secondary: tintFromApi(d.secondary),
     };
   }
   return set;
-}
-
-function xform4Tuple(v?: number[]): [number, number, number, number] {
-  return Array.isArray(v) && v.length >= 4
-    ? [v[0], v[1], v[2], v[3]]
-    : [1, 0, 0, 1];
 }
 
 /**

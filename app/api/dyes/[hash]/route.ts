@@ -19,6 +19,12 @@ export async function GET(
     return NextResponse.json({ error: "Invalid hash" }, { status: 400 });
   }
   try {
+    if (_req.nextUrl.searchParams.get("debug") === "2") {
+      // Full parsed gear .js payload — for auditing fields the pipeline
+      // doesn't consume yet (extra dye slots, decal/spec textures, ...).
+      const gear = await getItemGear(n);
+      return NextResponse.json({ hash: n, rawGearFile: gear.rawGearFile ?? null });
+    }
     if (_req.nextUrl.searchParams.has("debug")) {
       const gear = await getItemGear(n);
       return NextResponse.json({ hash: n, rawDefaultDyes: gear.rawDefaultDyes });

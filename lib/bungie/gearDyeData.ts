@@ -3,60 +3,84 @@
  * gear-asset record, served from `mobileGearCDN.Gear`). It carries three things
  * we need:
  *
- *  - `default_dyes[]` — per-slot material properties: albedo tints (the item's
- *    default colours / a shader's colours) AND emissive tint colours.
- *  - `art_content_sets[].arrangement` — which geometry belongs to the base body
- *    arrangement vs. gender/class overrides. We only render the base so the
- *    alternate arrangements don't overlap.
+ *  - `default_dyes[]` — per-slot material properties (Bungie's Destiny 2 PBR
+ *    dye schema: albedo tints, roughness/wear remaps, per-tint metalness,
+ *    fuzz, emissive, SSS). Parsed in FULL for both the primary and secondary
+ *    tint of every slot — the renderer picks per stage part.
+ *  - `locked_dyes[]` — same schema; always render regardless of an applied
+ *    shader (exotics).
+ *  - `art_content_sets[].arrangement` — which geometry belongs to the base
+ *    body arrangement vs. gender/class overrides.
  *
- * Weapons/armor and shaders all use the same format.
+ * Field semantics established empirically against an 8-helmet corpus
+ * (cat-eye 1435559164, first ascent 2468561950, holdfast 3097544525,
+ * iron intent 144007143, sunlit hood 2013981053, veiled tithes 523074950,
+ * cover of the exile 571925067, nighthawk 3960926756):
+ *
+ *  - `*_material_params[3]` is the tint's METALNESS. It tracks material type
+ *    across the whole corpus (all metal slots 0.85–1, every cloth/leather/
+ *    rubber slot 0) and splits within a slot exactly where the art does:
+ *    Sunlit Hood slot 0 is black paint (primary, 0) with gold trim
+ *    (secondary, 0.85). `*_worn_material_parameters[3]` is the worn-state
+ *    metalness (e.g. paint scratching through to bare metal).
+ *  - `*_material_params[0]` gates how strongly the tiled detail maps blend
+ *    over the base (0 on Nighthawk's gold plate, 1 on cloth).
+ *  - `*_material_advanced_params[0]` is a material-type id (-1, 5, 25, 35,
+ *    105…), `[1]` is the FUZZ amount — nonzero on exactly the cloth-flagged
+ *    slots in the corpus (0.1–0.62). Fuzz is Bungie's inverted-GGX cloth
+ *    lobe (GDC 2018); we approximate it with sheen.
+ *  - `*_roughness_remap` / `*_wear_remap` / `*_worn_roughness_remap` are vec4
+ *    remaps of the gearstack smoothness/wear channels. The exact runtime
+ *    formula is not public — outputs can leave [0,1] (e.g. [-1, 1.85]),
+ *    consistent with Bungie's signed smoothness domain where negative
+ *    smoothness = fuzz. Shipped raw; the client shader owns interpretation.
  */
 import { getGearAsset } from "./gearAsset";
 import { getManifest, cdnUrl } from "./manifest";
 import { bungieFetchRaw } from "./client";
 
+/** One tint (primary or secondary) of a dye slot — Bungie's full PBR set. */
+export interface DyeTint {
+  /** linear RGB albedo tint (0..1) */
+  albedo: [number, number, number];
+  /** albedo the surface takes in worn/scratched areas (gearstack wear mask) */
+  wornAlbedo: [number, number, number];
+  /** material_params[3] — 0 dielectric .. 1 metal */
+  metalness: number;
+  /** worn_material_parameters[3] — metalness of the worn state */
+  wornMetalness: number;
+  /** material_params[0] — detail-map blend strength 0..1 */
+  detailBlend: number;
+  /** material_advanced_params[1] — fuzz (cloth) amount 0..1 */
+  fuzz: number;
+  /** material_advanced_params[0] — engine material-type id (-1 = default) */
+  materialTypeId: number;
+  /** roughness_remap vec4 applied to the gearstack smoothness channel */
+  roughnessRemap: [number, number, number, number];
+  /** worn_roughness_remap vec4 — smoothness remap of the worn state */
+  wornRoughnessRemap: [number, number, number, number];
+  /** wear_remap vec4 applied to the gearstack wear signal */
+  wearRemap: [number, number, number, number];
+  /** emissive_tint_color_and_intensity_bias rgb */
+  emissive: [number, number, number];
+  /** emissive_tint_color_and_intensity_bias[3] */
+  emissiveIntensity: number;
+  /** subsurface_scattering_strength_and_emissive[0] (0 = none, the norm) */
+  sss: number;
+}
+
 export interface SlotDye {
-  /** linear RGB albedo tints (0..1) */
-  primary: [number, number, number];
-  secondary: [number, number, number];
-  /**
-   * Worn albedo tint — the colour a surface takes in its worn/scratched areas,
-   * blended in by the gearstack wear mask (alpha channel). Falls back to the
-   * secondary tint when the dye doesn't ship one.
-   */
-  worn: [number, number, number];
-  primaryEmissive: [number, number, number];
-  secondaryEmissive: [number, number, number];
+  /** Bungie's authoritative per-slot material flag: true = fabric/soft goods. */
+  cloth: boolean;
   /** entry names of the tiled per-slot detail maps (inside the item's texture containers) */
   detailDiffuse: string | null;
   detailNormal: string | null;
-  /** [scaleX, scaleY, offsetX, offsetY] tiling transform for the detail maps */
-  detailTransform: [number, number, number, number];
-  /** Bungie's authoritative per-slot material flag: true = fabric/soft goods. */
-  cloth: boolean;
-  /** raw primary_material_params vec4 (channel meanings partly undocumented). */
-  materialParams: [number, number, number, number];
-  /** primary_roughness_remap[3] output max — soft gloss hint (low = glossy). */
-  roughnessRemapMax: number;
-  /**
-   * primary_roughness_remap as a (in_min, in_max, out_min, out_max) range
-   * remap applied to the gearstack smoothness channel at runtime — maps the
-   * raw channel value from [in_min,in_max] into [out_min,out_max] (clamped),
-   * with the output in Bungie's native smoothness space (inverted to
-   * roughness in the shader). NOT scale+bias+clamp — see gearMaterial.ts
-   * applyRemap4 for why. Present only when the dye actually ships the field —
-   * absent means the material-family heuristic (roughnessRemapMax hint) is
-   * the only signal.
-   */
-  roughnessRemap: [number, number, number, number];
-  hasRoughnessRemap: boolean;
-  /** primary_wear_remap as (in_min, in_max, out_min, out_max), applied to the
-   * raw gearstack wear signal. Absent = the fixed wear formula stands as-is. */
-  wearRemap: [number, number, number, number];
-  hasWearRemap: boolean;
-  /** primary_subsurface_scattering_strength_and_emissive[0] — SSS strength hint,
-   * 0 when the dye doesn't carry the field (the common case for armor/weapons). */
-  sssStrength: number;
+  /** [scaleX, scaleY, offsetX, offsetY] tiling transform for the detail diffuse */
+  detailDiffuseTransform: [number, number, number, number];
+  /** separate tiling transform for the detail normal (often differs) */
+  detailNormalTransform: [number, number, number, number];
+  primary: DyeTint;
+  secondary: DyeTint;
 }
 
 export type GearDyes = Record<number, SlotDye>;
@@ -73,6 +97,8 @@ export interface ItemGear {
   baseGeometryCount: number | null;
   /** debug: raw default_dyes array (to inspect slot_type_index / change-color mapping) */
   rawDefaultDyes?: unknown;
+  /** debug: the complete parsed gear .js payload (only kept in memory cache). */
+  rawGearFile?: unknown;
 }
 
 function rgb3(v: unknown, fallback: [number, number, number]): [number, number, number] {
@@ -81,10 +107,55 @@ function rgb3(v: unknown, fallback: [number, number, number]): [number, number, 
     : fallback;
 }
 
-function xform4(v: unknown): [number, number, number, number] {
+function vec4(
+  v: unknown,
+  fallback: [number, number, number, number],
+): [number, number, number, number] {
   return Array.isArray(v) && v.length >= 4
     ? [Number(v[0]), Number(v[1]), Number(v[2]), Number(v[3])]
-    : [1, 1, 0, 0];
+    : fallback;
+}
+
+function num(v: unknown, fallback: number): number {
+  const n = Array.isArray(v) ? NaN : Number(v);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+/** No-op remap: full input range mapped straight through. */
+const IDENTITY_REMAP: [number, number, number, number] = [0, 1, 0, 1];
+
+function parseTint(
+  mp: Record<string, unknown>,
+  prefix: "primary" | "secondary",
+): DyeTint {
+  const p = (name: string) => mp[`${prefix}_${name}`];
+  const albedo = rgb3(p("albedo_tint"), [1, 1, 1]);
+  const materialParams = vec4(p("material_params"), [0, 0, 0, 0]);
+  const wornParams = vec4(p("worn_material_parameters"), materialParams);
+  const advanced = vec4(p("material_advanced_params"), [-1, 0, 0, 0]);
+  const emissive = vec4(
+    p("emissive_tint_color_and_intensity_bias") ?? p("emissive_tint_color"),
+    [0, 0, 0, 0],
+  );
+  const sssVec = p("subsurface_scattering_strength_and_emissive");
+  return {
+    albedo,
+    wornAlbedo: rgb3(p("worn_albedo_tint"), albedo),
+    metalness: Math.max(0, Math.min(1, materialParams[3])),
+    wornMetalness: Math.max(0, Math.min(1, wornParams[3])),
+    detailBlend: Math.max(0, Math.min(1, materialParams[0])),
+    fuzz: Math.max(0, Math.min(1, advanced[1])),
+    materialTypeId: advanced[0],
+    roughnessRemap: vec4(p("roughness_remap"), IDENTITY_REMAP),
+    wornRoughnessRemap: vec4(
+      p("worn_roughness_remap"),
+      vec4(p("roughness_remap"), IDENTITY_REMAP),
+    ),
+    wearRemap: vec4(p("wear_remap"), IDENTITY_REMAP),
+    emissive: [emissive[0], emissive[1], emissive[2]],
+    emissiveIntensity: num(emissive[3], 0),
+    sss: Array.isArray(sssVec) && sssVec.length > 0 ? Number(sssVec[0]) : 0,
+  };
 }
 
 function parseDyes(defaultDyes: unknown): GearDyes {
@@ -100,51 +171,18 @@ function parseDyes(defaultDyes: unknown): GearDyes {
     if (out[slot]) continue; // first group wins
     const mp = dye.material_properties ?? {};
     const tx = dye.textures ?? {};
+    const detailDiffuseTransform = vec4(mp.detail_diffuse_transform, [1, 1, 0, 0]);
     out[slot] = {
-      primary: rgb3(mp.primary_albedo_tint, [1, 1, 1]),
-      secondary: rgb3(mp.secondary_albedo_tint, [1, 1, 1]),
-      // Worn tint: the colour scratched/worn regions take (gearstack wear mask
-      // blends toward it). Bungie ships `worn_albedo_tint`; when absent, wear
-      // just darkens toward the secondary tint, so fall back to that.
-      worn: rgb3(
-        mp.worn_albedo_tint,
-        rgb3(mp.secondary_albedo_tint, [1, 1, 1]),
-      ),
-      // Bungie ships emissive as `*_emissive_tint_color_and_intensity_bias`
-      // (vec4 [r,g,b,i]); older/other dumps use `*_emissive_tint_color`.
-      // rgb3 takes the first three components of whichever exists.
-      primaryEmissive: rgb3(
-        mp.primary_emissive_tint_color_and_intensity_bias ??
-          mp.primary_emissive_tint_color,
-        [0, 0, 0],
-      ),
-      secondaryEmissive: rgb3(
-        mp.secondary_emissive_tint_color_and_intensity_bias ??
-          mp.secondary_emissive_tint_color,
-        [0, 0, 0],
-      ),
+      cloth: dye.cloth === true,
       // Detail-map entry names live in the dye's texture container. The key
       // varies across dumps (`detail_diffuse`/`detail_normal` in current gear
       // files, `diffuse`/`normal` in some). Check both.
-      detailDiffuse:
-        tx.detail_diffuse?.name ?? tx.diffuse?.name ?? null,
-      detailNormal:
-        tx.detail_normal?.name ?? tx.normal?.name ?? null,
-      detailTransform: xform4(mp.detail_diffuse_transform),
-      cloth: dye.cloth === true,
-      materialParams: xform4(mp.primary_material_params),
-      roughnessRemapMax: (() => {
-        const rr = mp.primary_roughness_remap;
-        return Array.isArray(rr) && rr.length >= 4 ? Number(rr[3]) : 0;
-      })(),
-      roughnessRemap: xform4(mp.primary_roughness_remap),
-      hasRoughnessRemap: Array.isArray(mp.primary_roughness_remap) && mp.primary_roughness_remap.length >= 4,
-      wearRemap: xform4(mp.primary_wear_remap),
-      hasWearRemap: Array.isArray(mp.primary_wear_remap) && mp.primary_wear_remap.length >= 4,
-      sssStrength: (() => {
-        const sss = mp.primary_subsurface_scattering_strength_and_emissive;
-        return Array.isArray(sss) && sss.length > 0 ? Number(sss[0]) : 0;
-      })(),
+      detailDiffuse: tx.detail_diffuse?.name ?? tx.diffuse?.name ?? null,
+      detailNormal: tx.detail_normal?.name ?? tx.normal?.name ?? null,
+      detailDiffuseTransform,
+      detailNormalTransform: vec4(mp.detail_normal_transform, detailDiffuseTransform),
+      primary: parseTint(mp, "primary"),
+      secondary: parseTint(mp, "secondary"),
     };
   }
   return out;
@@ -225,15 +263,12 @@ export async function getItemGear(hash: number): Promise<ItemGear> {
   // item's own gear file has geometry but no colours — the dyes live in the
   // item definition's translationBlock.defaultDyes, which point at a shader's
   // gear file. Resolving that requires the item def + a shader-hash -> gear-file
-  // lookup (see Destiny-Collada-Generator generatePresets: translationBlock
-  // .defaultDyes -> shader gear .js). NOT done here because it needs the
-  // manifest item definition, which this function doesn't fetch.
+  // lookup. NOT done here because it needs the manifest item definition, which
+  // this function doesn't fetch.
   //
   // TODO(shader-default-dyes): when Object.keys(dyes).length === 0, fetch
   //   DestinyInventoryItemDefinition[hash].translationBlock.defaultDyes, resolve
   //   each channel's dye hash to its shader gear file, and parseDyes THAT.
-  // Until then such items render with the name-keyword classifier's fallback
-  // (dielectric), which is correct-ish for cloth and avoids the metallic bug.
 
   const result: ItemGear = {
     dyes,
@@ -242,6 +277,7 @@ export async function getItemGear(hash: number): Promise<ItemGear> {
     // debug: distinguish "gear file had no dyes" from "parse produced none".
     rawDefaultDyes:
       data.default_dyes ?? { _noDefaultDyesInGearFile: true, gearFile },
+    rawGearFile: data,
   };
   gearCache.set(hash, result);
   return result;

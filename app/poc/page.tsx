@@ -16,8 +16,46 @@ import type { GearModelDebug } from "@/lib/loader/loadGearModel";
 import {
   GEARSTACK_CHANNELS,
   setGearstackDebugChannel,
+  REMAP_MODES,
+  DEFAULT_REMAP_MODE,
+  setRemapMode,
+  BAND_DEFAULTS,
+  setBandThresholds,
+  BAND_MODES,
+  DEFAULT_BAND_MODE,
+  setBandMode,
+  type BandMode,
+  type BandTuning,
   type GearstackDebugChannel,
+  type RemapMode,
 } from "@/lib/materials/gearMaterial";
+import {
+  dyeSetFromGearDyes,
+  dyeForSlot,
+  rankSlotsSoftToHard,
+} from "@/lib/materials/gearDye";
+
+interface MaterialInfo {
+  slot: number;
+  label: string;
+  cloth: boolean;
+  metalness: number;
+  fuzz: number;
+  primaryHex: string;
+  secondaryHex: string;
+}
+
+/**
+ * Human-readable material label straight from the dye DATA (no name
+ * heuristics): the cloth flag, the fuzz amount (Bungie's cloth lobe) and the
+ * authored per-tint metalness (material_params[3]).
+ */
+function materialLabel(cloth: boolean, metalness: number, fuzz: number): string {
+  if (cloth || fuzz > 0.01) return "Cloth / Fabric";
+  if (metalness >= 0.5) return "Metal";
+  if (metalness > 0.05) return "Semi-metal";
+  return "Dielectric / Painted";
+}
 
 // Three.js can't render on the server — load the canvas client-only.
 const ModelViewer = dynamic(() => import("@/components/viewer/ModelViewer"), {
@@ -36,21 +74,49 @@ export default function PocPage() {
   const [error, setError] = useState<string | null>(null);
   const [itemName, setItemName] = useState<string | null>(null);
   const [debugChannel, setDebugChannelState] = useState<GearstackDebugChannel>(0);
+  const [remapMode, setRemapModeState] = useState<RemapMode>(DEFAULT_REMAP_MODE);
+  const [bands, setBandsState] = useState<BandTuning>(BAND_DEFAULTS);
+  const [bandMode, setBandModeState] = useState<BandMode>(DEFAULT_BAND_MODE);
+  const [materials, setMaterials] = useState<MaterialInfo[] | null>(null);
   const modelRef = useRef<THREE.Group | null>(null);
 
   const onModel = useCallback(
     (group: THREE.Group | null) => {
       modelRef.current = group;
-      // A freshly loaded model's materials start at channel 0 — re-apply the
-      // currently selected channel so switching items doesn't silently reset it.
-      if (group && debugChannel !== 0) setGearstackDebugChannel(group, debugChannel);
+      // A freshly loaded model's materials start at defaults — re-apply the
+      // current selections so switching items doesn't silently reset them.
+      if (group) {
+        if (debugChannel !== 0) setGearstackDebugChannel(group, debugChannel);
+        if (remapMode !== DEFAULT_REMAP_MODE) setRemapMode(group, remapMode);
+        if (bandMode !== DEFAULT_BAND_MODE) setBandMode(group, bandMode);
+        setBandThresholds(group, bands);
+      }
     },
-    [debugChannel],
+    [debugChannel, remapMode, bandMode, bands],
   );
+
+  const selectBandMode = useCallback((mode: BandMode) => {
+    setBandModeState(mode);
+    if (modelRef.current) setBandMode(modelRef.current, mode);
+  }, []);
+
+  const updateBands = useCallback((patch: Partial<BandTuning>) => {
+    setBandsState((prev) => {
+      const next = { ...prev, ...patch };
+      if (next.t1 > next.t2) return prev; // keep the cuts ordered
+      if (modelRef.current) setBandThresholds(modelRef.current, patch);
+      return next;
+    });
+  }, []);
 
   const selectDebugChannel = useCallback((ch: GearstackDebugChannel) => {
     setDebugChannelState(ch);
     if (modelRef.current) setGearstackDebugChannel(modelRef.current, ch);
+  }, []);
+
+  const selectRemapMode = useCallback((mode: RemapMode) => {
+    setRemapModeState(mode);
+    if (modelRef.current) setRemapMode(modelRef.current, mode);
   }, []);
 
   const load = useCallback(() => {
@@ -63,12 +129,34 @@ export default function PocPage() {
     setDebug(null);
     setPath(null);
     setItemName(null);
+    setMaterials(null);
     setActiveHash(n);
     // Resolve the item's display name to label the rendered mesh.
     fetch(`/api/items?hash=${n}`)
       .then((r) => r.json())
       .then((d) => setItemName(d.item?.name ?? null))
       .catch(() => setItemName(null));
+    // Resolve each dye slot's material data for the materials panel.
+    fetch(`/api/dyes/${n}`)
+      .then((r) => r.json())
+      .then((d) => {
+        const dyeSet = dyeSetFromGearDyes(d.slots ?? {});
+        const ordered = rankSlotsSoftToHard(dyeSet);
+        const list: MaterialInfo[] = ordered.map((slot) => {
+          const dc = dyeForSlot(dyeSet, slot);
+          return {
+            slot,
+            label: materialLabel(dc.cloth, dc.primary.metalness, dc.primary.fuzz),
+            cloth: dc.cloth,
+            metalness: dc.primary.metalness,
+            fuzz: dc.primary.fuzz,
+            primaryHex: `#${dc.primary.albedo.getHexString("srgb")}`,
+            secondaryHex: `#${dc.secondary.albedo.getHexString("srgb")}`,
+          };
+        });
+        setMaterials(list.length > 0 ? list : null);
+      })
+      .catch(() => setMaterials(null));
   }, [input]);
 
   const onStatus = useCallback(
@@ -164,6 +252,102 @@ export default function PocPage() {
           </div>
         </div>
 
+        <div style={{ marginTop: 16 }}>
+          <label style={{ fontSize: 12, color: "var(--d2-text-dim)" }}>
+            ROUGHNESS/WEAR REMAP INTERPRETATION
+          </label>
+          <p style={{ fontSize: 10, color: "var(--d2-text-faint)", marginTop: 4, lineHeight: 1.5 }}>
+            Bungie doesn&apos;t publish the runtime formula for the dye remap vec4s —
+            switch live to compare readings against the in-game look.
+          </p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
+            {REMAP_MODES.map((label, mode) => (
+              <button
+                key={label}
+                className="d2-btn"
+                style={{
+                  fontSize: 11,
+                  padding: "4px 8px",
+                  borderColor: remapMode === mode ? "var(--d2-cyan)" : undefined,
+                  color: remapMode === mode ? "var(--d2-cyan)" : undefined,
+                }}
+                onClick={() => selectRemapMode(mode as RemapMode)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ marginTop: 16 }}>
+          <label style={{ fontSize: 12, color: "var(--d2-text-dim)" }}>
+            SINGLE-SLOT BAND DECODE
+          </label>
+          <p style={{ fontSize: 10, color: "var(--d2-text-faint)", marginTop: 4, lineHeight: 1.5 }}>
+            Bungie ships 6 materials per item (3 slots × primary/secondary). The 6-band
+            modes cut the dyeable A range into equal (slot, tint) bands; the ordering
+            isn&apos;t public, so compare live.
+          </p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
+            {BAND_MODES.map((label, mode) => (
+              <button
+                key={label}
+                className="d2-btn"
+                style={{
+                  fontSize: 11,
+                  padding: "4px 8px",
+                  borderColor: bandMode === mode ? "var(--d2-cyan)" : undefined,
+                  color: bandMode === mode ? "var(--d2-cyan)" : undefined,
+                }}
+                onClick={() => selectBandMode(mode as BandMode)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ marginTop: 16 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+            <label style={{ fontSize: 12, color: "var(--d2-text-dim)" }}>
+              MODE-0 THRESHOLDS (T1/T2)
+            </label>
+            <button
+              className="d2-btn"
+              style={{ fontSize: 10, padding: "2px 6px" }}
+              onClick={() => updateBands(BAND_DEFAULTS)}
+            >
+              Reset
+            </button>
+          </div>
+          <p style={{ fontSize: 10, color: "var(--d2-text-faint)", marginTop: 4, lineHeight: 1.5 }}>
+            For meshes whose stage parts all share one dye slot: raw gearstack A below t1 →
+            hardest ranked slot, t1–t2 → middle, above t2 → softest. Compare with the
+            &quot;a-channel bands&quot; debug view.
+          </p>
+          {(["t1", "t2"] as const).map((key) => (
+            <div key={key} style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
+              <span className="mono" style={{ fontSize: 11, color: "var(--d2-text-dim)", width: 20 }}>
+                {key}
+              </span>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.005}
+                value={bands[key]}
+                onChange={(e) => updateBands({ [key]: Number(e.target.value) })}
+                style={{ flex: 1 }}
+              />
+              <span className="mono" style={{ fontSize: 11, color: "var(--d2-cyan)", width: 44 }}>
+                {bands[key].toFixed(3)}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {materials && <MaterialsPanel materials={materials} />}
+
         {error && (
           <div
             className="d2-panel"
@@ -218,6 +402,56 @@ function PathBadge({ path }: { path: LoadPath | null }) {
       }}
     >
       {label}
+    </div>
+  );
+}
+
+function MaterialsPanel({ materials }: { materials: MaterialInfo[] }) {
+  return (
+    <div className="d2-panel" style={{ padding: 14, marginTop: 16 }}>
+      <p className="d2-eyebrow">Materials in use</p>
+      <p style={{ fontSize: 10, color: "var(--d2-text-faint)", marginTop: 2 }}>
+        Ordered softest → hardest. M = authored metalness (material_params[3]),
+        F = fuzz amount (material_advanced_params[1]).
+      </p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 6 }}>
+        {materials.map((m) => (
+          <div
+            key={m.slot}
+            style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12 }}
+          >
+            <span
+              title="Primary"
+              style={{
+                width: 16,
+                height: 16,
+                borderRadius: 3,
+                background: m.primaryHex,
+                border: "1px solid var(--d2-line)",
+                flexShrink: 0,
+              }}
+            />
+            <span
+              title="Secondary"
+              style={{
+                width: 16,
+                height: 16,
+                borderRadius: 3,
+                background: m.secondaryHex,
+                border: "1px solid var(--d2-line)",
+                flexShrink: 0,
+              }}
+            />
+            <span className="mono" style={{ color: "var(--d2-text-dim)", flexShrink: 0 }}>
+              Slot {m.slot}
+            </span>
+            <span style={{ color: "var(--d2-text)", flex: 1 }}>{m.label}</span>
+            <span className="mono" style={{ color: "var(--d2-text-faint)", fontSize: 11 }}>
+              M{m.metalness.toFixed(2)} F{m.fuzz.toFixed(2)}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

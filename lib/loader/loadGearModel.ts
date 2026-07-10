@@ -112,58 +112,6 @@ function buildGeomTextureMap(
 }
 
 /**
- * Which dye slot a named plate region belongs to, when the item ships no
- * dyeslot plate (many don't — the mask lives in the material definition we
- * can't fetch). Heuristic from the sub-texture names Bungie bakes into the
- * plate: metal faceplates take the primary/metal dye, rubber/tech the dark
- * accent dye, and everything else the main shell dye. Baked-art regions
- * (emblems, glows) return -1 = never dye, so their painted colours survive.
- */
-function slotForRegionName(name: string): number {
-  const n = name.toLowerCase();
-  // Truly baked glow/decal art (self-illuminated emblems) — never dye.
-  if (/glow|hawkeye|_decal|_logo|_sigil/.test(n)) return -1;
-  if (/visor|faceplate|face_plate|lens|glass/.test(n)) return 0; // metal/primary
-  if (/breather|rubber|core|vent|_cap|gasket|seal|cloth/.test(n)) return 2; // dark accent
-  // base / back / nose_guard / the item's main shell texture (which may be
-  // named after its emblem, e.g. "nighthawk_mask") → main shell dye.
-  return 1;
-}
-
-/**
- * Build a per-pixel dye-slot mask from the diffuse plate's named region
- * placements — a stand-in for a missing/empty dyeslot plate. Encodes the slot
- * so it decodes the same way as a real dyeslot (R×3 → {1,2,3} = slot {0,1,2};
- * R=0 = baked, don't dye). NEAREST-filtered so slot IDs never blend.
- */
-function buildRegionMask(plate: TexturePlate): THREE.Texture | null {
-  const [w, h] = plate.size;
-  const canvas = new OffscreenCanvas(w, h);
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return null;
-  ctx.fillStyle = "#000000"; // default: no dye (baked)
-  ctx.fillRect(0, 0, w, h);
-  let painted = 0;
-  for (const pl of plate.placements) {
-    const slot = slotForRegionName(pl.name);
-    const v = slot < 0 ? 0 : Math.round(((slot + 1) / 3) * 255);
-    ctx.fillStyle = `rgb(${v},${v},${v})`;
-    ctx.fillRect(pl.x, pl.y, pl.w, pl.h);
-    if (slot >= 0) painted++;
-  }
-  if (painted === 0) return null;
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.flipY = false;
-  tex.colorSpace = THREE.NoColorSpace;
-  tex.magFilter = THREE.NearestFilter;
-  tex.minFilter = THREE.NearestFilter;
-  tex.generateMipmaps = false;
-  tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
-  tex.needsUpdate = true;
-  return tex;
-}
-
-/**
  * Flag geometry groups whose UVs sit (mostly) inside a self-illuminated glow
  * region (e.g. `exotic_hawkeye_glow`). Those render additively so the black
  * around the glow is transparent instead of an opaque black socket.
@@ -330,8 +278,13 @@ export async function loadGearModel(
     ctx.imageSmoothingEnabled = !nearest;
     // A single low-res placement at the origin is a downsampled whole-plate map
     // (e.g. a 64px dyeslot mask in a "256" plate) — stretch it to cover the full
-    // UV space instead of leaving 15/16ths of the plate empty.
+    // UV space instead of leaving 15/16ths of the plate empty. ONLY for the
+    // nearest-filtered ID-mask plates: colour plates (diffuse/normal/gearstack)
+    // legitimately place a single sub-texture in a sub-REGION of the plate
+    // (cloaks like Relativism), and stretching those shifts/scales all
+    // texturing off its UVs.
     const stretchAll =
+      nearest &&
       plate.placements.length === 1 &&
       plate.placements[0].x === 0 &&
       plate.placements[0].y === 0;
@@ -512,9 +465,12 @@ export async function loadGearModel(
       metadataSummaries.push({ file: geom.file, ...summarize(built.metadata) });
       // Dev aid: expose raw metadata + container file names for skeleton R&D.
       if (typeof window !== "undefined") {
-        (window as unknown as Record<string, unknown>).__meta = built.metadata;
-        (window as unknown as Record<string, unknown>).__containerFiles =
-          container.files.map((f) => f.name);
+        const w = window as unknown as Record<string, unknown>;
+        w.__meta = built.metadata;
+        (w.__metaByFile as Record<string, unknown>) =
+          (w.__metaByFile as Record<string, unknown>) ?? {};
+        (w.__metaByFile as Record<string, unknown>)[geom.file] = built.metadata;
+        w.__containerFiles = container.files.map((f) => f.name);
       }
 
       // Prefer the plate atlases (what the UVs address); fall back to direct
@@ -527,12 +483,6 @@ export async function loadGearModel(
         maps = { ...(await texturesForGeometry(gi)), ...maps };
       }
       const hasTex = !!(maps.diffuse || maps.normal || maps.gearstack);
-
-      console.log("NIGHTHAWK MAPS", {
-  diffuse: maps.diffuse?.name ?? maps.diffuse?.userData?.name,
-  normal: maps.normal?.name,
-  gearstack: maps.gearstack?.name,
-});
 
       for (const m of built.meshes) {
         // Flag glow geometry (Nighthawk's eye) so it renders additively.

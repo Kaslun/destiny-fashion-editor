@@ -40,7 +40,10 @@ export async function GET(req: NextRequest) {
       q: sp.get("q") ?? undefined,
       slot: slotParam && SLOTS.has(slotParam) ? slotParam : undefined,
       kind:
-        kindParam === "weapon" || kindParam === "armor" || kindParam === "shader"
+        kindParam === "weapon" ||
+        kindParam === "armor" ||
+        kindParam === "shader" ||
+        kindParam === "ornament"
           ? kindParam
           : undefined,
       classType: classParam != null ? Number(classParam) : undefined,

@@ -23,10 +23,12 @@ export interface LoadedPiece {
 export async function loadPiece(
   itemHash: number,
   shaderHash?: number | null,
+  hideHood?: boolean,
 ): Promise<LoadedPiece> {
   const { group, debug } = await loadGearModel(itemHash, {
     shaderHash,
     frame: false,
+    hideHood,
   });
   return { group, debug };
 }

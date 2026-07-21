@@ -173,6 +173,15 @@ export interface LoadOptions {
    * in Destiny's native bind-pose space so multiple pieces align on one body.
    */
   frame?: boolean;
+  /**
+   * Skip geometry index 0. On every cloak we've inspected, the hood ships as
+   * its own rigid (unskinned) geometry file separate from the skinned cape
+   * body, always at index 0 — confirmed on Memory of Cayde Cloak (625602056):
+   * excluding index 0 renders the cape with no hood, index 0 alone IS the
+   * hood. Bungie exposes no data flag for which helmets should trigger this
+   * (see lib/bungie/hoodHiding.ts) — the toggle itself is the data-driven part.
+   */
+  hideHood?: boolean;
 }
 
 export async function loadGearModel(
@@ -454,6 +463,7 @@ export async function loadGearModel(
 
   for (let gi = 0; gi < content.geometry.length; gi++) {
     if (renderSet && !renderSet.has(gi)) continue; // skip overlapping overrides
+    if (opts.hideHood && gi === 0) continue; // skip the hood geometry file
     const geom = content.geometry[gi];
     try {
       const buf = await fetch(geom.proxyUrl).then((r) => {

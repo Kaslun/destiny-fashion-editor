@@ -18,6 +18,7 @@ import type {
   EquippedPiece,
   PieceStatus,
 } from "@/components/viewer/CharacterModel";
+import { helmetHidesHood } from "@/lib/bungie/hoodHiding";
 
 const ModelViewer = dynamic(() => import("@/components/viewer/ModelViewer"), {
   ssr: false,
@@ -77,8 +78,12 @@ export default function EditorPage() {
         ? { itemHash: item.hash, shaderHash: shaders[key]?.hash ?? null }
         : null;
     }
+    // Hunter cloaks: hide the hood when the equipped helmet is on the list.
+    if (out.classItem && classType === 1 && helmetHidesHood(items.helmet?.hash)) {
+      out.classItem = { ...out.classItem, hideHood: true };
+    }
     return out;
-  }, [items, shaders]);
+  }, [items, shaders, classType]);
 
   const onPieceStatus = useCallback((slot: SlotKey, s: PieceStatus) => {
     setStatus((prev) => ({ ...prev, [slot]: s }));

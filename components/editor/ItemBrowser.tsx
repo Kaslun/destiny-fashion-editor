@@ -11,7 +11,7 @@ export interface ItemEntry {
   name: string;
   icon: string | null;
   slot: string | null;
-  kind: "weapon" | "armor" | "shader";
+  kind: "weapon" | "armor" | "shader" | "ornament";
   tier: string;
   classType: number;
 }

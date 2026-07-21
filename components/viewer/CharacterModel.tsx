@@ -17,6 +17,9 @@ export type SlotKey = "helmet" | "gauntlets" | "chest" | "legs" | "classItem";
 export interface EquippedPiece {
   itemHash: number;
   shaderHash?: number | null;
+  /** Skip the cloak's hood geometry (index 0) — set by the caller based on
+   * whether the equipped helmet is in the hood-hiding list. */
+  hideHood?: boolean;
 }
 
 export type PieceStatus = "loading" | "ready" | "error";
@@ -28,7 +31,7 @@ interface Props {
 }
 
 function keyOf(p: EquippedPiece): string {
-  return `${p.itemHash}:${p.shaderHash ?? 0}`;
+  return `${p.itemHash}:${p.shaderHash ?? 0}:${p.hideHood ? 1 : 0}`;
 }
 
 /** Dispose a piece's geometry, materials, and all textures it owns. */
@@ -92,7 +95,7 @@ export default function CharacterModel({ pieces, onPieceStatus }: Props) {
 
         onPieceStatus?.(slot, "loading");
         try {
-          const { group } = await loadPiece(p.itemHash, p.shaderHash);
+          const { group } = await loadPiece(p.itemHash, p.shaderHash, p.hideHood);
           if (token !== tokenRef.current) {
             disposeGroup(group);
             return; // a newer request superseded this run

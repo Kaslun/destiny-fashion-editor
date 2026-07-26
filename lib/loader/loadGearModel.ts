@@ -27,8 +27,12 @@ import {
 import { dyeSetFromGearDyes, resolveDyeSet, type DyeSet } from "@/lib/materials/gearDye";
 import {
   createGearMaterials,
+  matchPatternTextureNames,
+  matchAccentTextureNames,
   type GearTextureMaps,
 } from "@/lib/materials/gearMaterial";
+import { medianDespeckleRGB } from "@/lib/geometry/despeckle";
+import { itemHasAnimatedGlow } from "@/lib/bungie/glowAnimatedItems";
 
 export interface GearModelDebug {
   itemHash: number;
@@ -279,24 +283,27 @@ export async function loadGearModel(
     srgb: boolean,
     nearest = false,
     cleanChroma = false,
+    despeckle = false,
   ): Promise<THREE.Texture | null> {
     const lookup = await entriesByName();
     const canvas = new OffscreenCanvas(plate.size[0], plate.size[1]);
     const ctx = canvas.getContext("2d");
     if (!ctx) return null;
     ctx.imageSmoothingEnabled = !nearest;
-    // A single low-res placement at the origin is a downsampled whole-plate map
-    // (e.g. a 64px dyeslot mask in a "256" plate) — stretch it to cover the full
-    // UV space instead of leaving 15/16ths of the plate empty. ONLY for the
-    // nearest-filtered ID-mask plates: colour plates (diffuse/normal/gearstack)
-    // legitimately place a single sub-texture in a sub-REGION of the plate
-    // (cloaks like Relativism), and stretching those shifts/scales all
-    // texturing off its UVs.
-    const stretchAll =
-      nearest &&
-      plate.placements.length === 1 &&
-      plate.placements[0].x === 0 &&
-      plate.placements[0].y === 0;
+    // Always draw each placement at its own real position/size — a single
+    // small placement at the origin used to be stretched to fill the whole
+    // plate on the assumption it was a downsampled whole-body ID mask. That
+    // assumption doesn't hold in general: sampled at native resolution,
+    // Relativism's lone dyeslot placement (128x64, gbit slot "_3") turned out
+    // to be a small, deliberately-composed eye/gem icon — stretching it
+    // smeared that icon's own internal shapes (its border, iris, background)
+    // across the entire character as if they were body-wide material regions
+    // (e.g. a large "undyed" wedge on the back that was really just the
+    // icon's black background). Drawing at native size instead leaves
+    // everywhere the placement doesn't cover exactly as an empty dyeslot
+    // plate already behaves — falling back to each stage part's own slot —
+    // which is what the data actually supports, not an invented middle
+    // ground.
     let drawn = 0;
     for (const pl of plate.placements) {
       const entry = lookup.get(pl.name);
@@ -307,8 +314,7 @@ export async function loadGearModel(
       const bitmap = await createImageBitmap(new Blob([entry.bytes.slice()]), {
         imageOrientation: "none",
       });
-      if (stretchAll) ctx.drawImage(bitmap, 0, 0, plate.size[0], plate.size[1]);
-      else ctx.drawImage(bitmap, pl.x, pl.y, pl.w, pl.h);
+      ctx.drawImage(bitmap, pl.x, pl.y, pl.w, pl.h);
       drawn++;
     }
     if (drawn === 0) return null;
@@ -372,6 +378,16 @@ export async function loadGearModel(
       ctx.putImageData(img, 0, 0);
     }
 
+    // ID-mask plates (dyeslot): remove isolated single-pixel compression
+    // noise without blending across real slot boundaries — see despeckle.ts
+    // for how this was diagnosed on Relativism's dyeslot plate specifically.
+    if (despeckle) {
+      const w = canvas.width, h = canvas.height;
+      const img = ctx.getImageData(0, 0, w, h);
+      medianDespeckleRGB(img.data, w, h);
+      ctx.putImageData(img, 0, 0);
+    }
+
     const tex = new THREE.CanvasTexture(canvas);
     tex.flipY = false; // Destiny UVs are v-down, matching image rows directly
     tex.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;
@@ -394,7 +410,7 @@ export async function loadGearModel(
     const normal = plates.normal ? await assemblePlate(plates.normal, false) : null;
     const gearstack = plates.gearstack ? await assemblePlate(plates.gearstack, false) : null;
     const dyeslot = plates.dyeslot
-      ? await assemblePlate(plates.dyeslot, false, true)
+      ? await assemblePlate(plates.dyeslot, false, true, false, true)
       : null;
     if (diffuse) maps.diffuse = diffuse;
     if (normal) maps.normal = normal;
@@ -406,6 +422,68 @@ export async function loadGearModel(
     const emissive = pickBestByRole(await imagesFor(allTextureIndices), "emissive");
     if (emissive) maps.emissive = await bytesToTexture(emissive.bytes, true);
     return maps;
+  }
+
+  // Pattern-shimmer warp textures (see gearMaterial.ts isPatternGroup), keyed
+  // by exact entry name rather than per-geometry-file: Relativism's own data
+  // shows the same noise+ripple names recur across separate geometry files
+  // (shell + cloth), so name-keyed caching avoids decoding the same bitmap
+  // twice and creating duplicate GPU textures.
+  const patternTextureCache = new Map<string, Promise<THREE.Texture>>();
+  async function resolvePatternTexture(name: string): Promise<THREE.Texture | null> {
+    const cached = patternTextureCache.get(name);
+    if (cached) return cached;
+    const lookup = await entriesByName();
+    const entry = lookup.get(name);
+    if (!entry) return null;
+    const promise = bytesToTexture(entry.bytes, false).then((tex) => {
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    });
+    patternTextureCache.set(name, promise);
+    return promise;
+  }
+
+  /**
+   * Resolve the pattern-shimmer noise+ripple pair (see isPatternGroup) into
+   * `maps.patternNoise`/`patternRipple`, if this geometry file's stage parts
+   * reference them. Modeled on attachDetailTextures below — same by-name
+   * lookup mechanism, just item-wide instead of per-dye-slot.
+   */
+  async function attachPatternTextures(
+    maps: GearTextureMaps,
+    patternNames: string[],
+  ): Promise<void> {
+    const { noise, ripple } = matchPatternTextureNames(patternNames);
+    if (!noise || !ripple) return;
+    const [noiseTex, rippleTex] = await Promise.all([
+      resolvePatternTexture(noise),
+      resolvePatternTexture(ripple),
+    ]);
+    if (noiseTex) maps.patternNoise = noiseTex;
+    if (rippleTex) maps.patternRipple = rippleTex;
+  }
+
+  /**
+   * Resolve the swirling-darkness accent trio (see isAccentGroup) into
+   * `maps.accentTwirl`/`accentBlob`/`accentDarkness`, if this geometry file's
+   * stage parts reference the full set. Same by-name lookup + name-keyed cache
+   * as the shimmer pair above.
+   */
+  async function attachAccentTextures(
+    maps: GearTextureMaps,
+    accentNames: string[],
+  ): Promise<void> {
+    const { twirl, blob, darkness } = matchAccentTextureNames(accentNames);
+    if (!twirl || !blob || !darkness) return;
+    const [twirlTex, blobTex, darknessTex] = await Promise.all([
+      resolvePatternTexture(twirl),
+      resolvePatternTexture(blob),
+      resolvePatternTexture(darkness),
+    ]);
+    if (twirlTex) maps.accentTwirl = twirlTex;
+    if (blobTex) maps.accentBlob = blobTex;
+    if (darknessTex) maps.accentDarkness = darknessTex;
   }
 
   /**
@@ -494,16 +572,49 @@ export async function loadGearModel(
       }
       const hasTex = !!(maps.diffuse || maps.normal || maps.gearstack);
 
+      // Pattern-shimmer textures (see isPatternGroup) — resolved once for
+      // every mesh built from this geometry file, same as diffuse/normal/
+      // gearstack above, since they're item-wide, not per-mesh.
+      const patternNames = built.meshes.flatMap((m) =>
+        m.groups.flatMap((g) => g.patternTextures ?? []),
+      );
+      if (patternNames.length > 0) {
+        try {
+          await attachPatternTextures(maps, patternNames);
+          await attachAccentTextures(maps, patternNames);
+        } catch (err) {
+          warnings.push(
+            `Pattern textures failed: ${err instanceof Error ? err.message : String(err)}`,
+          );
+        }
+      }
+
       for (const m of built.meshes) {
         // Flag glow geometry (Nighthawk's eye) so it renders additively.
         markGlowGroups(m.geometry, m.groups, built.metadata.plates?.diffuse);
         // Gearstack drives AO/roughness/emissive; the dyeslot plate (or
         // gearstack alpha) masks dye zones; decal groups render additively.
-        const isCloth = Object.values(dyeSet).some((d) => d.cloth);
+        // Whether the saturation-gated "plated" tint applies is decided per
+        // GROUP inside createGearMaterials (each group's own resolved dye
+        // slot may be cloth or metal) — a single item-wide cloth flag here
+        // would blanket-disable the gate for mixed-material meshes like
+        // cloaks (cloth cape + metal trim/medallion), over-tinting baked art
+        // that should have stayed protected. See gearMaterial.ts `plated`.
         const materials = createGearMaterials(m.groups, dyeSet, maps, {
          useGearstack: true,
           applyDye,
-          plated: !!built.metadata.plates && !isCloth,
+          plated: !!built.metadata.plates,
+          // The per-pixel A-channel band-split (needsBandSplit) guesses at
+          // hidden material regions from one file's wear/AO shading — a
+          // sound inference only for genuinely single-file items like
+          // Cover of the Exile, whose A-channel distribution the tuning
+          // (BAND_DEFAULTS) was calibrated against. Multi-file items (a
+          // cloak's separate hood + cape) already carry real per-part slot
+          // variation across their OTHER files, so guessing bands within a
+          // single-slot file like the cape misfires as speckled noise.
+          singlePart: content.geometry.length <= 1,
+          animatedGlow: itemHasAnimatedGlow(itemHash),
+          sourceGeometry: m.geometry,
         });
         const mesh = new THREE.Mesh(m.geometry, materials);
         mesh.name = geom.file;

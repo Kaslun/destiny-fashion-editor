@@ -14,16 +14,18 @@ import type * as THREE from "three";
 import GearModel, { type LoadPath } from "@/components/viewer/GearModel";
 import type { GearModelDebug } from "@/lib/loader/loadGearModel";
 import {
-  GEARSTACK_CHANNELS,
   setGearstackDebugChannel,
-  REMAP_MODES,
-  DEFAULT_REMAP_MODE,
-  setRemapMode,
+  DEFAULT_ROUGHNESS_REMAP_MODE,
+  DEFAULT_WEAR_REMAP_MODE,
+  setRoughnessRemapMode,
+  setWearRemapMode,
   BAND_DEFAULTS,
   setBandThresholds,
-  BAND_MODES,
   DEFAULT_BAND_MODE,
   setBandMode,
+  DEFAULT_GLOW_ENABLED,
+  setGlowEnabled,
+  hasAnimatedGlow,
   type BandMode,
   type BandTuning,
   type GearstackDebugChannel,
@@ -34,6 +36,7 @@ import {
   dyeForSlot,
   rankSlotsSoftToHard,
 } from "@/lib/materials/gearDye";
+import GearDebugControls from "@/components/editor/GearDebugControls";
 
 interface MaterialInfo {
   slot: number;
@@ -74,7 +77,12 @@ export default function PocPage() {
   const [error, setError] = useState<string | null>(null);
   const [itemName, setItemName] = useState<string | null>(null);
   const [debugChannel, setDebugChannelState] = useState<GearstackDebugChannel>(0);
-  const [remapMode, setRemapModeState] = useState<RemapMode>(DEFAULT_REMAP_MODE);
+  const [roughnessRemapMode, setRoughnessRemapModeState] = useState<RemapMode>(
+    DEFAULT_ROUGHNESS_REMAP_MODE,
+  );
+  const [wearRemapMode, setWearRemapModeState] = useState<RemapMode>(DEFAULT_WEAR_REMAP_MODE);
+  const [glowEnabled, setGlowEnabledState] = useState(DEFAULT_GLOW_ENABLED);
+  const [glowCapable, setGlowCapable] = useState(false);
   const [bands, setBandsState] = useState<BandTuning>(BAND_DEFAULTS);
   const [bandMode, setBandModeState] = useState<BandMode>(DEFAULT_BAND_MODE);
   const [materials, setMaterials] = useState<MaterialInfo[] | null>(null);
@@ -83,16 +91,24 @@ export default function PocPage() {
   const onModel = useCallback(
     (group: THREE.Group | null) => {
       modelRef.current = group;
+      // Detected from the loaded model's actual materials, not an item-hash
+      // lookup — works for any item that ships glow-capable geometry/shell
+      // emissive, with no allowlist needed on this side.
+      setGlowCapable(group ? hasAnimatedGlow(group) : false);
       // A freshly loaded model's materials start at defaults — re-apply the
       // current selections so switching items doesn't silently reset them.
       if (group) {
         if (debugChannel !== 0) setGearstackDebugChannel(group, debugChannel);
-        if (remapMode !== DEFAULT_REMAP_MODE) setRemapMode(group, remapMode);
+        if (roughnessRemapMode !== DEFAULT_ROUGHNESS_REMAP_MODE) {
+          setRoughnessRemapMode(group, roughnessRemapMode);
+        }
+        if (wearRemapMode !== DEFAULT_WEAR_REMAP_MODE) setWearRemapMode(group, wearRemapMode);
         if (bandMode !== DEFAULT_BAND_MODE) setBandMode(group, bandMode);
         setBandThresholds(group, bands);
+        if (glowEnabled !== DEFAULT_GLOW_ENABLED) setGlowEnabled(group, glowEnabled);
       }
     },
-    [debugChannel, remapMode, bandMode, bands],
+    [debugChannel, roughnessRemapMode, wearRemapMode, bandMode, bands, glowEnabled],
   );
 
   const selectBandMode = useCallback((mode: BandMode) => {
@@ -114,9 +130,22 @@ export default function PocPage() {
     if (modelRef.current) setGearstackDebugChannel(modelRef.current, ch);
   }, []);
 
-  const selectRemapMode = useCallback((mode: RemapMode) => {
-    setRemapModeState(mode);
-    if (modelRef.current) setRemapMode(modelRef.current, mode);
+  const selectRoughnessRemapMode = useCallback((mode: RemapMode) => {
+    setRoughnessRemapModeState(mode);
+    if (modelRef.current) setRoughnessRemapMode(modelRef.current, mode);
+  }, []);
+
+  const selectWearRemapMode = useCallback((mode: RemapMode) => {
+    setWearRemapModeState(mode);
+    if (modelRef.current) setWearRemapMode(modelRef.current, mode);
+  }, []);
+
+  const toggleGlowEnabled = useCallback(() => {
+    setGlowEnabledState((prev) => {
+      const next = !prev;
+      if (modelRef.current) setGlowEnabled(modelRef.current, next);
+      return next;
+    });
   }, []);
 
   const load = useCallback(() => {
@@ -230,120 +259,22 @@ export default function PocPage() {
         </div>
 
         <div style={{ marginTop: 16 }}>
-          <label style={{ fontSize: 12, color: "var(--d2-text-dim)" }}>
-            GEARSTACK CHANNEL
-          </label>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
-            {GEARSTACK_CHANNELS.map((label, ch) => (
-              <button
-                key={label}
-                className="d2-btn"
-                style={{
-                  fontSize: 11,
-                  padding: "4px 8px",
-                  borderColor: debugChannel === ch ? "var(--d2-cyan)" : undefined,
-                  color: debugChannel === ch ? "var(--d2-cyan)" : undefined,
-                }}
-                onClick={() => selectDebugChannel(ch as GearstackDebugChannel)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div style={{ marginTop: 16 }}>
-          <label style={{ fontSize: 12, color: "var(--d2-text-dim)" }}>
-            ROUGHNESS/WEAR REMAP INTERPRETATION
-          </label>
-          <p style={{ fontSize: 10, color: "var(--d2-text-faint)", marginTop: 4, lineHeight: 1.5 }}>
-            Bungie doesn&apos;t publish the runtime formula for the dye remap vec4s —
-            switch live to compare readings against the in-game look.
-          </p>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
-            {REMAP_MODES.map((label, mode) => (
-              <button
-                key={label}
-                className="d2-btn"
-                style={{
-                  fontSize: 11,
-                  padding: "4px 8px",
-                  borderColor: remapMode === mode ? "var(--d2-cyan)" : undefined,
-                  color: remapMode === mode ? "var(--d2-cyan)" : undefined,
-                }}
-                onClick={() => selectRemapMode(mode as RemapMode)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div style={{ marginTop: 16 }}>
-          <label style={{ fontSize: 12, color: "var(--d2-text-dim)" }}>
-            SINGLE-SLOT BAND DECODE
-          </label>
-          <p style={{ fontSize: 10, color: "var(--d2-text-faint)", marginTop: 4, lineHeight: 1.5 }}>
-            Bungie ships 6 materials per item (3 slots × primary/secondary). The 6-band
-            modes cut the dyeable A range into equal (slot, tint) bands; the ordering
-            isn&apos;t public, so compare live.
-          </p>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
-            {BAND_MODES.map((label, mode) => (
-              <button
-                key={label}
-                className="d2-btn"
-                style={{
-                  fontSize: 11,
-                  padding: "4px 8px",
-                  borderColor: bandMode === mode ? "var(--d2-cyan)" : undefined,
-                  color: bandMode === mode ? "var(--d2-cyan)" : undefined,
-                }}
-                onClick={() => selectBandMode(mode as BandMode)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div style={{ marginTop: 16 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-            <label style={{ fontSize: 12, color: "var(--d2-text-dim)" }}>
-              MODE-0 THRESHOLDS (T1/T2)
-            </label>
-            <button
-              className="d2-btn"
-              style={{ fontSize: 10, padding: "2px 6px" }}
-              onClick={() => updateBands(BAND_DEFAULTS)}
-            >
-              Reset
-            </button>
-          </div>
-          <p style={{ fontSize: 10, color: "var(--d2-text-faint)", marginTop: 4, lineHeight: 1.5 }}>
-            For meshes whose stage parts all share one dye slot: raw gearstack A below t1 →
-            hardest ranked slot, t1–t2 → middle, above t2 → softest. Compare with the
-            &quot;a-channel bands&quot; debug view.
-          </p>
-          {(["t1", "t2"] as const).map((key) => (
-            <div key={key} style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
-              <span className="mono" style={{ fontSize: 11, color: "var(--d2-text-dim)", width: 20 }}>
-                {key}
-              </span>
-              <input
-                type="range"
-                min={0}
-                max={1}
-                step={0.005}
-                value={bands[key]}
-                onChange={(e) => updateBands({ [key]: Number(e.target.value) })}
-                style={{ flex: 1 }}
-              />
-              <span className="mono" style={{ fontSize: 11, color: "var(--d2-cyan)", width: 44 }}>
-                {bands[key].toFixed(3)}
-              </span>
-            </div>
-          ))}
+          <GearDebugControls
+            debugChannel={debugChannel}
+            onSelectDebugChannel={selectDebugChannel}
+            roughnessRemapMode={roughnessRemapMode}
+            onSelectRoughnessRemapMode={selectRoughnessRemapMode}
+            wearRemapMode={wearRemapMode}
+            onSelectWearRemapMode={selectWearRemapMode}
+            glowCapable={glowCapable}
+            glowEnabled={glowEnabled}
+            onToggleGlow={toggleGlowEnabled}
+            bandMode={bandMode}
+            onSelectBandMode={selectBandMode}
+            bands={bands}
+            onUpdateBands={updateBands}
+            onResetBands={() => updateBands(BAND_DEFAULTS)}
+          />
         </div>
 
         {materials && <MaterialsPanel materials={materials} />}

@@ -46,6 +46,15 @@ export interface GroupInfo {
    * rendered additively so the black surround is transparent.
    */
   glow?: boolean;
+  /** Raw stage-part flags — see gearMaterial.ts ABILITY_VFX_FLAG. Defaults to
+   * 0 (no bits set) at call sites that don't carry real stage-part data (e.g.
+   * tests), which is a safe "no special flags" default. */
+  flags?: number;
+  /** Named VFX texture references from the stage part's shader (see
+   * renderMetadata.ts StagePart.staticTextures) — e.g. a noise/ripple pair
+   * driving an iridescent pattern shimmer. Empty/undefined for ordinary
+   * opaque parts. See gearMaterial.ts isPatternGroup. */
+  patternTextures?: string[];
 }
 
 export interface BuiltMesh {
@@ -265,7 +274,12 @@ function buildMesh(
     const groupCount = combined.length - groupStart;
     if (groupCount > 0) {
       geometry.addGroup(groupStart, groupCount, groups.length);
-      groups.push({ dyeIndex: part.gearDyeChangeColorIndex, decal: part.decal });
+      groups.push({
+        dyeIndex: part.gearDyeChangeColorIndex,
+        decal: part.decal,
+        flags: part.flags,
+        patternTextures: part.staticTextures,
+      });
     }
   }
 

@@ -47,6 +47,16 @@ export interface StagePart {
   flags: number;
   /** transparent decal pass (flag 0x8): additive blend, black = transparent */
   decal: boolean;
+  /** part.shader.type — a shader-program selector. -1 when absent. Most
+   * ordinary opaque parts carry a common id (e.g. 7) with no static_textures;
+   * parts that reference named VFX textures (see staticTextures) use the same
+   * ids to mean something more specific — see gearMaterial.ts isPatternGroup. */
+  shaderType: number;
+  /** part.shader.static_textures — named VFX texture references (e.g. a
+   * noise/ripple warp-map pair driving Relativism's iridescent pattern).
+   * Empty for ordinary opaque parts. Resolved to real textures by
+   * loadGearModel.ts via the same by-name lookup used for detail maps. */
+  staticTextures: string[];
   raw: Record<string, unknown>;
 }
 
@@ -161,11 +171,17 @@ function parseStreams(meshRaw: Record<string, unknown>): VertexStreamLayout[] {
   return streams;
 }
 
+function parseShaderStaticTextures(shader: unknown): string[] {
+  const list = (shader as { static_textures?: unknown } | undefined)?.static_textures;
+  return Array.isArray(list) ? list.filter((t): t is string => typeof t === "string") : [];
+}
+
 function parseStageParts(meshRaw: Record<string, unknown>): StagePart[] {
   const list = (meshRaw.stage_part_list as unknown[]) ?? [];
   return list.map((p) => {
     const part = p as Record<string, unknown>;
     const flags = num(part.flags);
+    const shader = part.shader as { type?: unknown } | undefined;
     return {
       startIndex: num(part.start_index),
       indexCount: num(part.index_count),
@@ -174,6 +190,8 @@ function parseStageParts(meshRaw: Record<string, unknown>): StagePart[] {
       gearDyeChangeColorIndex: num(part.gear_dye_change_color_index, -1),
       flags,
       decal: (flags & FLAG_DECAL_PASS) !== 0,
+      shaderType: num(shader?.type, -1),
+      staticTextures: parseShaderStaticTextures(part.shader),
       raw: part,
     };
   });

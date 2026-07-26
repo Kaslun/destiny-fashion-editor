@@ -10,7 +10,9 @@
  */
 import { useEffect, useState } from "react";
 import * as THREE from "three";
+import { useFrame } from "@react-three/fiber";
 import { loadGearModel, type GearModelDebug } from "@/lib/loader/loadGearModel";
+import { advanceGlowTime, advancePatternTime } from "@/lib/materials/gearMaterial";
 
 export type LoadPath = "loading" | "real" | "fallback";
 
@@ -61,6 +63,16 @@ export default function GearModel({ itemHash, shaderHash, onStatus, onModel }: P
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [itemHash, shaderHash]);
+
+  // Drive the ability-glow flicker (see gearMaterial.ts animatedGlow) and the
+  // pattern-shimmer warp (see isPatternGroup) from the render loop — a no-op
+  // traversal for models with neither material.
+  useFrame((_, delta) => {
+    if (group) {
+      advanceGlowTime(group, delta);
+      advancePatternTime(group, delta);
+    }
+  });
 
   if (group) return <primitive object={group} />;
   if (failed) return <FallbackModel />;

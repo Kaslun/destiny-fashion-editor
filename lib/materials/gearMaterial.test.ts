@@ -5,15 +5,26 @@ import {
   decodeChangeColorIndex,
   needsBandSplit,
   setGearstackDebugChannel,
-  setRemapMode,
+  setRoughnessRemapMode,
+  setWearRemapMode,
   setBandThresholds,
   setBandMode,
+  setGlowEnabled,
+  advanceGlowTime,
+  hasAnimatedGlow,
+  advancePatternTime,
+  matchPatternTextureNames,
+  isPatternGroup,
+  matchAccentTextureNames,
+  isAccentGroup,
   BAND_DEFAULTS,
   BAND_MODES,
   DEFAULT_BAND_MODE,
+  DEFAULT_GLOW_ENABLED,
   GEARSTACK_CHANNELS,
   REMAP_MODES,
-  DEFAULT_REMAP_MODE,
+  DEFAULT_ROUGHNESS_REMAP_MODE,
+  DEFAULT_WEAR_REMAP_MODE,
 } from "./gearMaterial";
 import { dyeSetFromGearDyes } from "./gearDye";
 import type { DyeSet } from "./gearDye";
@@ -125,9 +136,18 @@ describe("createGearMaterials — full gearstack node graph", () => {
       fullMaps(),
       { useGearstack: true, applyDye: true },
     );
-    const u = (mats[0].userData as { uniforms: { uDebugChannel: { value: number }; uRemapMode: { value: number } } }).uniforms;
+    const u = (
+      mats[0].userData as {
+        uniforms: {
+          uDebugChannel: { value: number };
+          uRoughnessRemapMode: { value: number };
+          uWearRemapMode: { value: number };
+        };
+      }
+    ).uniforms;
     expect(u.uDebugChannel.value).toBe(0);
-    expect(u.uRemapMode.value).toBe(DEFAULT_REMAP_MODE);
+    expect(u.uRoughnessRemapMode.value).toBe(DEFAULT_ROUGHNESS_REMAP_MODE);
+    expect(u.uWearRemapMode.value).toBe(DEFAULT_WEAR_REMAP_MODE);
   });
 
   it("skips the node graph entirely for untextured materials (plain fallback)", () => {
@@ -191,52 +211,357 @@ describe("createGearMaterials — full gearstack node graph", () => {
     expect(m.thicknessColorNode).not.toBeNull();
     expect(m.useSSS).toBe(true);
   });
+
+  it("builds cleanly (colorNode/emissiveNode still wired) with a real dyeslot plate present", () => {
+    // Dyeslot decode is now argmax(R,G,B) rather than R-only — this just
+    // confirms the node graph still constructs when a dyeslot map is given.
+    const m = createGearMaterials(
+      [{ dyeIndex: 0, decal: false }],
+      twoSlotDyes(),
+      { ...fullMaps(), dyeslot: tex() },
+      { useGearstack: true, applyDye: true },
+    )[0] as THREE.MeshSSSNodeMaterial;
+    expect(m.colorNode).not.toBeNull();
+    expect(m.emissiveNode).not.toBeNull();
+  });
+
+  it("builds cleanly regardless of materialTypeId (the emissive gate multiplies a factor, never skips node construction)", () => {
+    // Relativism's unrecognized materialTypeId (0/3/4) suppresses the
+    // B-channel emissive contribution — see KNOWN_EMISSIVE_MATERIAL_TYPE_IDS
+    // — but must not break the node graph for items using it.
+    const unusualMaterialDyes = dyeSetFromGearDyes({
+      "0": {
+        cloth: false,
+        primary: { albedo: [1, 1, 1], materialTypeId: 4 },
+        secondary: { albedo: [1, 1, 1], materialTypeId: 0 },
+      },
+    });
+    const m = createGearMaterials(
+      [{ dyeIndex: 0, decal: false }],
+      unusualMaterialDyes,
+      fullMaps(),
+      { useGearstack: true, applyDye: true },
+    )[0] as THREE.MeshSSSNodeMaterial;
+    expect(m.emissiveNode).not.toBeNull();
+  });
+
+  it("builds cleanly for an item whose emissive tints are the uniform-across-slots placeholder (Relativism shape)", () => {
+    // Placeholder emissive is now zeroed at the data level (see
+    // neutralizePlaceholderEmissive in gearDye.ts, and its dedicated tests) —
+    // by the time it reaches the shader the tint is already (0,0,0,0). This
+    // just confirms the material graph still constructs for a Relativism-shape
+    // set (all 3 primaries (1,0,0,1), all 3 secondaries (1,1,1,1)).
+    const placeholderEmissiveDyes = dyeSetFromGearDyes({
+      "0": {
+        primary: { materialTypeId: -1, emissive: [1, 0, 0], emissiveIntensity: 1 },
+        secondary: { materialTypeId: -1, emissive: [1, 1, 1], emissiveIntensity: 1 },
+      },
+      "1": {
+        cloth: true,
+        primary: { materialTypeId: -1, emissive: [1, 0, 0], emissiveIntensity: 1 },
+        secondary: { materialTypeId: -1, emissive: [1, 1, 1], emissiveIntensity: 1 },
+      },
+      "2": {
+        primary: { materialTypeId: -1, emissive: [1, 0, 0], emissiveIntensity: 1 },
+        secondary: { materialTypeId: -1, emissive: [1, 1, 1], emissiveIntensity: 1 },
+      },
+    });
+    const m = createGearMaterials(
+      [{ dyeIndex: 2, decal: false }],
+      placeholderEmissiveDyes,
+      fullMaps(),
+      { useGearstack: true, applyDye: true },
+    )[0] as THREE.MeshSSSNodeMaterial;
+    expect(m.emissiveNode).not.toBeNull();
+    expect(m.colorNode).not.toBeNull();
+  });
+
+  it("an unrecognized materialTypeId alone no longer triggers the pattern shimmer", () => {
+    // Behavior change: the iridescence blend used to be gated by materialTypeId
+    // (item/tint-wide, an inferred guess) — it's now gated by the real
+    // per-stage-part pattern-texture signal (see isPatternGroup). A group with
+    // an unrecognized materialTypeId but no patternTextures must build with no
+    // uPatternTime uniform at all (the concrete, testable proxy for "the
+    // pattern block didn't run") — colorNode still constructs either way.
+    const unusualMaterialDyes = dyeSetFromGearDyes({
+      "0": {
+        cloth: false,
+        primary: { albedo: [1, 1, 1], materialTypeId: 4 },
+        secondary: { albedo: [1, 1, 1], materialTypeId: 0 },
+      },
+    });
+    const m = createGearMaterials(
+      [{ dyeIndex: 0, decal: false }],
+      unusualMaterialDyes,
+      fullMaps(),
+      { useGearstack: true, applyDye: true },
+    )[0] as THREE.MeshSSSNodeMaterial;
+    expect(m.colorNode).not.toBeNull();
+    const u = (m.userData as { uniforms: { uPatternTime?: unknown } }).uniforms;
+    expect(u.uPatternTime).toBeUndefined();
+  });
+});
+
+describe("pattern shimmer (isPatternGroup) — real per-stage-part signal, not materialTypeId", () => {
+  function fullMaps() {
+    return { diffuse: tex(), normal: tex(), gearstack: tex() };
+  }
+  const noiseTex = () => tex();
+  const rippleTex = () => tex();
+  const NOISE_NAME = "3107841013_vfx_warpmap_noise_a";
+  const RIPPLE_NAME = "3107841013_vfx_warpmap_ripple_a";
+  const TWIRL_NAME = "3107841013_vfx_warpmap_twirl_a";
+
+  it("matchPatternTextureNames matches by suffix regardless of the numeric prefix", () => {
+    expect(matchPatternTextureNames([NOISE_NAME, RIPPLE_NAME])).toEqual({
+      noise: NOISE_NAME,
+      ripple: RIPPLE_NAME,
+    });
+    expect(matchPatternTextureNames(["999_vfx_warpmap_noise_a"]).noise).toBe(
+      "999_vfx_warpmap_noise_a",
+    );
+  });
+
+  it("matchPatternTextureNames returns {} when neither suffix is present", () => {
+    expect(matchPatternTextureNames([TWIRL_NAME, "2503085780_blob01_dif"])).toEqual({});
+    expect(matchPatternTextureNames(undefined)).toEqual({});
+    expect(matchPatternTextureNames([])).toEqual({});
+  });
+
+  it("matchPatternTextureNames requires both names independently (only one present ⇒ that half undefined)", () => {
+    expect(matchPatternTextureNames([NOISE_NAME]).ripple).toBeUndefined();
+    expect(matchPatternTextureNames([RIPPLE_NAME]).noise).toBeUndefined();
+  });
+
+  it("isPatternGroup is true only when a group carries BOTH names", () => {
+    expect(isPatternGroup({ dyeIndex: 0, decal: false, patternTextures: [NOISE_NAME, RIPPLE_NAME] })).toBe(
+      true,
+    );
+    expect(isPatternGroup({ dyeIndex: 0, decal: false, patternTextures: [NOISE_NAME] })).toBe(false);
+    expect(isPatternGroup({ dyeIndex: 0, decal: false })).toBe(false);
+    // The unconfirmed twirl/blob/darkness accent set — intentionally out of
+    // scope, must not trigger the shimmer path.
+    expect(
+      isPatternGroup({
+        dyeIndex: 0,
+        decal: false,
+        patternTextures: [TWIRL_NAME, "2503085780_blob01_dif", "1442532712_darkness_plate"],
+      }),
+    ).toBe(false);
+  });
+
+  it("a pattern group with both textures resolved exposes uPatternTime, starting at 0", () => {
+    const mats = createGearMaterials(
+      [{ dyeIndex: 0, decal: false, patternTextures: [NOISE_NAME, RIPPLE_NAME] }],
+      twoSlotDyes(),
+      { ...fullMaps(), patternNoise: noiseTex(), patternRipple: rippleTex() },
+      { useGearstack: true, applyDye: true },
+    );
+    const m = mats[0] as THREE.MeshSSSNodeMaterial;
+    expect(m.colorNode).not.toBeNull();
+    const u = (m.userData as { uniforms: { uPatternTime?: { value: number } } }).uniforms;
+    expect(u.uPatternTime?.value).toBe(0);
+  });
+
+  it("an ordinary group (no patternTextures) never exposes uPatternTime, even with maps present", () => {
+    const mats = createGearMaterials(
+      [{ dyeIndex: 0, decal: false }],
+      twoSlotDyes(),
+      { ...fullMaps(), patternNoise: noiseTex(), patternRipple: rippleTex() },
+      { useGearstack: true, applyDye: true },
+    );
+    const m = mats[0] as THREE.MeshSSSNodeMaterial;
+    const u = (m.userData as { uniforms: { uPatternTime?: unknown } }).uniforms;
+    expect(u.uPatternTime).toBeUndefined();
+  });
+
+  it("a pattern group with matching names but no resolved textures falls through with no crash and no uPatternTime", () => {
+    // loadGearModel.ts only populates maps.patternNoise/Ripple when the named
+    // entries actually resolve — this covers a stage part claiming the names
+    // but the loader failing (or being given) neither texture.
+    const mats = createGearMaterials(
+      [{ dyeIndex: 0, decal: false, patternTextures: [NOISE_NAME, RIPPLE_NAME] }],
+      twoSlotDyes(),
+      fullMaps(),
+      { useGearstack: true, applyDye: true },
+    );
+    const m = mats[0] as THREE.MeshSSSNodeMaterial;
+    expect(m.colorNode).not.toBeNull();
+    const u = (m.userData as { uniforms: { uPatternTime?: unknown } }).uniforms;
+    expect(u.uPatternTime).toBeUndefined();
+  });
+
+  it("advancePatternTime accumulates seconds on pattern materials, and is a no-op otherwise", () => {
+    const patterned = createGearMaterials(
+      [{ dyeIndex: 0, decal: false, patternTextures: [NOISE_NAME, RIPPLE_NAME] }],
+      twoSlotDyes(),
+      { ...fullMaps(), patternNoise: noiseTex(), patternRipple: rippleTex() },
+      { useGearstack: true, applyDye: true },
+    )[0] as THREE.MeshSSSNodeMaterial;
+    const ordinary = createGearMaterials(
+      [{ dyeIndex: 0, decal: false }],
+      twoSlotDyes(),
+      fullMaps(),
+      { useGearstack: true, applyDye: true },
+    )[0] as THREE.MeshSSSNodeMaterial;
+    const root = new THREE.Group();
+    root.add(new THREE.Mesh(new THREE.BufferGeometry(), [patterned, ordinary]));
+
+    const u = (patterned.userData as { uniforms: { uPatternTime: { value: number } } }).uniforms;
+    expect(u.uPatternTime.value).toBe(0);
+
+    advancePatternTime(root, 0.5);
+    expect(u.uPatternTime.value).toBeCloseTo(0.5);
+    advancePatternTime(root, 0.25);
+    expect(u.uPatternTime.value).toBeCloseTo(0.75);
+
+    expect(
+      (ordinary.userData as { uniforms: { uPatternTime?: unknown } }).uniforms.uPatternTime,
+    ).toBeUndefined();
+  });
+});
+
+describe("swirling-darkness accent (isAccentGroup) — the type-8 twirl/blob/darkness trio", () => {
+  function fullMaps() {
+    return { diffuse: tex(), normal: tex(), gearstack: tex() };
+  }
+  const TWIRL = "3107841013_vfx_warpmap_twirl_a";
+  const BLOB = "2503085780_blob01_dif";
+  const DARKNESS = "1442532712_darkness_plate";
+  const NOISE = "3107841013_vfx_warpmap_noise_a";
+  const RIPPLE = "3107841013_vfx_warpmap_ripple_a";
+
+  it("matchAccentTextureNames finds all three by suffix regardless of numeric prefix", () => {
+    expect(matchAccentTextureNames([TWIRL, BLOB, DARKNESS])).toEqual({
+      twirl: TWIRL,
+      blob: BLOB,
+      darkness: DARKNESS,
+    });
+    expect(matchAccentTextureNames(["9_vfx_warpmap_twirl_a", "9_blob01_dif", "9_darkness_plate"]))
+      .toEqual({ twirl: "9_vfx_warpmap_twirl_a", blob: "9_blob01_dif", darkness: "9_darkness_plate" });
+  });
+
+  it("isAccentGroup requires all three; the shimmer pair does NOT trigger it", () => {
+    expect(isAccentGroup({ dyeIndex: 0, decal: false, patternTextures: [TWIRL, BLOB, DARKNESS] })).toBe(true);
+    expect(isAccentGroup({ dyeIndex: 0, decal: false, patternTextures: [TWIRL, BLOB] })).toBe(false);
+    expect(isAccentGroup({ dyeIndex: 0, decal: false, patternTextures: [NOISE, RIPPLE] })).toBe(false);
+    expect(isAccentGroup({ dyeIndex: 0, decal: false })).toBe(false);
+  });
+
+  it("accent and pattern are mutually exclusive (disjoint texture sets)", () => {
+    const accentGroup = { dyeIndex: 0, decal: false, patternTextures: [TWIRL, BLOB, DARKNESS] };
+    expect(isAccentGroup(accentGroup)).toBe(true);
+    expect(isPatternGroup(accentGroup)).toBe(false);
+  });
+
+  it("an accent group with all three textures resolved exposes uPatternTime, starting at 0", () => {
+    const mats = createGearMaterials(
+      [{ dyeIndex: 0, decal: false, patternTextures: [TWIRL, BLOB, DARKNESS] }],
+      twoSlotDyes(),
+      { ...fullMaps(), accentTwirl: tex(), accentBlob: tex(), accentDarkness: tex() },
+      { useGearstack: true, applyDye: true },
+    );
+    const m = mats[0] as THREE.MeshSSSNodeMaterial;
+    expect(m.colorNode).not.toBeNull();
+    const u = (m.userData as { uniforms: { uPatternTime?: { value: number } } }).uniforms;
+    expect(u.uPatternTime?.value).toBe(0);
+  });
+
+  it("advancePatternTime drives the accent clock too (shared with the shimmer)", () => {
+    const accent = createGearMaterials(
+      [{ dyeIndex: 0, decal: false, patternTextures: [TWIRL, BLOB, DARKNESS] }],
+      twoSlotDyes(),
+      { ...fullMaps(), accentTwirl: tex(), accentBlob: tex(), accentDarkness: tex() },
+      { useGearstack: true, applyDye: true },
+    )[0] as THREE.MeshSSSNodeMaterial;
+    const root = new THREE.Group();
+    root.add(new THREE.Mesh(new THREE.BufferGeometry(), accent));
+    const u = (accent.userData as { uniforms: { uPatternTime: { value: number } } }).uniforms;
+    expect(u.uPatternTime.value).toBe(0);
+    advancePatternTime(root, 0.5);
+    expect(u.uPatternTime.value).toBeCloseTo(0.5);
+  });
+
+  it("an accent group whose textures didn't resolve falls through with no crash and no uPatternTime", () => {
+    const mats = createGearMaterials(
+      [{ dyeIndex: 0, decal: false, patternTextures: [TWIRL, BLOB, DARKNESS] }],
+      twoSlotDyes(),
+      fullMaps(),
+      { useGearstack: true, applyDye: true },
+    );
+    const m = mats[0] as THREE.MeshSSSNodeMaterial;
+    expect(m.colorNode).not.toBeNull();
+    const u = (m.userData as { uniforms: { uPatternTime?: unknown } }).uniforms;
+    expect(u.uPatternTime).toBeUndefined();
+  });
 });
 
 describe("needsBandSplit — per-pixel A-channel split gate", () => {
   it("fires for a single-part mesh (Cover of the Exile: one part, dye index 3)", () => {
-    expect(needsBandSplit([{ dyeIndex: 3, decal: false }], false)).toBe(true);
+    expect(needsBandSplit([{ dyeIndex: 3, decal: false }])).toBe(true);
   });
 
   it("fires when several parts all decode to the SAME slot (indices 2 and 3 are both slot 1)", () => {
     expect(
-      needsBandSplit(
-        [
-          { dyeIndex: 2, decal: false },
-          { dyeIndex: 3, decal: false },
-        ],
-        false,
-      ),
+      needsBandSplit([
+        { dyeIndex: 2, decal: false },
+        { dyeIndex: 3, decal: false },
+      ]),
     ).toBe(true);
   });
 
   it("does NOT fire when parts carry real per-slot variation (Nighthawk: slots 0/1/2)", () => {
     expect(
-      needsBandSplit(
-        [
-          { dyeIndex: 0, decal: false },
-          { dyeIndex: 2, decal: false },
-          { dyeIndex: 5, decal: true },
-        ],
-        false,
-      ),
+      needsBandSplit([
+        { dyeIndex: 0, decal: false },
+        { dyeIndex: 2, decal: false },
+        { dyeIndex: 5, decal: true },
+      ]),
     ).toBe(false);
-  });
-
-  it("does NOT fire when a per-pixel dyeslot plate exists (real data wins)", () => {
-    expect(needsBandSplit([{ dyeIndex: 3, decal: false }], true)).toBe(false);
   });
 
   it("ignores glow groups when counting slots", () => {
     expect(
-      needsBandSplit(
-        [
-          { dyeIndex: 3, decal: false },
-          { dyeIndex: 0, decal: false, glow: true },
-        ],
-        false,
-      ),
+      needsBandSplit([
+        { dyeIndex: 3, decal: false },
+        { dyeIndex: 0, decal: false, glow: true },
+      ]),
     ).toBe(true);
+  });
+
+  it("no longer bails just because a dyeslot plate exists — eligibility is now dyeslot-independent", () => {
+    // Behavior change (Relativism 2809120022): dyeslot presence used to force
+    // this false unconditionally. Now the caller (createGearMaterials'
+    // bandSplit) decides whether the result is used as the PRIMARY slot
+    // source or as makeOpaque's FALLBACK for texels a real-but-sparse plate
+    // leaves unassigned — needsBandSplit itself only answers "do these parts
+    // share one slot," independent of dyeslot data.
+    expect(needsBandSplit([{ dyeIndex: 3, decal: false }])).toBe(true);
+  });
+});
+
+describe("createGearMaterials — band-split fallback behind a real dyeslot plate", () => {
+  it("builds cleanly with singlePart:false + a dyeslot map + single-slot groups (Relativism's shape)", () => {
+    // Relativism (2809120022) has 2 real geometry files (shell + cloth), so
+    // singlePart is correctly false — but band-split is still needed as
+    // makeOpaque's fallback for texels its dyeslot plate leaves unassigned
+    // (see the bandSplit computation in createGearMaterials). This only
+    // confirms the node graph still constructs under that combination; the
+    // actual per-pixel recovery is checked live against /poc.
+    const groups: GroupInfo[] = [
+      { dyeIndex: 0, decal: false },
+      { dyeIndex: 0, decal: true },
+    ];
+    const mats = createGearMaterials(
+      groups,
+      twoSlotDyes(),
+      { diffuse: tex(), normal: tex(), gearstack: tex(), dyeslot: tex() },
+      { useGearstack: true, applyDye: true, singlePart: false },
+    );
+    expect(mats).toHaveLength(2);
+    for (const m of mats) {
+      expect((m as THREE.MeshSSSNodeMaterial).colorNode).not.toBeNull();
+    }
   });
 });
 
@@ -251,7 +576,15 @@ describe("live uniform setters", () => {
     const mesh = new THREE.Mesh(new THREE.BufferGeometry(), mats[0]);
     const root = new THREE.Group();
     root.add(mesh);
-    const u = (mats[0].userData as { uniforms: { uDebugChannel: { value: number }; uRemapMode: { value: number } } }).uniforms;
+    const u = (
+      mats[0].userData as {
+        uniforms: {
+          uDebugChannel: { value: number };
+          uRoughnessRemapMode: { value: number };
+          uWearRemapMode: { value: number };
+        };
+      }
+    ).uniforms;
     return { root, u };
   }
 
@@ -263,10 +596,17 @@ describe("live uniform setters", () => {
     expect(u.uDebugChannel.value).toBe(0);
   });
 
-  it("setRemapMode switches the remap interpretation live", () => {
+  it("setRoughnessRemapMode switches the roughness remap interpretation live", () => {
     const { root, u } = materialInScene();
-    setRemapMode(root, 2);
-    expect(u.uRemapMode.value).toBe(2);
+    setRoughnessRemapMode(root, 1);
+    expect(u.uRoughnessRemapMode.value).toBe(1);
+  });
+
+  it("setWearRemapMode switches the wear remap interpretation live, independently of roughness", () => {
+    const { root, u } = materialInScene();
+    setWearRemapMode(root, 2);
+    expect(u.uWearRemapMode.value).toBe(2);
+    expect(u.uRoughnessRemapMode.value).toBe(DEFAULT_ROUGHNESS_REMAP_MODE);
   });
 
   it("setBandThresholds updates band cuts live and partially", () => {
@@ -299,5 +639,198 @@ describe("live uniform setters", () => {
 
   it("exposes 3 remap interpretations", () => {
     expect(REMAP_MODES).toHaveLength(3);
+  });
+});
+
+describe("animated glow (GearMaterialOptions.animatedGlow)", () => {
+  it("does NOT expose uGlowEnabled for ordinary items (opt-in only)", () => {
+    const mats = createGearMaterials(
+      [{ dyeIndex: 0, decal: false }],
+      twoSlotDyes(),
+      { diffuse: tex(), gearstack: tex() },
+      { useGearstack: true, applyDye: true },
+    );
+    const u = (mats[0].userData as { uniforms: { uGlowEnabled?: { value: number } } }).uniforms;
+    expect(u.uGlowEnabled).toBeUndefined();
+  });
+
+  it("exposes uGlowEnabled, defaulted on, when animatedGlow is set", () => {
+    const mats = createGearMaterials(
+      [{ dyeIndex: 0, decal: false }],
+      twoSlotDyes(),
+      { diffuse: tex(), gearstack: tex() },
+      { useGearstack: true, applyDye: true, animatedGlow: true },
+    );
+    const u = (mats[0].userData as { uniforms: { uGlowEnabled?: { value: number } } }).uniforms;
+    expect(u.uGlowEnabled?.value).toBe(DEFAULT_GLOW_ENABLED ? 1 : 0);
+  });
+
+  it("setGlowEnabled toggles the uniform live, and is a no-op on materials without it", () => {
+    const animated = createGearMaterials(
+      [{ dyeIndex: 0, decal: false }],
+      twoSlotDyes(),
+      { diffuse: tex(), gearstack: tex() },
+      { useGearstack: true, applyDye: true, animatedGlow: true },
+    )[0] as THREE.MeshSSSNodeMaterial;
+    const ordinary = createGearMaterials(
+      [{ dyeIndex: 0, decal: false }],
+      twoSlotDyes(),
+      { diffuse: tex(), gearstack: tex() },
+      { useGearstack: true, applyDye: true },
+    )[0] as THREE.MeshSSSNodeMaterial;
+    const root = new THREE.Group();
+    root.add(new THREE.Mesh(new THREE.BufferGeometry(), [animated, ordinary]));
+
+    const u = (animated.userData as { uniforms: { uGlowEnabled: { value: number } } }).uniforms;
+    expect(u.uGlowEnabled.value).toBe(DEFAULT_GLOW_ENABLED ? 1 : 0);
+
+    setGlowEnabled(root, true);
+    expect(u.uGlowEnabled.value).toBe(1);
+    expect(
+      (ordinary.userData as { uniforms: { uGlowEnabled?: unknown } }).uniforms.uGlowEnabled,
+    ).toBeUndefined();
+
+    setGlowEnabled(root, false);
+    expect(u.uGlowEnabled.value).toBe(0);
+  });
+
+  it("advanceGlowTime accumulates seconds on animated materials, and is a no-op otherwise", () => {
+    const animated = createGearMaterials(
+      [{ dyeIndex: 0, decal: false }],
+      twoSlotDyes(),
+      { diffuse: tex(), gearstack: tex() },
+      { useGearstack: true, applyDye: true, animatedGlow: true },
+    )[0] as THREE.MeshSSSNodeMaterial;
+    const ordinary = createGearMaterials(
+      [{ dyeIndex: 0, decal: false }],
+      twoSlotDyes(),
+      { diffuse: tex(), gearstack: tex() },
+      { useGearstack: true, applyDye: true },
+    )[0] as THREE.MeshSSSNodeMaterial;
+    const root = new THREE.Group();
+    root.add(new THREE.Mesh(new THREE.BufferGeometry(), [animated, ordinary]));
+
+    const u = (animated.userData as { uniforms: { uGlowTime: { value: number } } }).uniforms;
+    expect(u.uGlowTime.value).toBe(0);
+
+    advanceGlowTime(root, 0.5);
+    expect(u.uGlowTime.value).toBeCloseTo(0.5);
+    advanceGlowTime(root, 0.25);
+    expect(u.uGlowTime.value).toBeCloseTo(0.75);
+
+    expect(
+      (ordinary.userData as { uniforms: { uGlowTime?: unknown } }).uniforms.uGlowTime,
+    ).toBeUndefined();
+  });
+});
+
+describe("ability-VFX geometry (flags & 0x2000, gated by animatedGlow — NOT universal)", () => {
+  it("renders a flagged group as ordinary opaque geometry when animatedGlow is off", () => {
+    // This bit is NOT a reliable universal signal — see isAbilityVfxGroup's
+    // doc comment (confirmed wrong on Relativism, where the same bit sits on
+    // an ordinary always-visible decal part, its hood). So without an
+    // animatedGlow opt-in, a flagged group falls through to the normal
+    // opaque path exactly like any other group.
+    const mats = createGearMaterials(
+      [{ dyeIndex: 0, decal: false, flags: 0x2000 }],
+      twoSlotDyes(),
+      { diffuse: tex(), gearstack: tex() },
+      { useGearstack: true, applyDye: true },
+    );
+    expect(mats[0]).toBeInstanceOf(THREE.MeshSSSNodeMaterial);
+    expect(mats[0].transparent).toBe(false);
+  });
+
+  it("renders a flagged group as transparent, invisible-by-default VFX geometry when animatedGlow is on", () => {
+    const mats = createGearMaterials(
+      [{ dyeIndex: 0, decal: false, flags: 0x2000 }],
+      twoSlotDyes(),
+      { diffuse: tex(), gearstack: tex() },
+      { useGearstack: true, applyDye: true, animatedGlow: true },
+    );
+    const m = mats[0] as THREE.MeshStandardNodeMaterial;
+    expect(m).toBeInstanceOf(THREE.MeshStandardNodeMaterial);
+    expect(m.transparent).toBe(true);
+    expect(m.depthWrite).toBe(false);
+    expect(m.opacityNode).not.toBeNull();
+    expect(m.emissiveNode).not.toBeNull();
+    const u = (m.userData as { uniforms: { uGlowEnabled: { value: number } } }).uniforms;
+    expect(u.uGlowEnabled.value).toBe(DEFAULT_GLOW_ENABLED ? 1 : 0);
+  });
+
+  it("does NOT flag an unflagged group as VFX geometry even with animatedGlow on", () => {
+    const mats = createGearMaterials(
+      [{ dyeIndex: 0, decal: false, flags: 0 }],
+      twoSlotDyes(),
+      { diffuse: tex(), gearstack: tex() },
+      { useGearstack: true, applyDye: true, animatedGlow: true },
+    );
+    expect(mats[0]).toBeInstanceOf(THREE.MeshSSSNodeMaterial);
+    expect(mats[0].transparent).toBe(false);
+  });
+
+  it("setGlowEnabled/advanceGlowTime/hasAnimatedGlow drive VFX-geometry materials (shared uniform shape)", () => {
+    const vfx = createGearMaterials(
+      [{ dyeIndex: 0, decal: false, flags: 0x2000 }],
+      twoSlotDyes(),
+      { diffuse: tex(), gearstack: tex() },
+      { useGearstack: true, applyDye: true, animatedGlow: true },
+    )[0];
+    const root = new THREE.Group();
+    root.add(new THREE.Mesh(new THREE.BufferGeometry(), vfx));
+
+    expect(hasAnimatedGlow(root)).toBe(true);
+    setGlowEnabled(root, true);
+    const u = (vfx.userData as { uniforms: { uGlowEnabled: { value: number }; uGlowTime: { value: number } } })
+      .uniforms;
+    expect(u.uGlowEnabled.value).toBe(1);
+    advanceGlowTime(root, 1.2);
+    expect(u.uGlowTime.value).toBeCloseTo(1.2);
+  });
+
+  it("hasAnimatedGlow is false when nothing on the model has a glow-capable material", () => {
+    const ordinary = createGearMaterials(
+      [{ dyeIndex: 0, decal: false, flags: 0x2000 }],
+      twoSlotDyes(),
+      { diffuse: tex(), gearstack: tex() },
+      { useGearstack: true, applyDye: true },
+    )[0];
+    const root = new THREE.Group();
+    root.add(new THREE.Mesh(new THREE.BufferGeometry(), ordinary));
+    expect(hasAnimatedGlow(root)).toBe(false);
+  });
+
+  it("computes a vfxRadial gradient from sourceGeometry: 0 near the base, 1 at the farthest tip", () => {
+    // 3 shell vertices at the centre (not part of any VFX group), then 3 VFX
+    // vertices at increasing distance from the bounding-sphere centre.
+    const positions = new Float32Array([
+      0, 0, 0, 0, 0, 0, 0, 0, 0,
+      1, 0, 0, 2, 0, 0, 3, 0, 0,
+    ]);
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    geometry.setIndex([0, 1, 2, 3, 4, 5]);
+    geometry.addGroup(0, 3, 0);
+    geometry.addGroup(3, 3, 1);
+    geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 0, 0), 1);
+
+    const groups: GroupInfo[] = [
+      { dyeIndex: 0, decal: false, flags: 0 },
+      { dyeIndex: 0, decal: false, flags: 0x2000 },
+    ];
+
+    createGearMaterials(
+      groups,
+      twoSlotDyes(),
+      { diffuse: tex(), gearstack: tex() },
+      { useGearstack: true, applyDye: true, animatedGlow: true, sourceGeometry: geometry },
+    );
+
+    const attr = geometry.getAttribute("vfxRadial") as THREE.BufferAttribute;
+    expect(attr).toBeDefined();
+    expect(attr.getX(3)).toBeCloseTo(0); // base
+    expect(attr.getX(4)).toBeCloseTo(0.5);
+    expect(attr.getX(5)).toBeCloseTo(1); // tip
+    expect(attr.getX(0)).toBe(0); // untouched shell vertex, safe default
   });
 });

@@ -39,6 +39,9 @@ export interface DyeTint {
   emissiveIntensity: number;
   /** subsurface scattering strength (0 = none, the common case) */
   sss: number;
+  /** material_advanced_params[0] — engine material-type id (-1 = default/
+   * standard PBR; see gearMaterial.ts KNOWN_EMISSIVE_MATERIAL_TYPE_IDS) */
+  materialTypeId: number;
 }
 
 export interface DyeSlot {
@@ -75,6 +78,7 @@ function neutralTint(): DyeTint {
     emissive: new THREE.Color(0, 0, 0),
     emissiveIntensity: 0,
     sss: 0,
+    materialTypeId: -1,
   };
 }
 
@@ -132,6 +136,7 @@ interface ApiTint {
   emissive?: number[];
   emissiveIntensity?: number;
   sss?: number;
+  materialTypeId?: number;
 }
 
 interface ApiSlotDye {
@@ -178,7 +183,62 @@ function tintFromApi(t: ApiTint | undefined): DyeTint {
     emissiveIntensity:
       typeof t.emissiveIntensity === "number" ? t.emissiveIntensity : 0,
     sss: typeof t.sss === "number" ? t.sss : 0,
+    materialTypeId: typeof t.materialTypeId === "number" ? t.materialTypeId : -1,
   };
+}
+
+/** Whether a tint's emissive actually contributes any light (colour × intensity). */
+function emissiveContributes(t: DyeTint): boolean {
+  const maxChannel = Math.max(t.emissive.r, t.emissive.g, t.emissive.b);
+  return t.emissiveIntensity > 1e-5 && maxChannel > 1e-5;
+}
+
+/** Whether two tints carry the same emissive colour + intensity (float-safe). */
+function sameEmissive(a: DyeTint, b: DyeTint): boolean {
+  const eps = 1e-5;
+  return (
+    Math.abs(a.emissive.r - b.emissive.r) < eps &&
+    Math.abs(a.emissive.g - b.emissive.g) < eps &&
+    Math.abs(a.emissive.b - b.emissive.b) < eps &&
+    Math.abs(a.emissiveIntensity - b.emissiveIntensity) < eps
+  );
+}
+
+/**
+ * Zero out placeholder emissive tints in place.
+ *
+ * Some gear files ship an identical emissive_tint_color_and_intensity_bias on
+ * EVERY slot for a given parity — Relativism (2809120022) carries (1,0,0,1)
+ * on all three primaries and (1,1,1,1) on all three secondaries. That's the
+ * exporter's unset default, not authored glow: genuine emissive is either
+ * (0,0,0,0), or a distinct colour that appears on only SOME slots (Celestial
+ * Nighthawk's gold eye is slot-0-only, black on slots 1 & 2). A single
+ * non-zero emissive repeated identically across every slot is the placeholder
+ * signature; left in, it multiplies with a broadly-nonzero gearstack B
+ * channel into a false wash across the whole surface (a red one from the
+ * primaries, a white one from the secondaries).
+ *
+ * Detected data-side rather than pattern-matching specific hex values in the
+ * shader, so it catches any placeholder value, not just the two Relativism
+ * happens to use. Checked per parity (primary/secondary independently) because
+ * the two placeholders differ. Items with fewer than two slots are left
+ * untouched: with nothing to compare against, a lone glow is indistinguishable
+ * from a lone placeholder, so the conservative choice preserves it.
+ */
+export function neutralizePlaceholderEmissive(set: DyeSet): void {
+  const slots = Object.values(set);
+  if (slots.length < 2) return;
+  for (const parity of ["primary", "secondary"] as const) {
+    const tints = slots.map((s) => s[parity]);
+    const allContribute = tints.every(emissiveContributes);
+    const allIdentical = tints.every((t) => sameEmissive(t, tints[0]));
+    if (allContribute && allIdentical) {
+      for (const t of tints) {
+        t.emissive.setRGB(0, 0, 0);
+        t.emissiveIntensity = 0;
+      }
+    }
+  }
 }
 
 /** Build a DyeSet from the /api/dyes response. */
@@ -196,6 +256,7 @@ export function dyeSetFromGearDyes(slots: Record<string, ApiSlotDye>): DyeSet {
       secondary: tintFromApi(d.secondary),
     };
   }
+  neutralizePlaceholderEmissive(set);
   return set;
 }
 

@@ -10,7 +10,9 @@
  */
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
+import { useFrame } from "@react-three/fiber";
 import { loadPiece, frameCharacter } from "@/lib/loader/loadCharacter";
+import { advanceGlowTime, advancePatternTime } from "@/lib/materials/gearMaterial";
 
 export type SlotKey = "helmet" | "gauntlets" | "chest" | "legs" | "classItem";
 
@@ -28,6 +30,10 @@ interface Props {
   /** slot -> equipped item (or null/absent for an empty slot). */
   pieces: Partial<Record<SlotKey, EquippedPiece | null>>;
   onPieceStatus?: (slot: SlotKey, status: PieceStatus, error?: string) => void;
+  /** Fires once with the persistent character wrapper group — lets a parent
+   * reach into the assembled scene, e.g. to drive the shader debug controls
+   * across every equipped piece. */
+  onModel?: (group: THREE.Group) => void;
 }
 
 function keyOf(p: EquippedPiece): string {
@@ -47,7 +53,7 @@ function disposeGroup(group: THREE.Group): void {
   });
 }
 
-export default function CharacterModel({ pieces, onPieceStatus }: Props) {
+export default function CharacterModel({ pieces, onPieceStatus, onModel }: Props) {
   // Persistent scene graph: wrapper (framed) -> body (holds native pieces).
   const wrapperRef = useRef<THREE.Group | null>(null);
   const bodyRef = useRef<THREE.Group | null>(null);
@@ -74,10 +80,12 @@ export default function CharacterModel({ pieces, onPieceStatus }: Props) {
     const wrapper = wrapperRef.current!;
     const loaded = loadedRef.current;
 
-    // Remove pieces whose slot was cleared or whose item/shader changed.
+    // Remove only pieces whose slot was CLEARED. A slot that merely changed
+    // item/shader keeps its current group on-screen until the replacement has
+    // finished loading (see the swap below), so swapping a piece never flashes
+    // an empty slot.
     for (const [slot, entry] of [...loaded]) {
-      const desired = pieces[slot];
-      if (!desired || keyOf(desired) !== entry.key) {
+      if (!pieces[slot]) {
         body.remove(entry.group);
         disposeGroup(entry.group);
         loaded.delete(slot);
@@ -123,10 +131,25 @@ export default function CharacterModel({ pieces, onPieceStatus }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sig]);
 
-  // Expose for console/scene inspection (dev aid).
+  // Expose for console/scene inspection (dev aid) and hand the persistent
+  // wrapper to the parent so it can drive the shader debug controls. The
+  // wrapper is created once and never replaced, so a single fire is enough —
+  // the editor re-applies settings per piece via onPieceStatus("ready").
   useEffect(() => {
     (window as unknown as Record<string, unknown>).__character = wrapperRef.current;
+    onModel?.(wrapperRef.current!);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Drive the ability-glow flicker (see gearMaterial.ts animatedGlow) and the
+  // pattern-shimmer warp (see isPatternGroup) across every equipped piece — a
+  // no-op traversal for pieces with neither material. Without this, uGlowTime/
+  // uPatternTime never advance and the effects render as a flat, unmoving
+  // value instead of animating.
+  useFrame((_, delta) => {
+    advanceGlowTime(wrapperRef.current!, delta);
+    advancePatternTime(wrapperRef.current!, delta);
+  });
 
   return <primitive object={wrapperRef.current} />;
 }

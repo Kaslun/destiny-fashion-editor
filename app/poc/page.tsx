@@ -37,6 +37,10 @@ import {
   rankSlotsSoftToHard,
 } from "@/lib/materials/gearDye";
 import GearDebugControls from "@/components/editor/GearDebugControls";
+import {
+  DEFAULT_TONE_MAPPING,
+  type ToneMappingKey,
+} from "@/components/viewer/toneMapping";
 
 interface MaterialInfo {
   slot: number;
@@ -77,6 +81,7 @@ export default function PocPage() {
   const [error, setError] = useState<string | null>(null);
   const [itemName, setItemName] = useState<string | null>(null);
   const [debugChannel, setDebugChannelState] = useState<GearstackDebugChannel>(0);
+  const [toneMapping, setToneMapping] = useState<ToneMappingKey>(DEFAULT_TONE_MAPPING);
   const [roughnessRemapMode, setRoughnessRemapModeState] = useState<RemapMode>(
     DEFAULT_ROUGHNESS_REMAP_MODE,
   );
@@ -202,7 +207,7 @@ export default function PocPage() {
       {/* Viewport */}
       <section className="poc-viewport">
         {activeHash ? (
-          <ModelViewer>
+          <ModelViewer rawOutput={debugChannel !== 0} toneMapping={toneMapping}>
             <GearModel itemHash={activeHash} onStatus={onStatus} onModel={onModel} />
           </ModelViewer>
         ) : (
@@ -262,6 +267,8 @@ export default function PocPage() {
           <GearDebugControls
             debugChannel={debugChannel}
             onSelectDebugChannel={selectDebugChannel}
+            toneMapping={toneMapping}
+            onSelectToneMapping={setToneMapping}
             roughnessRemapMode={roughnessRemapMode}
             onSelectRoughnessRemapMode={selectRoughnessRemapMode}
             wearRemapMode={wearRemapMode}

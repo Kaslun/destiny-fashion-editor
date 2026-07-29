@@ -79,6 +79,7 @@ import {
   transformedNormalView,
   positionViewDirection,
   attribute,
+  sRGBTransferEOTF,
 } from "three/tsl";
 import {
   dyeForSlot,
@@ -90,9 +91,12 @@ import type { GroupInfo } from "@/lib/geometry/buildGeometry";
 
 /**
  * Live gearstack-channel viewer. 0 = normal rendering; 1-4 override every pixel
- * with a greyscale view of the gearstack R/G/B/A channel (bright = high value);
- * 5 shows the RESOLVED dye slot per pixel, so material boundaries can be
- * inspected directly instead of guessed at from the lit render.
+ * with a greyscale view of the gearstack R/G/B/A channel — the displayed grey
+ * IS the raw 0..1 channel value (see the colorSpaceToWorking note at the
+ * outputNode assignment: without it the output stage's sRGB encode inflated
+ * every reading); 5 shows the RESOLVED dye slot per pixel, so material
+ * boundaries can be inspected directly instead of guessed at from the lit
+ * render.
  * Wired to a uniform (not compiled in/out) so `setGearstackDebugChannel` can
  * flip it on an already-loaded model without rebuilding materials.
  */
@@ -910,6 +914,28 @@ function makeOpaque(
   let slotF: TSLNode;
   let parityF: TSLNode = partParity;
 
+  /**
+   * A discrete slot index as a 3-component weight vector — (1,0,0), (0,1,0) or
+   * (0,0,1). Lets every slot source (per-part, band decode, dyeslot plate) feed
+   * ONE weighted lookup path: a one-hot vector makes the blend below collapse
+   * back to a plain single-row read, so discrete sources are unaffected by it.
+   *
+   * Clamps like the `slotRounded` it replaces, so a negative slot ("never dye",
+   * e.g. a decal group) still selects slot 0's row rather than all-zero. That
+   * matters: several matRow reads — detailBlend at the albedo mix, fuzz, the
+   * pattern-accent strength — are NOT behind the isDyed gate, and zeroing them
+   * would quietly drop detail blending on exactly those groups. "Never dye" is
+   * expressed by isDyed, not by starving the table lookup.
+   */
+  const oneHotSlot = (s: TSLNode): TSLNode => {
+    const c = clamp(s, 0.0, 2.0);
+    return vec3(
+      select(c.lessThan(0.5), 1.0, 0.0),
+      select(c.greaterThanEqual(0.5).and(c.lessThan(1.5)), 1.0, 0.0),
+      select(c.greaterThanEqual(1.5), 1.0, 0.0),
+    );
+  };
+
   // Per-pixel A-channel band decode (see needsBandSplit) — computed once,
   // used either as the PRIMARY slot source (no dyeslot plate) or as the
   // FALLBACK inside the dyeslot branch below wherever the plate itself has
@@ -954,6 +980,11 @@ function makeOpaque(
     );
   }
 
+  // Per-slot BLEND weights (slot0, slot1, slot2), summing to 1 wherever the
+  // pixel is dyed at all. One-hot everywhere except inside a dyeslot plate's
+  // genuinely-shared regions — see the plate branch below.
+  let slotWeights: TSLNode | null = null;
+
   if (maps.dyeslot) {
     // R/G/B are independent per-slot weights (slot0/slot1/slot2), NOT a
     // single scalar 1-based id — confirmed by rendering Relativism's real
@@ -961,21 +992,48 @@ function makeOpaque(
     // in-game look: reading only R (the old "floor(r*3+0.5)-1" decode) missed
     // real slot1/slot2 regions entirely wherever the plate expressed them via
     // G or B (e.g. a cyan G+B region), rendering them as flat undyed grey
-    // instead of the tinted (blue) material they actually are. Taking the
-    // argmax of the three channels — cheap, no shader rearchitecture needed —
-    // recovered the same regions a full 3-way weighted blend did in that
-    // comparison, so argmax is the one implemented here.
+    // instead of the tinted (blue) material they actually are.
+    //
+    // Those weights are USED AS WEIGHTS here. They used to be collapsed to an
+    // argmax ("cheap, no shader rearchitecture needed"), which is fine on a
+    // clear winner but is a coin flip on a tie — and ties are the majority of
+    // the signal, not an edge case. Measured across four real plates (512x512,
+    // via the resolved-slot debug view and a direct read of the assembled
+    // plates): of the texels the plate positively assigns, only 12-39% have a
+    // clear winner, while 34-79% are two-way ties whose average sorted channels
+    // are ~[209, 208, 12] — two slots essentially equal, the third at zero.
+    // Wherever two such weight fields cross, argmax flips slot per texel, which
+    // is precisely the salt-and-pepper speckle in the resolved-slot view.
+    //
+    // These ties are real authored regions, not compression noise: only 4.8-18%
+    // of tie texels touch a clear-winner texel, ~3.8 of their 4 neighbours are
+    // also ties, and their horizontal runs average 13-42px. Block-compression
+    // artifacts at a region boundary would be 1-2px runs almost all of which
+    // touch a clear region. (Nor is filtering to blame — the plate is already
+    // NearestFilter with generateMipmaps=false, and gets a 3x3 median
+    // despeckle at assembly; see loadGearModel/despeckle.ts. A per-channel
+    // median cannot fix this anyway: each channel is individually smooth, it
+    // is the SIGN of their difference that flips.)
+    //
+    // Normalising instead is continuous by construction, so the speckle cannot
+    // occur, and it degenerates exactly to the old behaviour on a clear winner
+    // — a one-hot weight vector reproduces the previous single-row lookup bit
+    // for bit. Only genuinely-shared texels change.
     const dyeslotTex = texture(maps.dyeslot, uvN);
     const qr = dyeslotTex.r;
     const qg = dyeslotTex.g;
     const qb = dyeslotTex.b;
     const sum = qr.add(qg).add(qb);
+    // Dominant slot: still needed for the things that must stay discrete —
+    // the "is this dyed at all" gate and materialTypeId, which is an enum and
+    // would be meaningless interpolated.
     const argmax = select(
       qr.greaterThanEqual(qg).and(qr.greaterThanEqual(qb)),
       float(0.0),
       select(qg.greaterThanEqual(qb), float(1.0), float(2.0)),
     );
     // near-zero on all three channels = no per-pixel assignment ("baked").
+    const plateActive = step(0.03, sum);
     const dyeslotSlot = select(sum.lessThan(0.03), float(-1), argmax);
     // The plate REFINES the group's slot per texel — it does not get to strand
     // the whole mesh undyed. Confirmed against Thy Fearful Symmetry's real
@@ -992,12 +1050,22 @@ function makeOpaque(
     if (bandSlotF && bandParityF) {
       parityF = select(dyeslotSlot.lessThan(-0.5), bandParityF, partParity);
     }
+    // Where the plate speaks, use its normalised weights; where it is silent,
+    // fall back to a one-hot vector on whatever slot the fallback resolved to.
+    slotWeights = mix(
+      oneHotSlot(slotF),
+      vec3(qr, qg, qb).div(max(sum, 1e-5)),
+      plateActive,
+    );
   } else if (bandSlotF && bandParityF) {
     slotF = bandSlotF;
     parityF = bandParityF;
   } else {
     slotF = float(decalSlot ? -1 : slotClamped);
   }
+  // Every non-plate path resolves to a single slot, so its weights are one-hot
+  // and the blended lookup below collapses back to the original single-row read.
+  if (!slotWeights) slotWeights = oneHotSlot(slotF);
   const dyeOn = !!opts.applyDye && wantGearstack;
   const isDyed = dyeOn ? step(-0.5, slotF).mul(dyeMask) : float(0.0);
 
@@ -1005,24 +1073,47 @@ function makeOpaque(
   // parity*3 + slot, row offset per the layout above. uniformArray elements
   // are untyped for TS, hence the cast.
   const slotRounded = floor(clamp(slotF, 0.0, 2.0).add(0.5));
-  const matRow = (row: number) =>
+  const matRowAt = (slotIndex: TSLNode, row: number) =>
     vec4(
       uMaterialTable.element(
         int(
           parityF
             .mul(3.0)
-            .add(slotRounded)
+            .add(slotIndex)
             .mul(ROWS_PER_MATERIAL)
             .add(row + 0.5),
         ),
       ) as TSLNode,
     );
 
+  /**
+   * The material row for this pixel, blended across slots by slotWeights (see
+   * the dyeslot decode above). With one-hot weights — every source except a
+   * dyeslot plate's shared regions — this is exactly the old single-row read;
+   * inside a shared region it interpolates instead of coin-flipping.
+   *
+   * Interpolating the remap vec4s (rows 2-4) is not identical to interpolating
+   * the remapped RESULT, but it is continuous and it is exact at both ends, so
+   * the only pixels it can affect are the ones whose previous value was
+   * arbitrary anyway. materialTypeId is deliberately NOT taken from here — see
+   * matRowDominant.
+   */
+  const matRow = (row: number) =>
+    matRowAt(float(0.0), row)
+      .mul(slotWeights.x)
+      .add(matRowAt(float(1.0), row).mul(slotWeights.y))
+      .add(matRowAt(float(2.0), row).mul(slotWeights.z));
+
+  /** Row from the single dominant slot — for values that must not interpolate. */
+  const matRowDominant = (row: number) => matRowAt(slotRounded, row);
+
   // ---- material-type gate (see KNOWN_EMISSIVE_MATERIAL_TYPE_IDS) --------------
   // Resolved per-pixel from the SAME (slot, parity) the rest of this function
   // uses — shared by the emissive gate below and the iridescent tint above
   // the albedo assignment.
-  const materialTypeId = matRow(6).w;
+  // Enum, not a quantity: an interpolated id between two known types would
+  // match neither, silently flipping the emissive gate off in shared regions.
+  const materialTypeId = matRowDominant(6).w;
   let isKnownMaterial = materialTypeId.equal(KNOWN_EMISSIVE_MATERIAL_TYPE_IDS[0]);
   for (const id of KNOWN_EMISSIVE_MATERIAL_TYPE_IDS.slice(1)) {
     isKnownMaterial = isKnownMaterial.or(materialTypeId.equal(id));
@@ -1346,14 +1437,16 @@ function makeOpaque(
     // ---- debug channel viewer (unlit override of the final output) ------------
     // Slot view: secondary-parity texels show at half brightness so the
     // (slot, parity) pair is readable at a glance.
+    // Built from slotWeights, not from the discrete slot, so this view shows
+    // what is actually being rendered. Inside a dyeslot plate's shared regions
+    // that reads as a blend of the two slot colours (e.g. green/blue -> cyan)
+    // rather than the salt-and-pepper the old argmax produced — if speckle
+    // ever reappears here, the decode really has regressed rather than the
+    // view merely disagreeing with the render.
     const slotColor = select(
       slotF.lessThan(-0.5).or(dyeMask.lessThan(0.5)),
       vec3(0.15, 0.15, 0.15),
-      select(
-        slotF.lessThan(0.5),
-        vec3(1.0, 0.0, 0.0),
-        select(slotF.lessThan(1.5), vec3(0.0, 1.0, 0.0), vec3(0.0, 0.0, 1.0)),
-      ).mul(parityF.mul(-0.5).add(1.0)),
+      slotWeights.mul(parityF.mul(-0.5).add(1.0)),
     );
     // Channel 6: quantize A into 8 bands with distinct hues, to inspect
     // whether/where the wear channel doubles as a per-pixel material id on
@@ -1401,7 +1494,41 @@ function makeOpaque(
         ),
       ),
     );
-    mat.outputNode = select(uDebugChannel.greaterThan(0.5), vec4(dbg, 1.0), output);
+    // `outputNode` is written in WORKING (linear) space, and the renderer's
+    // full-screen output pass then applies tone mapping AND a working -> sRGB
+    // encode over the whole frame. Writing a raw channel value straight out
+    // therefore displayed it badly distorted, which meant the four channels
+    // whose entire job is reading data off the model were the ones that lied:
+    // mid-range data read as saturated (raw 0.5 encoded to 0.74) on top of
+    // whatever the tone curve did to it.
+    //
+    // Pre-inverting the encode here (sRGB -> linear, so the output pass's
+    // linear -> sRGB puts it back) makes the ENCODE half round-trip, so the
+    // grey on screen is the raw channel value. The tone-mapping half cannot be
+    // undone here — it is a post pass and `material.toneMapped` is WebGL-only
+    // — so it is switched off at the renderer for as long as a channel is
+    // active; see DebugToneMapping in ModelViewer.tsx. Both halves are
+    // required: with only this one, the undyed-grey constant vec3(0.15) still
+    // measured 20/255 on screen instead of 38/255.
+    //
+    // Channel 6 was never affected (it bands gs.a BEFORE the output stage) and
+    // is what caught the encode bug — on ordinary armor A sits at 0.50-0.75,
+    // which it correctly shows as bands 4-5 while channels 1-4 rendered the
+    // same texels near-white.
+    //
+    // This also fixes the categorical views: slotColor's secondary-parity
+    // texels are specified at half brightness, and now actually read as half
+    // brightness rather than 74%.
+    // Applied directly rather than via colorSpaceToWorking(): that wraps
+    // ColorSpaceNode, which indexes .rgb/.a off its input, and the builder
+    // flattens the vec4() wrapper back to the underlying vec3 before it gets
+    // there — so `.a` compiles to a `.w` swizzle on a vec3 and the whole
+    // pipeline fails to build (silently, as a WGSL error at runtime, not a TS
+    // one: the model simply vanishes). sRGBTransferEOTF is vec3 -> vec3 and is
+    // exactly the inverse of the OETF the output pass applies, so it does the
+    // same job with no vec4 plumbing to get wrong.
+    const dbgOut = sRGBTransferEOTF(dbg) as TSLNode;
+    mat.outputNode = select(uDebugChannel.greaterThan(0.5), vec4(dbgOut, 1.0), output);
   }
 
   // ---- detail normal blended over the plate normal ----------------------------

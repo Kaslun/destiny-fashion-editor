@@ -1,39 +1,117 @@
 import Link from "next/link";
-import AppHeader from "@/components/ui/AppHeader";
+
+/**
+ * Landing screen. Same stage language as the editor — a lit backdrop, one
+ * oversized tracked headline, and the two ways in (straight to the editor, or
+ * sign in first to pull a real loadout).
+ */
+const STATS = [
+  { value: "5", label: "Armor slots" },
+  { value: "WebGPU", label: "Node materials" },
+  { value: "TGXM", label: "Real gear geometry" },
+];
 
 export default function Home() {
   return (
-    <>
-    <AppHeader title="Destiny Fashion" subtitle="3D Editor" />
-    <main style={{ maxWidth: 960, margin: "0 auto", padding: "56px 24px" }}>
-      <p className="d2-eyebrow">Bungie API · Three.js · Gear Assets</p>
-      <h1 style={{ fontSize: 56, lineHeight: 1.0, marginTop: 8 }}>
+    <div
+      className="fx-root"
+      style={{
+        background: "linear-gradient(100deg, #39434d 0%, #4e5a67 42%, #8492a0 100%)",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        padding: "0 clamp(24px, 6vw, 120px)",
+        overflowY: "auto",
+      }}
+    >
+      <p
+        style={{
+          margin: 0,
+          textTransform: "uppercase",
+          letterSpacing: "0.34em",
+          fontWeight: 500,
+          fontSize: 12,
+          color: "rgba(255,255,255,0.8)",
+        }}
+      >
         Destiny Fashion Editor
+      </p>
+      <h1
+        style={{
+          margin: "20px 0 0",
+          textTransform: "uppercase",
+          fontWeight: 700,
+          letterSpacing: "-0.015em",
+          fontSize: "clamp(48px, 7vw, 104px)",
+          lineHeight: 0.9,
+          maxWidth: 1100,
+        }}
+      >
+        Your Guardian,
+        <br />
+        rendered in full
       </h1>
-      <hr className="d2-rule" style={{ maxWidth: 320 }} />
-      <p style={{ color: "var(--d2-text-dim)", maxWidth: 620, lineHeight: 1.6 }}>
-        A web-based 3D character &amp; fashion tool. Render your real gear with
-        equipped armor, weapons and shaders — or build a look from scratch.
+      <p
+        style={{
+          margin: "26px 0 0",
+          fontSize: 19,
+          lineHeight: 1.5,
+          color: "rgba(255,255,255,0.8)",
+          maxWidth: 620,
+        }}
+      >
+        Real gear geometry, real shaders, real dyes — assembled in the browser from
+        Bungie&apos;s own asset pipeline.
       </p>
 
-      <div className="d2-panel" style={{ padding: 24, marginTop: 32, maxWidth: 620 }}>
-        <p className="d2-eyebrow">Build status — Step 1</p>
-        <h2 style={{ fontSize: 24, marginTop: 6 }}>Gear Asset Proof-of-Concept</h2>
-        <p style={{ color: "var(--d2-text-dim)", lineHeight: 1.6 }}>
-          The renderer pipeline (manifest → gear-asset SQLite → TGXM geometry →
-          Three.js) is wired to a verification page. Load a single item hash and
-          confirm the real LOD-0 mesh and textures render.
-        </p>
-        <div style={{ display: "flex", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
-          <Link href="/editor" className="d2-btn d2-btn--primary" style={{ display: "inline-block" }}>
-            Open Manual Editor →
-          </Link>
-          <Link href="/poc" className="d2-btn" style={{ display: "inline-block" }}>
-            POC Viewer
-          </Link>
-        </div>
+      <div style={{ display: "flex", gap: 12, marginTop: 40, flexWrap: "wrap" }}>
+        <Link
+          href="/editor"
+          className="fx-btn fx-btn--solid"
+          style={{ padding: "17px 34px", fontSize: 13 }}
+        >
+          Open the editor
+        </Link>
+        <a href="/api/auth/login" className="fx-btn" style={{ padding: "17px 34px", fontSize: 13 }}>
+          Sign in with Bungie
+        </a>
+        <Link href="/poc" className="fx-btn" style={{ padding: "17px 34px", fontSize: 13 }}>
+          POC viewer
+        </Link>
       </div>
-    </main>
-    </>
+
+      <div
+        style={{
+          display: "flex",
+          gap: 56,
+          marginTop: 76,
+          paddingTop: 26,
+          borderTop: "1px solid rgba(255,255,255,0.24)",
+          maxWidth: 900,
+          flexWrap: "wrap",
+        }}
+      >
+        {STATS.map((s) => (
+          <div key={s.label}>
+            <div
+              style={{ fontWeight: 700, fontSize: 34, fontVariantNumeric: "tabular-nums" }}
+            >
+              {s.value}
+            </div>
+            <div
+              style={{
+                marginTop: 4,
+                textTransform: "uppercase",
+                letterSpacing: "0.2em",
+                fontSize: 10,
+                color: "rgba(255,255,255,0.65)",
+              }}
+            >
+              {s.label}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

@@ -3,24 +3,51 @@
 /**
  * Appearance Customization — full-character fashion editor.
  *
- * Mirrors Destiny 2's transmog/shader screen: a left column of the five armor
- * slots (each showing its equipped ornament + shader), the assembled 3D
- * character in the center, and a contextual browser on the right for the slot
- * being edited. Armor is class-specific, so switching class clears the set.
+ * The screen is the stage: a lit studio the assembled Guardian stands in, with
+ * the UI floating over the left third as white rules and tiles. Navigation is
+ * the slot rail (helmet → class item) plus an overview list that shows the
+ * whole set at once; picking a slot points both the browse column and the
+ * camera at that piece. Armor is class-specific, so switching class resets the
+ * set.
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import Link from "next/link";
 import dynamic from "next/dynamic";
 import type * as THREE from "three";
-import ItemBrowser, { type ItemEntry } from "@/components/editor/ItemBrowser";
+import ItemBrowser, { tierColor, type ItemEntry } from "@/components/editor/ItemBrowser";
 import ShaderPicker from "@/components/editor/ShaderPicker";
 import GearDebugControls from "@/components/editor/GearDebugControls";
-import AppHeader from "@/components/ui/AppHeader";
+import SlotRail from "@/components/editor/SlotRail";
+import OverviewPanel from "@/components/editor/OverviewPanel";
+import {
+  LoadingScreen,
+  SignInScreen,
+  RosterScreen,
+  CrashScreen,
+  EmptyStage,
+} from "@/components/editor/Screens";
+import { ARMOR_SLOTS, SLOT_LABEL, type Focus, type Layer } from "@/components/editor/slots";
+import ViewportBoundary from "@/components/viewer/ViewportBoundary";
+import SlotFocusCamera from "@/components/viewer/SlotFocusCamera";
+import type { LightPreset } from "@/components/viewer/ModelViewer";
+import {
+  DEFAULT_TONE_MAPPING,
+  type ToneMappingKey,
+} from "@/components/viewer/toneMapping";
 import type {
   SlotKey,
   EquippedPiece,
   PieceStatus,
 } from "@/components/viewer/CharacterModel";
 import { helmetHidesHood } from "@/lib/bungie/hoodHiding";
+import {
+  loadFavorites,
+  saveFavorites,
+  loadSets,
+  saveSets,
+  newSetId,
+  type SavedSet,
+} from "@/lib/editor/prefs";
 import {
   setGearstackDebugChannel,
   DEFAULT_ROUGHNESS_REMAP_MODE,
@@ -42,9 +69,7 @@ import {
 
 const ModelViewer = dynamic(() => import("@/components/viewer/ModelViewer"), {
   ssr: false,
-  loading: () => (
-    <div style={{ padding: 24, color: "var(--d2-text-dim)" }}>Booting viewport…</div>
-  ),
+  loading: () => null,
 });
 const CharacterModel = dynamic(() => import("@/components/viewer/CharacterModel"), {
   ssr: false,
@@ -56,16 +81,25 @@ const CLASSES = [
   { value: 2, label: "Warlock" },
 ];
 
-const ARMOR_SLOTS: { key: SlotKey; label: string; glyph: string }[] = [
-  { key: "helmet", label: "Helmet", glyph: "◈" },
-  { key: "gauntlets", label: "Arms", glyph: "✋" },
-  { key: "chest", label: "Chest", glyph: "▣" },
-  { key: "legs", label: "Legs", glyph: "⋀" },
-  { key: "classItem", label: "Class Item", glyph: "✶" },
+const LIGHTS: { value: LightPreset; label: string }[] = [
+  { value: "studio", label: "Studio" },
+  { value: "tower", label: "Tower" },
+  { value: "night", label: "Night" },
 ];
 
-type BrowseMode = "gear" | "shader" | "debug";
+/** Skipping the account gate is remembered so manual mode doesn't nag. */
+const MANUAL_MODE_KEY = "dfe.manualMode.v1";
+
 type SlotState<T> = Partial<Record<SlotKey, T>>;
+
+/** Everything the undo stack, saved sets and Revert operate on. */
+interface Look {
+  classType: number;
+  items: SlotState<ItemEntry>;
+  shaders: SlotState<ItemEntry>;
+}
+
+const EMPTY_LOOK: Look = { classType: 1, items: {}, shaders: {} };
 
 interface ProfileChar {
   characterId: string;
@@ -81,19 +115,112 @@ interface ProfileChar {
   }[];
 }
 
-export default function EditorPage() {
-  const [classType, setClassType] = useState(1); // Hunter default
-  const [items, setItems] = useState<SlotState<ItemEntry>>({});
-  const [shaders, setShaders] = useState<SlotState<ItemEntry>>({});
-  const [status, setStatus] = useState<SlotState<PieceStatus>>({});
-  const [activeSlot, setActiveSlot] = useState<SlotKey>("helmet");
-  const [mode, setMode] = useState<BrowseMode>("gear");
+/** Look one item up by hash for its display name/icon (the index the browser uses). */
+async function fetchItem(hash: number): Promise<ItemEntry | null> {
+  try {
+    const res = await fetch(`/api/items?hash=${hash}`);
+    const data = await res.json();
+    return (data.item as ItemEntry | null) ?? null;
+  } catch {
+    return null;
+  }
+}
 
-  // ── Debug: live shader tuning across the whole assembled character. The
-  // controls live in the right-panel "Debug" tab; every setting defaults to the
-  // normal in-game render, so tuning is simply applied continuously (no on/off
-  // gate) and persists while browsing other tabs. ──
+export default function EditorPage() {
+  // ── The look, and its history ──
+  // Every user-facing change goes through commit() so Undo/Redo/Revert cover
+  // the whole editor; async catalog fills use replace(), which doesn't create a
+  // history step the user never made. lookRef mirrors state so the history can
+  // be built outside a setState updater (no double-push under StrictMode).
+  const [look, setLook] = useState<Look>(EMPTY_LOOK);
+  const lookRef = useRef(look);
+  const past = useRef<Look[]>([]);
+  const future = useRef<Look[]>([]);
+  /** The look Revert returns to: the pulled loadout, or the opening set. */
+  const baseline = useRef<Look | null>(null);
+  const [, bumpHistory] = useReducer((n: number) => n + 1, 0);
+
+  const apply = useCallback((next: Look) => {
+    lookRef.current = next;
+    setLook(next);
+  }, []);
+
+  const replace = useCallback(
+    (updater: (prev: Look) => Look) => apply(updater(lookRef.current)),
+    [apply],
+  );
+
+  const commit = useCallback(
+    (updater: (prev: Look) => Look) => {
+      const prev = lookRef.current;
+      const next = updater(prev);
+      if (next === prev) return;
+      past.current = [...past.current.slice(-49), prev];
+      future.current = [];
+      apply(next);
+      bumpHistory();
+    },
+    [apply],
+  );
+
+  const undo = useCallback(() => {
+    const prev = past.current.pop();
+    if (!prev) return;
+    future.current.push(lookRef.current);
+    apply(prev);
+    bumpHistory();
+  }, [apply]);
+
+  const redo = useCallback(() => {
+    const next = future.current.pop();
+    if (!next) return;
+    past.current.push(lookRef.current);
+    apply(next);
+    bumpHistory();
+  }, [apply]);
+
+  const revert = useCallback(() => {
+    const base = baseline.current;
+    if (base) commit(() => base);
+  }, [commit]);
+
+  // ── Browse focus ──
+  const [focus, setFocus] = useState<Focus>("overview");
+  const [layer, setLayer] = useState<Layer>("gear");
+  /** Overview → one shader across every equipped piece. */
+  const [shadeAll, setShadeAll] = useState(false);
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [status, setStatus] = useState<SlotState<PieceStatus>>({});
+
+  // ── Stage ──
+  const [light, setLight] = useState<LightPreset>("studio");
+  const [menuHidden, setMenuHidden] = useState(false);
+  const [devOpen, setDevOpen] = useState(false);
+
+  // ── Local prefs ──
+  const [favorites, setFavorites] = useState<Set<number>>(() => new Set());
+  const [sets, setSets] = useState<SavedSet[]>([]);
+  useEffect(() => {
+    setFavorites(loadFavorites());
+    setSets(loadSets());
+  }, []);
+
+  const toggleFavorite = useCallback((hash: number) => {
+    setFavorites((prev) => {
+      const next = new Set(prev);
+      if (!next.delete(hash)) next.add(hash);
+      saveFavorites(next);
+      return next;
+    });
+  }, []);
+
+  // ── Debug: live shader tuning across the whole assembled character. Every
+  // setting defaults to the normal in-game render, so tuning is applied
+  // continuously (no on/off gate) and persists while browsing. ──
   const [debugChannel, setDebugChannelState] = useState<GearstackDebugChannel>(0);
+  // Renderer-level, not per-material — handed to ModelViewer rather than pushed
+  // onto the character group like the settings below.
+  const [toneMapping, setToneMapping] = useState<ToneMappingKey>(DEFAULT_TONE_MAPPING);
   const [roughnessRemapMode, setRoughnessRemapModeState] = useState<RemapMode>(
     DEFAULT_ROUGHNESS_REMAP_MODE,
   );
@@ -165,17 +292,20 @@ export default function EditorPage() {
   const pieces = useMemo<Partial<Record<SlotKey, EquippedPiece | null>>>(() => {
     const out: Partial<Record<SlotKey, EquippedPiece | null>> = {};
     for (const { key } of ARMOR_SLOTS) {
-      const item = items[key];
+      const item = look.items[key];
       out[key] = item
-        ? { itemHash: item.hash, shaderHash: shaders[key]?.hash ?? null }
+        ? { itemHash: item.hash, shaderHash: look.shaders[key]?.hash ?? null }
         : null;
     }
     // Hunter cloaks: hide the hood when the equipped helmet is on the list.
-    if (out.classItem && classType === 1 && helmetHidesHood(items.helmet?.hash)) {
+    if (out.classItem && look.classType === 1 && helmetHidesHood(look.items.helmet?.hash)) {
       out.classItem = { ...out.classItem, hideHood: true };
     }
     return out;
-  }, [items, shaders, classType]);
+  }, [look]);
+
+  // Re-frame the camera when the focused piece's geometry changes underneath it.
+  const [framingRevision, setFramingRevision] = useState(0);
 
   const onPieceStatus = useCallback((slot: SlotKey, s: PieceStatus) => {
     setStatus((prev) => ({ ...prev, [slot]: s }));
@@ -185,544 +315,909 @@ export default function EditorPage() {
     if (s === "ready" && characterRef.current) {
       applyDebugRef.current(characterRef.current);
       setGlowCapable(hasAnimatedGlow(characterRef.current));
+      setFramingRevision((n) => n + 1);
     }
   }, []);
 
+  // ── Editing actions ──
   const onPickItem = useCallback(
-    (item: ItemEntry) => setItems((prev) => ({ ...prev, [activeSlot]: item })),
-    [activeSlot],
+    (item: ItemEntry) => {
+      if (focus === "overview") return;
+      commit((prev) => ({ ...prev, items: { ...prev.items, [focus]: item } }));
+    },
+    [commit, focus],
   );
+
   const onPickShader = useCallback(
-    (hash: number | null) =>
-      setShaders((prev) => {
-        const next = { ...prev };
-        if (hash === null) delete next[activeSlot];
-        // ShaderPicker only returns a hash; look it up lazily via /api later if
-        // we want the icon. For now store a minimal entry so the chip renders.
-        else next[activeSlot] = { ...(prev[activeSlot] as ItemEntry), hash } as ItemEntry;
-        return next;
-      }),
-    [activeSlot],
+    (shader: ItemEntry) => {
+      commit((prev) => {
+        if (shadeAll) {
+          const next = { ...prev.shaders };
+          for (const { key } of ARMOR_SLOTS) if (prev.items[key]) next[key] = shader;
+          return { ...prev, shaders: next };
+        }
+        if (focus === "overview") return prev;
+        return { ...prev, shaders: { ...prev.shaders, [focus]: shader } };
+      });
+    },
+    [commit, focus, shadeAll],
   );
+
+  /** "Default" — strip the layer currently being edited on the focused slot. */
+  const clearFocused = useCallback(() => {
+    commit((prev) => {
+      if (shadeAll) {
+        const shaders = { ...prev.shaders };
+        for (const { key } of ARMOR_SLOTS) delete shaders[key];
+        return { ...prev, shaders };
+      }
+      if (focus === "overview") return prev;
+      const bucket = layer === "gear" ? "items" : "shaders";
+      if (!prev[bucket][focus]) return prev;
+      const next = { ...prev[bucket] };
+      delete next[focus];
+      return { ...prev, [bucket]: next };
+    });
+  }, [commit, focus, layer, shadeAll]);
+
+  /** Overview chevron — back to the set this session started from, unshaded. */
+  const resetAll = useCallback(() => {
+    commit((prev) => ({
+      classType: prev.classType,
+      items: baseline.current?.items ?? prev.items,
+      shaders: {},
+    }));
+  }, [commit]);
+
+  const editSlot = useCallback((slot: SlotKey, which: Layer) => {
+    setShadeAll(false);
+    setFocus(slot);
+    setLayer(which);
+  }, []);
+
+  const onFocusRail = useCallback((next: Focus) => {
+    setShadeAll(false);
+    setFocus(next);
+    if (next !== "overview") setLayer("gear");
+  }, []);
 
   // Fill every empty armor slot with a data-driven placeholder (the first armor
   // piece the catalog returns for that slot + class) so the editor always shows
   // a full Guardian instead of empty slots. Only fills gaps — never clobbers an
   // already-equipped piece (e.g. a real loadout or a user pick).
-  const loadDefaultSet = useCallback(async (cls: number) => {
-    const results = await Promise.all(
-      ARMOR_SLOTS.map(async ({ key }) => {
-        const params = new URLSearchParams({ slot: key, kind: "armor", limit: "1" });
-        if (cls !== 3) params.set("classType", String(cls));
+  const loadDefaultSet = useCallback(
+    async (cls: number) => {
+      const results = await Promise.all(
+        ARMOR_SLOTS.map(async ({ key }) => {
+          const params = new URLSearchParams({ slot: key, kind: "armor", limit: "1" });
+          if (cls !== 3) params.set("classType", String(cls));
+          try {
+            const res = await fetch(`/api/items?${params.toString()}`);
+            const data = await res.json();
+            return [key, data.items?.[0] as ItemEntry | undefined] as const;
+          } catch {
+            return [key, undefined] as const;
+          }
+        }),
+      );
+      replace((prev) => {
+        const items = { ...prev.items };
+        for (const [key, item] of results) if (item && !items[key]) items[key] = item;
+        const next = { ...prev, items };
+        // First complete set of the session is what Revert comes back to.
+        if (!baseline.current) baseline.current = next;
+        return next;
+      });
+    },
+    [replace],
+  );
+
+  /**
+   * Dev: dress every slot in a random catalog piece, each with its own random
+   * shader. Sweeping the gearstack debug channels only tells you something on
+   * a set you didn't hand-pick — a fixed set hides the bugs that only show up
+   * on particular plate/dye data. Seeded per call and logged so a set that
+   * turns up a bug can be reproduced from the console line.
+   */
+  const randomizeSet = useCallback(async () => {
+    const cls = lookRef.current.classType;
+    const pick = <T,>(arr: T[]): T | undefined =>
+      arr.length ? arr[Math.floor(Math.random() * arr.length)] : undefined;
+
+    const [slotResults, shaderPool] = await Promise.all([
+      Promise.all(
+        ARMOR_SLOTS.map(async ({ key }) => {
+          const params = new URLSearchParams({ slot: key, kind: "armor", limit: "500" });
+          if (cls !== 3) params.set("classType", String(cls));
+          try {
+            const res = await fetch(`/api/items?${params.toString()}`);
+            const data = await res.json();
+            return [key, pick((data.items ?? []) as ItemEntry[])] as const;
+          } catch {
+            return [key, undefined] as const;
+          }
+        }),
+      ),
+      (async () => {
         try {
-          const res = await fetch(`/api/items?${params.toString()}`);
+          const res = await fetch("/api/items?kind=shader&limit=1000");
           const data = await res.json();
-          return [key, data.items?.[0] as ItemEntry | undefined] as const;
+          return (data.items ?? []) as ItemEntry[];
         } catch {
-          return [key, undefined] as const;
+          return [] as ItemEntry[];
         }
-      }),
-    );
-    setItems((prev) => {
-      const next = { ...prev };
-      for (const [key, item] of results) if (item && !next[key]) next[key] = item;
-      return next;
+      })(),
+    ]);
+
+    setStatus({});
+    commit((prev) => {
+      const items = { ...prev.items };
+      const shaders = { ...prev.shaders };
+      for (const [key, item] of slotResults) {
+        if (!item) continue;
+        items[key] = item;
+        const shader = pick(shaderPool);
+        if (shader) shaders[key] = shader;
+      }
+      console.log(
+        "[randomize]",
+        ARMOR_SLOTS.map(
+          ({ key }) =>
+            `${key}=${items[key]?.hash ?? "-"}/${shaders[key]?.hash ?? "-"} (${items[key]?.name ?? "-"} · ${shaders[key]?.name ?? "-"})`,
+        ).join("\n"),
+      );
+      return { ...prev, items, shaders };
     });
-  }, []);
+  }, [commit]);
 
   const changeClass = useCallback(
     (c: number) => {
-      setClassType(c);
-      setItems({}); // armor is class-specific — reset the set
-      setShaders({});
+      // Armor is class-specific — the set can't survive the switch.
+      commit(() => ({ classType: c, items: {}, shaders: {} }));
       setStatus({});
-      loadDefaultSet(c); // refill with the new class's placeholder set
+      baseline.current = null;
+      loadDefaultSet(c);
     },
-    [loadDefaultSet],
+    [commit, loadDefaultSet],
   );
 
   // ── Real-account loadout (Bungie OAuth) ──
   const [authState, setAuthState] = useState<"unknown" | "out" | "in">("unknown");
   const [characters, setCharacters] = useState<ProfileChar[]>([]);
+  const [gateDone, setGateDone] = useState(false);
+  const [activeCharacter, setActiveCharacter] = useState<ProfileChar | null>(null);
 
-  const fetchProfile = useCallback(async () => {
-    try {
-      const res = await fetch("/api/profile");
-      if (res.status === 401) {
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.localStorage.getItem(MANUAL_MODE_KEY)) {
+      setGateDone(true);
+    }
+    (async () => {
+      try {
+        const res = await fetch("/api/profile");
+        if (res.status === 401) {
+          setAuthState("out");
+          setCharacters([]);
+          return;
+        }
+        const data = await res.json();
+        setAuthState("in");
+        setCharacters(data.characters ?? []);
+      } catch {
         setAuthState("out");
-        setCharacters([]);
-        return;
       }
-      const data = await res.json();
-      setAuthState("in");
-      setCharacters(data.characters ?? []);
+    })();
+  }, []);
+
+  const skipAccount = useCallback(() => {
+    setGateDone(true);
+    try {
+      window.localStorage.setItem(MANUAL_MODE_KEY, "1");
     } catch {
-      setAuthState("out");
+      /* private mode — the gate just reappears next visit */
     }
   }, []);
 
+  // Start with a full placeholder set so the stage is never empty.
   useEffect(() => {
-    fetchProfile();
-  }, [fetchProfile]);
-
-  // Start with a full placeholder set so the viewport is never empty.
-  useEffect(() => {
-    loadDefaultSet(classType);
+    loadDefaultSet(EMPTY_LOOK.classType);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const equipLoadout = useCallback((c: ProfileChar) => {
-    setClassType(c.classType);
-    const nextItems: SlotState<ItemEntry> = {};
-    const nextShaders: SlotState<ItemEntry> = {};
-    for (const it of c.items) {
-      if (!ARMOR_SLOTS.some((s) => s.key === it.slot)) continue; // armor = the body
-      nextItems[it.slot as SlotKey] = {
-        hash: it.renderHash,
-        name: it.slot,
-        icon: null,
-        slot: it.slot,
-        kind: "armor",
-        tier: "",
-        classType: c.classType,
-      };
-      if (it.shaderHash) {
-        nextShaders[it.slot as SlotKey] = { hash: it.shaderHash } as ItemEntry;
+  /**
+   * Dress the Guardian in a character's live loadout. The profile gives the
+   * render hash (the geometry to load) and the item hash (what the player owns)
+   * separately — the catalog lookup is by item hash for the name/icon, while
+   * the entry keeps the render hash so the viewport loads the right mesh.
+   */
+  const equipLoadout = useCallback(
+    async (character: ProfileChar) => {
+      setActiveCharacter(character);
+      setGateDone(true);
+      setStatus({});
+      const armor = character.items.filter((it) =>
+        ARMOR_SLOTS.some((s) => s.key === it.slot),
+      );
+      const resolved = await Promise.all(
+        armor.map(async (it) => {
+          const [display, shader] = await Promise.all([
+            fetchItem(it.itemHash),
+            it.shaderHash ? fetchItem(it.shaderHash) : Promise.resolve(null),
+          ]);
+          return { it, display, shader };
+        }),
+      );
+      const items: SlotState<ItemEntry> = {};
+      const shaders: SlotState<ItemEntry> = {};
+      for (const { it, display, shader } of resolved) {
+        const slot = it.slot as SlotKey;
+        items[slot] = {
+          ...(display ?? {
+            name: SLOT_LABEL[slot],
+            icon: null,
+            slot: it.slot,
+            kind: "armor" as const,
+            tier: "",
+            classType: character.classType,
+          }),
+          hash: it.renderHash, // geometry, not the owned instance
+        };
+        if (it.shaderHash) {
+          shaders[slot] =
+            shader ??
+            ({
+              hash: it.shaderHash,
+              name: "Shader",
+              icon: null,
+              slot: null,
+              kind: "shader",
+              tier: "",
+              classType: 3,
+            } as ItemEntry);
+        }
       }
-    }
-    setItems(nextItems);
-    setShaders(nextShaders);
-    setStatus({});
-    loadDefaultSet(c.classType); // fill any slots the loadout didn't cover
-  }, [loadDefaultSet]);
+      const next: Look = { classType: character.classType, items, shaders };
+      baseline.current = next;
+      past.current = [];
+      future.current = [];
+      apply(next);
+      bumpHistory();
+      loadDefaultSet(character.classType); // fill any slots the loadout didn't cover
+    },
+    [apply, loadDefaultSet],
+  );
 
-  const equippedCount = ARMOR_SLOTS.filter((s) => items[s.key]).length;
+  // ── Saved sets ──
+  const saveCurrentSet = useCallback(() => {
+    const className = CLASSES.find((c) => c.value === look.classType)?.label ?? "Guardian";
+    setSets((prev) => {
+      const set: SavedSet = {
+        id: newSetId(),
+        name: `${className} ${prev.length + 1}`,
+        classType: look.classType,
+        items: look.items,
+        shaders: look.shaders,
+        savedAt: Date.now(),
+      };
+      const next = [...prev, set];
+      saveSets(next);
+      return next;
+    });
+  }, [look]);
+
+  const loadSet = useCallback(
+    (set: SavedSet) => {
+      setStatus({});
+      commit(() => ({ classType: set.classType, items: set.items, shaders: set.shaders }));
+    },
+    [commit],
+  );
+
+  const deleteSet = useCallback((id: string) => {
+    setSets((prev) => {
+      const next = prev.filter((s) => s.id !== id);
+      saveSets(next);
+      return next;
+    });
+  }, []);
+
+  const equippedSlots = ARMOR_SLOTS.filter((s) => look.items[s.key]);
+  const equippedCount = equippedSlots.length;
+
+  // Hold the viewport behind a loading screen until the whole opening set has
+  // assembled, so the user sees a complete Guardian rather than pieces popping
+  // in one at a time. Latches once — later per-slot swaps don't re-trigger it.
+  const [booted, setBooted] = useState(false);
+  useEffect(() => {
+    if (booted) return;
+    if (equippedCount === 0) return; // placeholder set not resolved yet
+    const allSettled = equippedSlots.every((s) => {
+      const st = status[s.key];
+      return st === "ready" || st === "error";
+    });
+    if (allSettled) setBooted(true);
+  }, [booted, equippedCount, equippedSlots, status]);
+
+  // The load screen covers the whole editor, so a piece that never reports
+  // (a stalled fetch, a renderer that never initialized) would trap the user
+  // behind it. Drop the cover after a grace period regardless — the slot rail
+  // keeps showing per-piece progress from there.
+  useEffect(() => {
+    if (booted) return;
+    const t = setTimeout(() => setBooted(true), 20_000);
+    return () => clearTimeout(t);
+  }, [booted]);
+
+  // Relaunch the viewport: a new key remounts the ModelViewer (fresh WebGPU
+  // canvas + renderer) and CharacterModel (reloads every piece), and clears any
+  // caught render error. Used by the manual reload control and the error
+  // boundary's fallback to recover from a failed/black canvas.
+  const [viewportKey, setViewportKey] = useState(0);
+  const reloadViewport = useCallback(() => {
+    characterRef.current = null;
+    setBooted(false);
+    setStatus({});
+    setGlowCapable(false);
+    setViewportKey((k) => k + 1);
+  }, []);
+
+  // Screen-level keys, as advertised bottom-right. TAB is the game's "hide the
+  // menu and look at the Guardian" — skipped while typing in the search field,
+  // and Shift+Tab is left alone so keyboard focus traversal still works.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null;
+      const typing =
+        !!el && (el.tagName === "INPUT" || el.tagName === "SELECT" || el.tagName === "TEXTAREA");
+      if (e.key === "Tab" && !e.shiftKey && !typing) {
+        e.preventDefault();
+        setMenuHidden((v) => !v);
+      } else if (e.key === "Escape") {
+        if (devOpen) setDevOpen(false);
+        else if (menuHidden) setMenuHidden(false);
+        else onFocusRail("overview");
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [devOpen, menuHidden, onFocusRail]);
+
+  const browsing = focus !== "overview" || shadeAll;
+  const focusedItem = focus === "overview" ? null : (look.items[focus] ?? null);
+  const focusedShader = focus === "overview" ? null : (look.shaders[focus] ?? null);
+  const pickingShader = shadeAll || layer === "shader";
+
+  const showSignIn = authState === "out" && !gateDone;
+  const showRoster = authState === "in" && characters.length > 0 && !gateDone;
+  const showLoading = !showSignIn && !showRoster && !booted;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
-      <AppHeader title="Appearance Customization" subtitle="Fashion · Full Character" />
-      <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
-        {/* ── Left: slot column ── */}
-        <aside
-          style={{
-            width: 340,
-            borderRight: "1px solid var(--d2-line)",
-            display: "flex",
-            flexDirection: "column",
-            padding: 16,
-            gap: 12,
-            overflowY: "auto",
-          }}
-        >
-          {/* Bungie account: sign in, or pick a Guardian to load its loadout */}
-          <div>
-            {authState === "out" && (
-              <a
-                href="/api/auth/login"
-                className="d2-btn d2-btn--primary"
+    <div className="fx-root" data-light={light}>
+      <div className="fx-vignette" />
+
+      <div className="fx-shell">
+        {!menuHidden && (
+          <div className="fx-menu">
+            {/* Title */}
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <Link
+                href="/"
+                title="Home"
                 style={{
-                  display: "block",
-                  textAlign: "center",
-                  padding: "9px 0",
-                  fontSize: 12,
-                  textDecoration: "none",
+                  width: 26,
+                  height: 26,
+                  flexShrink: 0,
+                  border: "2px solid rgba(255,255,255,0.9)",
+                  transform: "rotate(45deg)",
+                }}
+              />
+              <h1
+                style={{
+                  margin: 0,
+                  textTransform: "uppercase",
+                  fontWeight: 500,
+                  letterSpacing: "0.08em",
+                  fontSize: 26,
+                  textShadow: "0 1px 12px rgba(30,36,43,0.45)",
                 }}
               >
-                Sign in with Bungie
-              </a>
-            )}
-            {authState === "in" && characters.length > 0 && (
-              <div>
-                <p className="d2-eyebrow" style={{ margin: "0 0 6px" }}>
-                  Your Guardians
-                </p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  {characters.map((c) => (
-                    <button
-                      key={c.characterId}
-                      className="d2-btn"
+                Appearance Customization
+              </h1>
+            </div>
+
+            {/* Breadcrumb + rule */}
+            <div style={{ marginTop: 26 }}>
+              <p
+                style={{
+                  margin: "0 0 10px",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.22em",
+                  fontSize: 13,
+                  color: "var(--fx-ink-dim)",
+                  textShadow: "0 1px 8px rgba(30,36,43,0.5)",
+                }}
+              >
+                Customization <span style={{ color: "var(--fx-ink-faint)" }}>{"//"}</span>{" "}
+                <span style={{ color: "#fff", fontWeight: 500 }}>
+                  {shadeAll ? SLOT_LABEL.overview : SLOT_LABEL[focus]}
+                </span>
+                {browsing && (
+                  <>
+                    {" "}
+                    <span style={{ color: "var(--fx-ink-faint)" }}>·</span>{" "}
+                    <span style={{ color: "#fff", fontWeight: 500 }}>
+                      {pickingShader ? "Shader" : "Ornament"}
+                    </span>
+                  </>
+                )}
+              </p>
+              <div style={{ display: "flex", alignItems: "center" }}>
+                <span style={{ width: 46, height: 2, background: "#fff" }} />
+                <span
+                  style={{
+                    flex: 1,
+                    height: 1,
+                    background:
+                      "linear-gradient(90deg, rgba(255,255,255,0.42), rgba(255,255,255,0.06))",
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Rail + browse column */}
+            <div style={{ display: "flex", gap: 22, marginTop: 22, flex: 1, minHeight: 0 }}>
+              {browsing && (
+                <SlotRail
+                  focus={focus}
+                  onFocus={onFocusRail}
+                  items={look.items}
+                  status={status}
+                />
+              )}
+
+              <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+                {!browsing ? (
+                  <OverviewPanel
+                    items={look.items}
+                    shaders={look.shaders}
+                    onEdit={editSlot}
+                    onResetAll={resetAll}
+                    onShadeAll={() => setShadeAll(true)}
+                    shadeAllArmed={shadeAll}
+                  />
+                ) : (
+                  <>
+                    {/* Layer switch: default / ornament / shader for this slot */}
+                    <div
                       style={{
                         display: "flex",
                         alignItems: "center",
                         gap: 10,
-                        padding: 6,
-                        textAlign: "left",
+                        marginBottom: 22,
                       }}
-                      onClick={() => equipLoadout(c)}
                     >
-                      {c.emblemPath && (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={c.emblemPath}
-                          alt=""
-                          style={{ width: 28, height: 28, objectFit: "cover" }}
-                        />
+                      <button
+                        className="fx-btn"
+                        onClick={clearFocused}
+                        title={
+                          shadeAll
+                            ? "Remove every shader"
+                            : `Remove this ${pickingShader ? "shader" : "piece"}`
+                        }
+                        style={{ height: 74, padding: "0 20px" }}
+                      >
+                        Default
+                      </button>
+                      <div style={{ width: 14 }} />
+                      {!shadeAll && (
+                        <>
+                          <button
+                            className="fx-tile"
+                            data-selected={layer === "gear"}
+                            title="Ornament"
+                            onClick={() => setLayer("gear")}
+                            style={{
+                              width: 74,
+                              height: 74,
+                              overflow: "hidden",
+                              borderColor: focusedItem
+                                ? tierColor(focusedItem.tier)
+                                : "var(--fx-line)",
+                            }}
+                          >
+                            <span className="fx-tile__fill" />
+                            {focusedItem?.icon && (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={focusedItem.icon} alt="" />
+                            )}
+                          </button>
+                          <button
+                            className="fx-tile"
+                            data-selected={layer === "shader"}
+                            title="Shader"
+                            onClick={() => setLayer("shader")}
+                            disabled={!focusedItem}
+                            style={{
+                              width: 74,
+                              height: 74,
+                              overflow: "hidden",
+                              background:
+                                "linear-gradient(135deg,#f3efe4 0 50%,#9aa7b2 50% 100%)",
+                            }}
+                          >
+                            {focusedShader?.icon && (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={focusedShader.icon} alt="" />
+                            )}
+                          </button>
+                        </>
                       )}
-                      <span style={{ flex: 1 }}>{c.className}</span>
-                      <span style={{ color: "var(--d2-gold)", fontSize: 12 }}>
-                        ✦ {c.light}
-                      </span>
+                      <button
+                        className="fx-tile"
+                        data-selected={favoritesOnly}
+                        title="Show favourites only (shift-click a tile to favourite it)"
+                        onClick={() => setFavoritesOnly((v) => !v)}
+                        style={{
+                          width: 74,
+                          height: 74,
+                          display: "grid",
+                          placeItems: "center",
+                          fontSize: 20,
+                          color: favoritesOnly ? "var(--fx-gold)" : "var(--fx-ink-dim)",
+                        }}
+                      >
+                        ★
+                      </button>
+                    </div>
+
+                    {pickingShader ? (
+                      <ShaderPicker
+                        selectedShaderHash={focusedShader?.hash ?? null}
+                        onSelect={onPickShader}
+                        favoritesOnly={favoritesOnly}
+                        favorites={favorites}
+                        onToggleFavorite={toggleFavorite}
+                      />
+                    ) : (
+                      <ItemBrowser
+                        selectedHash={focusedItem?.hash ?? null}
+                        onSelect={onPickItem}
+                        fixedSlot={focus === "overview" ? undefined : focus}
+                        fixedClassType={look.classType}
+                        favoritesOnly={favoritesOnly}
+                        favorites={favorites}
+                        onToggleFavorite={toggleFavorite}
+                      />
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Saved sets · class · light */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "flex-end",
+                gap: 34,
+                marginTop: "auto",
+                paddingTop: 20,
+                flexWrap: "wrap",
+              }}
+            >
+              <div>
+                <p className="fx-label">Saved sets</p>
+                <div style={{ display: "flex", gap: 8 }}>
+                  {sets.map((set) => {
+                    const cover = ARMOR_SLOTS.map((s) => set.items[s.key]).find((i) => i?.icon);
+                    return (
+                      <button
+                        key={set.id}
+                        className="fx-tile"
+                        title={`${set.name} — shift-click to delete`}
+                        onClick={(e) => (e.shiftKey ? deleteSet(set.id) : loadSet(set))}
+                        style={{ width: 52, height: 52, overflow: "hidden" }}
+                      >
+                        <span className="fx-tile__fill" />
+                        {cover?.icon && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={cover.icon} alt="" />
+                        )}
+                      </button>
+                    );
+                  })}
+                  <button
+                    className="fx-tile"
+                    title="Save the current look"
+                    onClick={saveCurrentSet}
+                    style={{
+                      width: 52,
+                      height: 52,
+                      display: "grid",
+                      placeItems: "center",
+                      fontSize: 17,
+                      color: "var(--fx-ink-dim)",
+                      background: "transparent",
+                      borderStyle: "dashed",
+                    }}
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <p className="fx-label">Class</p>
+                <div style={{ display: "flex", gap: 14 }}>
+                  {CLASSES.map((c) => (
+                    <button
+                      key={c.value}
+                      className="fx-tab"
+                      data-active={look.classType === c.value}
+                      onClick={() => changeClass(c.value)}
+                    >
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="fx-label" style={{ marginTop: 16 }}>
+                  Light
+                </p>
+                <div style={{ display: "flex", gap: 14 }}>
+                  {LIGHTS.map((l) => (
+                    <button
+                      key={l.value}
+                      className="fx-tab"
+                      data-active={light === l.value}
+                      onClick={() => setLight(l.value)}
+                    >
+                      {l.label}
                     </button>
                   ))}
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Stage: the assembled Guardian ── */}
+        <div className="fx-stage">
+          <ViewportBoundary
+            key={viewportKey}
+            fallback={(error) => (
+              <CrashScreen detail={error.message} onRelaunch={reloadViewport} />
             )}
-          </div>
+          >
+            <ModelViewer
+              light={light}
+              showGrid={false}
+              rawOutput={debugChannel !== 0}
+              toneMapping={toneMapping}
+            >
+              <CharacterModel
+                pieces={pieces}
+                onPieceStatus={onPieceStatus}
+                onModel={onCharacterModel}
+              />
+              <SlotFocusCamera
+                character={characterRef}
+                slot={focus === "overview" ? null : focus}
+                revision={framingRevision}
+              />
+            </ModelViewer>
+          </ViewportBoundary>
 
-          {/* Class picker */}
-          <div style={{ display: "flex", gap: 6 }}>
-            {CLASSES.map((c) => (
-              <button
-                key={c.value}
-                className={`d2-btn ${classType === c.value ? "d2-btn--primary" : ""}`}
-                style={{ flex: 1, padding: "8px 0", fontSize: 12 }}
-                onClick={() => changeClass(c.value)}
-              >
-                {c.label}
-              </button>
-            ))}
-          </div>
+          {booted && equippedCount === 0 && <EmptyStage />}
+        </div>
+      </div>
 
-          <div>
-            <p className="d2-eyebrow" style={{ margin: 0 }}>
-              Customization
-            </p>
+      {/* ── Top-right: account, history, dev ── */}
+      <div
+        className="fx-actions"
+        style={{
+          position: "absolute",
+          top: 43,
+          right: 48,
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          zIndex: 20,
+        }}
+      >
+        <button
+          className="fx-btn"
+          onClick={() => setGateDone(false)}
+          title={activeCharacter ? "Switch Guardian" : "Bungie account"}
+          style={{ padding: "10px 15px", fontSize: 11 }}
+        >
+          {activeCharacter ? activeCharacter.className : "Sign in"}
+        </button>
+        <button
+          className="fx-btn"
+          title="Rebuild the canvas and reload every piece"
+          onClick={reloadViewport}
+          style={{ width: 36, height: 36, padding: 0, fontSize: 15 }}
+        >
+          ⟳
+        </button>
+        <button
+          className="fx-btn"
+          title="Undo"
+          onClick={undo}
+          disabled={past.current.length === 0}
+          style={{ width: 36, height: 36, padding: 0, fontSize: 15 }}
+        >
+          ↺
+        </button>
+        <button
+          className="fx-btn"
+          title="Redo"
+          onClick={redo}
+          disabled={future.current.length === 0}
+          style={{ width: 36, height: 36, padding: 0, fontSize: 15 }}
+        >
+          ↻
+        </button>
+        <button
+          className="fx-btn"
+          onClick={revert}
+          disabled={!baseline.current}
+          title="Back to the set this session started from"
+          style={{ padding: "10px 15px", fontSize: 11 }}
+        >
+          Revert
+        </button>
+        <button
+          className="fx-btn fx-btn--solid"
+          onClick={saveCurrentSet}
+          style={{ padding: "10px 17px", fontSize: 11 }}
+        >
+          Save set
+        </button>
+        <button
+          className="fx-btn"
+          title="Developer tools"
+          onClick={() => setDevOpen((v) => !v)}
+          style={{
+            width: 36,
+            height: 36,
+            padding: 0,
+            fontFamily: "ui-monospace, Menlo, monospace",
+            fontSize: 12,
+            letterSpacing: 0,
+            color: devOpen ? "var(--fx-gold)" : "var(--fx-ink-dim)",
+          }}
+        >
+          &lt;/&gt;
+        </button>
+      </div>
+
+      {/* ── Bottom-right: key legend ── */}
+      <div
+        className="fx-legend"
+        style={{
+          position: "absolute",
+          right: 48,
+          bottom: 34,
+          display: "flex",
+          alignItems: "center",
+          gap: 20,
+          zIndex: 20,
+        }}
+      >
+        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span className="fx-key">TAB</span>
+          <span className="fx-hint">{menuHidden ? "Show menu" : "Hide menu"}</span>
+        </span>
+        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span className="fx-key">ESC</span>
+          <span className="fx-hint">Overview</span>
+        </span>
+      </div>
+
+      {/* ── Developer drawer ── */}
+      {devOpen && (
+        <div
+          className="fx-dev"
+          style={{
+            position: "absolute",
+            right: 48,
+            top: 100,
+            bottom: 90,
+            width: 330,
+            padding: 18,
+            overflowY: "auto",
+            zIndex: 30,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "baseline",
+              justifyContent: "space-between",
+              marginBottom: 12,
+            }}
+          >
             <p
               style={{
-                margin: "2px 0 0",
-                fontSize: 11,
-                color: "var(--d2-text-faint)",
-                letterSpacing: "0.06em",
+                margin: 0,
+                textTransform: "uppercase",
+                letterSpacing: "0.3em",
+                fontSize: 10,
+                color: "var(--fx-gold)",
               }}
             >
-              {equippedCount}/5 SLOTS · APPLY PER PIECE
+              Developer · gearstack
             </p>
-          </div>
-
-          {/* Slot rows */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {ARMOR_SLOTS.map((slot) => (
-              <SlotRow
-                key={slot.key}
-                slot={slot}
-                item={items[slot.key] ?? null}
-                shader={shaders[slot.key] ?? null}
-                status={status[slot.key]}
-                active={activeSlot === slot.key}
-                activeMode={activeSlot === slot.key ? mode : null}
-                onEditItem={() => {
-                  setActiveSlot(slot.key);
-                  setMode("gear");
-                }}
-                onEditShader={() => {
-                  setActiveSlot(slot.key);
-                  setMode("shader");
-                }}
-              />
-            ))}
-          </div>
-        </aside>
-
-        {/* ── Center: 3D character ── */}
-        <section style={{ position: "relative", flex: 1, minHeight: 0 }}>
-          <div className="d2-frame" />
-          <ModelViewer>
-            <CharacterModel
-              pieces={pieces}
-              onPieceStatus={onPieceStatus}
-              onModel={onCharacterModel}
-            />
-          </ModelViewer>
-          {equippedCount === 0 && (
-            <div
+            <button
+              onClick={() => setDevOpen(false)}
               style={{
-                position: "absolute",
-                inset: 0,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                pointerEvents: "none",
-                color: "var(--d2-text-faint)",
-                textAlign: "center",
+                background: "none",
+                border: "none",
+                color: "var(--fx-ink-dim)",
+                fontSize: 14,
+                cursor: "pointer",
               }}
             >
-              <div>
-                <p className="d2-eyebrow">Full Character</p>
-                <p>Equip armor to each slot to assemble your Guardian.</p>
-              </div>
-            </div>
-          )}
-        </section>
-
-        {/* ── Right: contextual browser ── */}
-        <aside
-          style={{
-            width: 360,
-            borderLeft: "1px solid var(--d2-line)",
-            display: "flex",
-            flexDirection: "column",
-            padding: 16,
-            minHeight: 0,
-          }}
-        >
-          <div style={{ marginBottom: 10 }}>
-            <p className="d2-eyebrow" style={{ margin: 0 }}>
-              {mode === "debug" ? "Debugging" : "Editing"}
-            </p>
-            <p style={{ margin: "2px 0 0", fontSize: 15, fontWeight: 600 }}>
-              {mode === "debug" ? (
-                <>
-                  Full Character ·{" "}
-                  <span style={{ color: "var(--d2-cyan)" }}>Shader Debug</span>
-                </>
-              ) : (
-                <>
-                  {ARMOR_SLOTS.find((s) => s.key === activeSlot)?.label} ·{" "}
-                  <span style={{ color: "var(--d2-cyan)" }}>
-                    {mode === "gear" ? "Ornament" : "Shader"}
-                  </span>
-                </>
-              )}
-            </p>
-          </div>
-
-          {/* Ornament / Shader / Debug tabs */}
-          <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
-            <button
-              className={`d2-btn ${mode === "gear" ? "d2-btn--primary" : ""}`}
-              style={{ flex: 1, padding: "7px 0", fontSize: 12 }}
-              onClick={() => setMode("gear")}
-            >
-              Ornament
-            </button>
-            <button
-              className={`d2-btn ${mode === "shader" ? "d2-btn--primary" : ""}`}
-              style={{ flex: 1, padding: "7px 0", fontSize: 12 }}
-              onClick={() => setMode("shader")}
-              disabled={!items[activeSlot]}
-              title={items[activeSlot] ? "" : "Equip an item first"}
-            >
-              Shader
-            </button>
-            <button
-              className={`d2-btn ${mode === "debug" ? "d2-btn--primary" : ""}`}
-              style={{ flex: 1, padding: "7px 0", fontSize: 12 }}
-              onClick={() => setMode("debug")}
-              title="Live shader tuning across the whole character"
-            >
-              Debug
+              ✕
             </button>
           </div>
-
-          <div style={{ flex: 1, minHeight: 0, overflowY: mode === "debug" ? "auto" : undefined }}>
-            {mode === "gear" && (
-              <ItemBrowser
-                selectedHash={items[activeSlot]?.hash ?? null}
-                onSelect={onPickItem}
-                fixedSlot={activeSlot}
-                fixedClassType={classType}
-              />
-            )}
-            {mode === "shader" && (
-              <ShaderPicker
-                selectedShaderHash={shaders[activeSlot]?.hash ?? null}
-                onSelect={onPickShader}
-              />
-            )}
-            {mode === "debug" && (
-              <>
-                <p style={{ fontSize: 10, color: "var(--d2-text-faint)", margin: "0 0 12px", lineHeight: 1.5 }}>
-                  Live tuning applied to every equipped piece. Every control
-                  defaults to the normal in-game render.
-                </p>
-                <GearDebugControls
-                  debugChannel={debugChannel}
-                  onSelectDebugChannel={selectDebugChannel}
-                  roughnessRemapMode={roughnessRemapMode}
-                  onSelectRoughnessRemapMode={selectRoughnessRemapMode}
-                  wearRemapMode={wearRemapMode}
-                  onSelectWearRemapMode={selectWearRemapMode}
-                  glowCapable={glowCapable}
-                  glowEnabled={glowEnabled}
-                  onToggleGlow={toggleGlowEnabled}
-                  bandMode={bandMode}
-                  onSelectBandMode={selectBandMode}
-                  bands={bands}
-                  onUpdateBands={updateBands}
-                  onResetBands={() => updateBands(BAND_DEFAULTS)}
-                />
-              </>
-            )}
-          </div>
-        </aside>
-      </div>
-    </div>
-  );
-}
-
-const TIER_COLOR: Record<string, string> = {
-  Exotic: "#ceae33",
-  Legendary: "#5a3e70",
-  Rare: "#4f7ba8",
-  Uncommon: "#3a7d44",
-  Common: "#8a929c",
-};
-
-function SlotRow({
-  slot,
-  item,
-  shader,
-  status,
-  active,
-  activeMode,
-  onEditItem,
-  onEditShader,
-}: {
-  slot: { key: SlotKey; label: string; glyph: string };
-  item: ItemEntry | null;
-  shader: ItemEntry | null;
-  status?: PieceStatus;
-  active: boolean;
-  activeMode: BrowseMode | null;
-  onEditItem: () => void;
-  onEditShader: () => void;
-}) {
-  const tier = item ? (TIER_COLOR[item.tier] ?? "var(--d2-line)") : "var(--d2-line)";
-  return (
-    <div
-      className="d2-panel"
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-        padding: 8,
-        background: active ? "rgba(79,208,224,0.06)" : "rgba(10,12,15,0.6)",
-        borderColor: active ? "var(--d2-cyan)" : "var(--d2-line)",
-      }}
-    >
-      <div
-        style={{
-          width: 22,
-          textAlign: "center",
-          color: "var(--d2-text-dim)",
-          fontSize: 14,
-        }}
-        title={slot.label}
-      >
-        {slot.glyph}
-      </div>
-
-      {/* Ornament cell */}
-      <Cell
-        icon={item?.icon ?? null}
-        fallback={slot.label.slice(0, 4)}
-        border={active && activeMode === "gear" ? "var(--d2-cyan)" : tier}
-        onClick={onEditItem}
-        status={status}
-      />
-
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div
-          style={{
-            fontSize: 12,
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            color: item ? "var(--d2-text)" : "var(--d2-text-faint)",
-          }}
-        >
-          {item?.name ?? slot.label}
+          <p style={{ margin: "0 0 14px", fontSize: 11, lineHeight: 1.6 }}>
+            Live tuning across every equipped piece. Each control defaults to the
+            normal in-game render.
+          </p>
+          <button
+            className="d2-btn"
+            onClick={randomizeSet}
+            title="Dress every slot in a random piece + random shader (hashes logged to the console)"
+            style={{ fontSize: 11, padding: "4px 8px", marginBottom: 16, width: "100%" }}
+          >
+            Randomize set
+          </button>
+          <GearDebugControls
+            debugChannel={debugChannel}
+            onSelectDebugChannel={selectDebugChannel}
+            toneMapping={toneMapping}
+            onSelectToneMapping={setToneMapping}
+            roughnessRemapMode={roughnessRemapMode}
+            onSelectRoughnessRemapMode={selectRoughnessRemapMode}
+            wearRemapMode={wearRemapMode}
+            onSelectWearRemapMode={selectWearRemapMode}
+            glowCapable={glowCapable}
+            glowEnabled={glowEnabled}
+            onToggleGlow={toggleGlowEnabled}
+            bandMode={bandMode}
+            onSelectBandMode={selectBandMode}
+            bands={bands}
+            onUpdateBands={updateBands}
+            onResetBands={() => updateBands(BAND_DEFAULTS)}
+          />
         </div>
-        <div style={{ fontSize: 10, color: "var(--d2-text-faint)" }}>
-          {shader ? "◆ shaded" : "no shader"}
-        </div>
-      </div>
+      )}
 
-      {/* Shader cell */}
-      <Cell
-        icon={shader?.icon ?? null}
-        fallback="◆"
-        border={active && activeMode === "shader" ? "var(--d2-cyan)" : "var(--d2-line)"}
-        onClick={onEditShader}
-        disabled={!item}
-      />
-    </div>
-  );
-}
-
-function Cell({
-  icon,
-  fallback,
-  border,
-  onClick,
-  status,
-  disabled,
-}: {
-  icon: string | null;
-  fallback: string;
-  border: string;
-  onClick: () => void;
-  status?: PieceStatus;
-  disabled?: boolean;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      style={{
-        width: 44,
-        height: 44,
-        flexShrink: 0,
-        padding: 0,
-        cursor: disabled ? "not-allowed" : "pointer",
-        background: "var(--d2-bg)",
-        border: `2px solid ${border}`,
-        position: "relative",
-        overflow: "hidden",
-        opacity: disabled ? 0.4 : 1,
-      }}
-    >
-      {icon ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={icon}
-          alt=""
-          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+      {/* ── Full-stage screens ── */}
+      {showSignIn && <SignInScreen onManual={skipAccount} />}
+      {showRoster && (
+        <RosterScreen
+          characters={characters.map((c) => ({
+            characterId: c.characterId,
+            className: c.className,
+            light: c.light,
+            emblemPath: c.emblemPath,
+            slots: c.items.filter((it) => ARMOR_SLOTS.some((s) => s.key === it.slot)).length,
+          }))}
+          onPick={(id) => {
+            const c = characters.find((x) => x.characterId === id);
+            if (c) equipLoadout(c);
+          }}
+          onSkip={() => setGateDone(true)}
         />
-      ) : (
-        <span style={{ fontSize: 9, color: "var(--d2-text-faint)" }}>{fallback}</span>
       )}
-      {status === "loading" && (
-        <span
-          style={{
-            position: "absolute",
-            inset: 0,
-            background: "rgba(0,0,0,0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 9,
-            color: "var(--d2-cyan)",
-          }}
-        >
-          …
-        </span>
+      {showLoading && (
+        <LoadingScreen
+          pieces={ARMOR_SLOTS.map((s) => ({ label: s.label, status: status[s.key] }))}
+          onReload={reloadViewport}
+        />
       )}
-      {status === "error" && (
-        <span
-          style={{
-            position: "absolute",
-            bottom: 0,
-            right: 0,
-            fontSize: 9,
-            color: "var(--d2-danger)",
-            background: "rgba(0,0,0,0.7)",
-            padding: "0 2px",
-          }}
-        >
-          !
-        </span>
-      )}
-    </button>
+    </div>
   );
 }

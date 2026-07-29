@@ -19,10 +19,16 @@ import {
   type GearstackDebugChannel,
   type RemapMode,
 } from "@/lib/materials/gearMaterial";
+import {
+  TONE_MAPPING_OPTIONS,
+  type ToneMappingKey,
+} from "@/components/viewer/toneMapping";
 
 export interface GearDebugControlsProps {
   debugChannel: GearstackDebugChannel;
   onSelectDebugChannel: (ch: GearstackDebugChannel) => void;
+  toneMapping: ToneMappingKey;
+  onSelectToneMapping: (key: ToneMappingKey) => void;
   roughnessRemapMode: RemapMode;
   onSelectRoughnessRemapMode: (mode: RemapMode) => void;
   wearRemapMode: RemapMode;
@@ -47,6 +53,8 @@ const btnStyle = (active: boolean) => ({
 export default function GearDebugControls({
   debugChannel,
   onSelectDebugChannel,
+  toneMapping,
+  onSelectToneMapping,
   roughnessRemapMode,
   onSelectRoughnessRemapMode,
   wearRemapMode,
@@ -60,8 +68,41 @@ export default function GearDebugControls({
   onUpdateBands,
   onResetBands,
 }: GearDebugControlsProps) {
+  const toneNote = TONE_MAPPING_OPTIONS.find((o) => o.key === toneMapping)?.note;
+
   return (
     <>
+      <div style={{ marginBottom: 16 }}>
+        <label style={{ fontSize: 12, color: "var(--d2-text-dim)" }}>
+          TONE MAPPING
+        </label>
+        <p style={{ fontSize: 10, color: "var(--d2-text-faint)", marginTop: 4, lineHeight: 1.5 }}>
+          Applies to the whole render, not just the gear. ACES is React Three
+          Fiber&apos;s default rather than a choice anyone made here, and every
+          material tuned by eye was tuned against it — so A/B this while
+          re-tuning. The gearstack channels below always force this off, so
+          their readings stay raw whatever is picked here.
+        </p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
+          {TONE_MAPPING_OPTIONS.map((opt) => (
+            <button
+              key={opt.key}
+              className="d2-btn"
+              style={btnStyle(toneMapping === opt.key)}
+              title={opt.note}
+              onClick={() => onSelectToneMapping(opt.key)}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+        {toneNote && (
+          <p style={{ fontSize: 10, color: "var(--d2-text-faint)", marginTop: 6, lineHeight: 1.5 }}>
+            {toneNote}
+          </p>
+        )}
+      </div>
+
       <div>
         <label style={{ fontSize: 12, color: "var(--d2-text-dim)" }}>
           GEARSTACK CHANNEL

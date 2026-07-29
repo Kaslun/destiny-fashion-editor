@@ -104,6 +104,9 @@ export default function CharacterModel({ pieces, onPieceStatus, onModel }: Props
         onPieceStatus?.(slot, "loading");
         try {
           const { group } = await loadPiece(p.itemHash, p.shaderHash, p.hideHood);
+          // Tag the piece so consumers of the exposed wrapper can find one
+          // slot's geometry — e.g. framing the camera on the piece being edited.
+          group.userData.slot = slot;
           if (token !== tokenRef.current) {
             disposeGroup(group);
             return; // a newer request superseded this run

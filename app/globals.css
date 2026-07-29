@@ -364,6 +364,421 @@ a:hover {
   background: var(--d2-text);
 }
 
+/* ===========================================================================
+   Appearance Customization surface ("fx")
+   ---------------------------------------------------------------------------
+   The fashion editor doesn't wear the dark tool chrome above: it's a lit studio
+   the Guardian stands in, so the whole screen is a light steel gradient and the
+   UI is white rules/hairlines floating on top of it. Same D2 type language
+   (uppercase, tracked, sharp corners) — inverted surface.
+
+   The dark tokens stay for the POC/debug screens, which are tools, not stage.
+   Everything here is scoped under .fx-root so the two never bleed.
+   =========================================================================== */
+.fx-root {
+  --fx-ink: #ffffff;
+  --fx-ink-dim: rgba(255, 255, 255, 0.56);
+  --fx-ink-faint: rgba(255, 255, 255, 0.3);
+  --fx-line: rgba(255, 255, 255, 0.26);
+  --fx-line-strong: rgba(255, 255, 255, 0.34);
+  --fx-gold: #f0d264;
+  --fx-danger: #f2836b;
+  /* Hatch fill standing in for an item with no icon (and the tint behind one). */
+  --fx-hatch: repeating-linear-gradient(
+    135deg,
+    rgba(236, 241, 245, 0.22) 0 5px,
+    rgba(236, 241, 245, 0.07) 5px 10px
+  );
+
+  position: relative;
+  height: 100vh;
+  overflow: hidden;
+  color: var(--fx-ink);
+  background: var(--fx-stage);
+}
+
+/* Light presets — the rig in ModelViewer changes with these, so the stage
+   backdrop shifts with it or the Guardian floats on a mismatched room. */
+.fx-root[data-light="studio"] {
+  --fx-stage: radial-gradient(
+    ellipse 66% 78% at 71% 46%,
+    #eff3f6 0%,
+    #c6cfd7 28%,
+    #909ca7 56%,
+    #5d6872 82%,
+    #47515b 100%
+  );
+}
+.fx-root[data-light="tower"] {
+  --fx-stage: radial-gradient(
+    ellipse 66% 78% at 71% 46%,
+    #f8f1e4 0%,
+    #dfceb2 28%,
+    #ab9375 56%,
+    #6b5c49 82%,
+    #4a4237 100%
+  );
+}
+.fx-root[data-light="night"] {
+  --fx-stage: radial-gradient(
+    ellipse 66% 78% at 71% 46%,
+    #7e8ea1 0%,
+    #4d5a6b 28%,
+    #333d4a 56%,
+    #222932 82%,
+    #171c23 100%
+  );
+}
+
+/* Vignette + key-light bloom, painted over the stage gradient. */
+.fx-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(38, 45, 53, 0.55) 0%,
+      rgba(38, 45, 53, 0.28) 26%,
+      rgba(38, 45, 53, 0) 48%
+    ),
+    radial-gradient(circle 620px at 71% 44%, rgba(255, 255, 255, 0.16), transparent 70%);
+}
+
+.fx-root a {
+  color: var(--fx-ink);
+}
+.fx-root a:hover {
+  color: #ffffff;
+}
+
+/* ---- Tiles (slot rail, item grid, saved sets) ------------------------------ */
+/* One square cell: hatch backdrop, optional icon, rarity border, selection ring. */
+.fx-tile {
+  position: relative;
+  padding: 0;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--fx-line);
+  font-family: inherit;
+  color: inherit;
+  transition: border-color 0.12s;
+}
+.fx-tile:hover {
+  border-color: rgba(255, 255, 255, 0.85);
+}
+.fx-tile:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+.fx-tile__fill {
+  position: absolute;
+  inset: 0;
+  background: var(--fx-hatch);
+}
+.fx-tile img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* Rarity stripe along the bottom edge (slot rail) */
+.fx-tile__tier {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+}
+.fx-tile[data-selected="true"] {
+  border-color: #ffffff;
+}
+.fx-tile[data-selected="true"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 14px rgba(255, 255, 255, 0.5);
+  pointer-events: none;
+}
+.fx-tile__fav {
+  position: absolute;
+  top: 3px;
+  left: 4px;
+  font-size: 11px;
+  line-height: 1;
+  color: var(--fx-gold);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+/* ---- Buttons --------------------------------------------------------------- */
+.fx-btn {
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--fx-ink);
+  background: transparent;
+  border: 1px solid var(--fx-line-strong);
+  padding: 10px 16px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.12s, background 0.12s, color 0.12s;
+}
+.fx-btn:hover:not(:disabled) {
+  border-color: #ffffff;
+}
+.fx-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.fx-btn--solid {
+  color: #2b333b;
+  background: rgba(255, 255, 255, 0.9);
+  border-color: #ffffff;
+}
+.fx-btn--solid:hover:not(:disabled) {
+  background: #ffffff;
+}
+
+/* Underlined text tab (light preset switcher) */
+.fx-tab {
+  padding: 0 0 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 12px;
+  color: var(--fx-ink-dim);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  font-family: inherit;
+}
+.fx-tab:hover {
+  color: #ffffff;
+}
+.fx-tab[data-active="true"] {
+  color: #ffffff;
+  border-bottom-color: #ffffff;
+}
+
+/* Pager chevrons flanking the item grid */
+.fx-arrow {
+  width: 26px;
+  display: grid;
+  place-items: center;
+  font-size: 15px;
+  color: var(--fx-ink-dim);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+.fx-arrow:hover:not(:disabled) {
+  color: #ffffff;
+}
+.fx-arrow:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+/* ---- Fields ---------------------------------------------------------------- */
+.fx-input {
+  background: rgba(42, 50, 58, 0.34);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  color: #ffffff;
+  padding: 11px 13px;
+  font-family: inherit;
+  font-size: 15px;
+  letter-spacing: 0.03em;
+  outline: none;
+}
+.fx-input::placeholder {
+  color: rgba(255, 255, 255, 0.7);
+}
+.fx-input:focus {
+  border-color: #ffffff;
+  background: rgba(42, 50, 58, 0.5);
+}
+.fx-select {
+  padding: 7px 10px;
+  font-size: 12px;
+}
+.fx-select option {
+  background: #2a323a;
+  color: #ffffff;
+}
+
+/* Small tracked caps above a control group (Saved sets / Class / Light) */
+.fx-label {
+  margin: 0 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Keycap hint (bottom-right legend) */
+.fx-hint {
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.8);
+}
+.fx-key {
+  padding: 2px 7px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 10px;
+  color: #2b333b;
+  background: rgba(255, 255, 255, 0.85);
+}
+
+/* ---- Developer drawer ------------------------------------------------------ */
+/* Re-skins the shared GearDebugControls (dark .d2-btn) for the gold-on-glass
+   drawer without forking the component. */
+.fx-dev {
+  background: rgba(42, 51, 60, 0.72);
+  backdrop-filter: blur(18px);
+  border: 1px solid rgba(240, 210, 100, 0.4);
+}
+.fx-dev label {
+  font-size: 11px !important;
+  color: rgba(255, 255, 255, 0.75) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+.fx-dev p {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+.fx-dev .d2-btn {
+  clip-path: none;
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.22);
+  color: rgba(255, 255, 255, 0.75);
+  letter-spacing: 0.04em;
+}
+.fx-dev .d2-btn:hover {
+  border-color: var(--fx-gold);
+  color: var(--fx-gold);
+}
+/* GearDebugControls marks the active choice with the cyan token — remap it. */
+.fx-dev .d2-btn[style*="--d2-cyan"] {
+  color: var(--fx-gold) !important;
+  border-color: var(--fx-gold) !important;
+  background: rgba(240, 210, 100, 0.12);
+}
+.fx-dev .mono {
+  color: var(--fx-gold) !important;
+}
+.fx-dev input[type="range"] {
+  accent-color: var(--fx-gold);
+}
+
+/* ---- Overlays (loading / sign-in / roster / crash) ------------------------- */
+.fx-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse 62% 52% at 50% 45%, #6a7783 0%, #38424c 74%);
+}
+.fx-overlay--crash {
+  background: radial-gradient(ellipse 62% 52% at 50% 45%, #6f5a55 0%, #3c322f 74%);
+}
+.fx-card {
+  width: 520px;
+  max-width: calc(100vw - 48px);
+  padding: 44px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+}
+@keyframes fx-sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(400%);
+  }
+}
+.fx-sweep {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 22%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.9), transparent);
+  animation: fx-sweep 1.6s linear infinite;
+}
+
+/* ---- Editor layout --------------------------------------------------------- */
+.fx-shell {
+  display: flex;
+  height: 100%;
+}
+.fx-menu {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: clamp(620px, 55%, 1050px);
+  padding: 44px 0 34px 48px;
+  min-height: 0;
+}
+.fx-stage {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+@media (max-width: 1180px) {
+  .fx-menu {
+    width: clamp(480px, 62%, 760px);
+    padding: 24px 0 20px 24px;
+  }
+}
+/* Below the design's desktop target the two columns stack — stage on top, menu
+   scrolling beneath it — and the screen-corner furniture gets out of the way. */
+@media (max-width: 860px) {
+  .fx-root {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+  .fx-shell {
+    flex-direction: column-reverse;
+    height: auto;
+  }
+  .fx-menu {
+    width: 100%;
+    padding: 64px 20px 24px;
+  }
+  .fx-stage {
+    flex: none;
+    height: 46vh;
+    width: 100%;
+  }
+  .fx-actions {
+    top: 10px !important;
+    right: 10px !important;
+    left: 10px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+  .fx-legend {
+    display: none !important;
+  }
+  .fx-dev {
+    right: 10px !important;
+    left: 10px;
+    width: auto !important;
+    top: 64px !important;
+  }
+}
+
 /* ---- POC layout (responsive) ---------------------------------------------- */
 .poc-main {
   display: flex;

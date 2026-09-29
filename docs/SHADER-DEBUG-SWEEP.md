@@ -1,5 +1,9 @@
 # Shader debug sweep — two randomized sets
 
+> Historical investigation. The remap, material-ID and inferred dye-band
+> conclusions below are superseded by [Destiny material implementation](DESTINY-MATERIALS.md).
+> Keep these observations as regression examples, not as the current shader specification.
+
 Date: 2026-07-27. Method: the new dev-drawer **Randomize set** button (random
 armor piece + random shader per slot, hashes logged to the console), then every
 gearstack debug channel 0–6, both remap-mode axes, and all three band modes.

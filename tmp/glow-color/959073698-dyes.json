@@ -1,0 +1,345 @@
+{
+  "hash": 959073698,
+  "slots": {
+    "0": {
+      "cloth": false,
+      "detailDiffuse": "327503503_gear_detail_metal_dif",
+      "detailNormal": "168494730_wobble_norm",
+      "detailDiffuseTransform": [
+        1.5,
+        1.5,
+        0,
+        0
+      ],
+      "detailNormalTransform": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "primary": {
+        "albedo": [
+          0.760697,
+          0.730875,
+          0.687441
+        ],
+        "wornAlbedo": [
+          0.058791,
+          0.058791,
+          0.058791
+        ],
+        "metalness": 0.9,
+        "wornMetalness": 0.18,
+        "detailBlend": 0.9,
+        "detailNormalBlend": 0,
+        "detailRoughnessBlend": 0.8,
+        "wornDetailBlend": 1,
+        "wornDetailNormalBlend": 0,
+        "wornDetailRoughnessBlend": 0,
+        "transmission": 0,
+        "fuzz": 0,
+        "materialTypeId": -1,
+        "roughnessRemap": [
+          -0.7,
+          1.5,
+          0,
+          5
+        ],
+        "wornRoughnessRemap": [
+          -1,
+          7.999999,
+          0.5,
+          0.1
+        ],
+        "wearRemap": [
+          -1.8,
+          3.9,
+          0,
+          1
+        ],
+        "emissive": [
+          0.327778,
+          0.964686,
+          0.982251
+        ],
+        "emissiveIntensity": 1,
+        "sss": 0
+      },
+      "secondary": {
+        "albedo": [
+          0.957455,
+          0.957455,
+          0.957455
+        ],
+        "wornAlbedo": [
+          0.797947,
+          0.797947,
+          0.797947
+        ],
+        "metalness": 1,
+        "wornMetalness": 1,
+        "detailBlend": 0,
+        "detailNormalBlend": 1,
+        "detailRoughnessBlend": 1,
+        "wornDetailBlend": 0,
+        "wornDetailNormalBlend": 0,
+        "wornDetailRoughnessBlend": 0,
+        "transmission": 0,
+        "fuzz": 0,
+        "materialTypeId": -1,
+        "roughnessRemap": [
+          -2,
+          23.5,
+          0.7,
+          0.2
+        ],
+        "wornRoughnessRemap": [
+          -0.25,
+          2.75,
+          0.5,
+          0.4
+        ],
+        "wearRemap": [
+          -0.5,
+          10.5,
+          0,
+          1
+        ],
+        "emissive": [
+          1,
+          0,
+          0
+        ],
+        "emissiveIntensity": 1,
+        "sss": 0
+      }
+    },
+    "1": {
+      "cloth": true,
+      "detailDiffuse": "327503503_gear_detail_cotton_fabric_d2_dif",
+      "detailNormal": "327503503_gear_detail_cotton_fabric_d2_norm",
+      "detailDiffuseTransform": [
+        3,
+        3,
+        0,
+        0
+      ],
+      "detailNormalTransform": [
+        3,
+        3,
+        0,
+        0
+      ],
+      "primary": {
+        "albedo": [
+          0.107023,
+          0.119538,
+          0.135633
+        ],
+        "wornAlbedo": [
+          0.045186,
+          0.045186,
+          0.045186
+        ],
+        "metalness": 0,
+        "wornMetalness": 0,
+        "detailBlend": 0.3,
+        "detailNormalBlend": 1,
+        "detailRoughnessBlend": 1,
+        "wornDetailBlend": 0.5,
+        "wornDetailNormalBlend": 0.2,
+        "wornDetailRoughnessBlend": 1,
+        "transmission": 0,
+        "fuzz": 0.5,
+        "materialTypeId": -1,
+        "roughnessRemap": [
+          -0.5,
+          2,
+          0,
+          0.4
+        ],
+        "wornRoughnessRemap": [
+          0.4,
+          0.2,
+          -1,
+          2
+        ],
+        "wearRemap": [
+          -1.2,
+          4,
+          0,
+          1
+        ],
+        "emissive": [
+          0.327778,
+          0.964686,
+          0.982251
+        ],
+        "emissiveIntensity": 1,
+        "sss": 0
+      },
+      "secondary": {
+        "albedo": [
+          0.814847,
+          0.814847,
+          0.814847
+        ],
+        "wornAlbedo": [
+          0.045186,
+          0.045186,
+          0.045186
+        ],
+        "metalness": 0,
+        "wornMetalness": 0,
+        "detailBlend": 0.3,
+        "detailNormalBlend": 1,
+        "detailRoughnessBlend": 1,
+        "wornDetailBlend": 0.5,
+        "wornDetailNormalBlend": 0.2,
+        "wornDetailRoughnessBlend": 1,
+        "transmission": 0,
+        "fuzz": 0.5,
+        "materialTypeId": -1,
+        "roughnessRemap": [
+          -0.5,
+          2,
+          0,
+          0.4
+        ],
+        "wornRoughnessRemap": [
+          0.4,
+          0.2,
+          -1,
+          2
+        ],
+        "wearRemap": [
+          -1.2,
+          4,
+          0,
+          1
+        ],
+        "emissive": [
+          1,
+          0,
+          0
+        ],
+        "emissiveIntensity": 1,
+        "sss": 0
+      }
+    },
+    "2": {
+      "cloth": false,
+      "detailDiffuse": "327503503_gear_detail_leather_dif",
+      "detailNormal": "327503503_gear_detail_leather_norm",
+      "detailDiffuseTransform": [
+        2,
+        2,
+        0,
+        0
+      ],
+      "detailNormalTransform": [
+        2,
+        2,
+        0,
+        0
+      ],
+      "primary": {
+        "albedo": [
+          0.032555,
+          0.05015,
+          0.052406
+        ],
+        "wornAlbedo": [
+          0.119538,
+          0.184475,
+          0.174647
+        ],
+        "metalness": 0,
+        "wornMetalness": 0,
+        "detailBlend": 0.5,
+        "detailNormalBlend": 0,
+        "detailRoughnessBlend": 0.4,
+        "wornDetailBlend": 0,
+        "wornDetailNormalBlend": 1,
+        "wornDetailRoughnessBlend": 0,
+        "transmission": 0,
+        "fuzz": 0,
+        "materialTypeId": -1,
+        "roughnessRemap": [
+          0,
+          0.79,
+          0,
+          1
+        ],
+        "wornRoughnessRemap": [
+          0,
+          0.7,
+          0,
+          1
+        ],
+        "wearRemap": [
+          -0.2,
+          2.1,
+          0,
+          1
+        ],
+        "emissive": [
+          0.327778,
+          0.964686,
+          0.982251
+        ],
+        "emissiveIntensity": 1,
+        "sss": 0
+      },
+      "secondary": {
+        "albedo": [
+          0.088656,
+          0.127438,
+          0.127438
+        ],
+        "wornAlbedo": [
+          0.127438,
+          0.187821,
+          0.191202
+        ],
+        "metalness": 0,
+        "wornMetalness": 0,
+        "detailBlend": 0.5,
+        "detailNormalBlend": 0,
+        "detailRoughnessBlend": 0.4,
+        "wornDetailBlend": 0,
+        "wornDetailNormalBlend": 1,
+        "wornDetailRoughnessBlend": 0,
+        "transmission": 0,
+        "fuzz": 0,
+        "materialTypeId": -1,
+        "roughnessRemap": [
+          0,
+          0.79,
+          0,
+          1
+        ],
+        "wornRoughnessRemap": [
+          0,
+          0.7,
+          0,
+          1
+        ],
+        "wearRemap": [
+          -0.2,
+          2.1,
+          0,
+          1
+        ],
+        "emissive": [
+          1,
+          0,
+          0
+        ],
+        "emissiveIntensity": 1,
+        "sss": 0
+      }
+    }
+  },
+  "locked": {}
+}

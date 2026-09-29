@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { parseRenderMetadata } from "./renderMetadata";
+import { parseRenderMetadata, lod0Parts } from "./renderMetadata";
+import corpus from "./fixtures/material-parts.json";
 
 /** Minimal synthetic render_metadata.js payload with one mesh + given stage parts. */
 function metadataJson(stageParts: unknown[]): string {
@@ -87,4 +88,48 @@ describe("parseRenderMetadata — stage part shader field", () => {
     expect(meta.meshes[0].stageParts[0].shaderType).toBe(7);
     expect(meta.meshes[0].stageParts[0].staticTextures).toEqual([]);
   });
+});
+
+describe("material pass and LOD separation", () => {
+  const part = (start: number, count: number, lod = 0, dye = 0, flags = 0) => ({
+    start_index: start, index_count: count, lod_category: lod,
+    gear_dye_change_color_index: dye, flags,
+  });
+  it("keeps every category containing LOD zero, not just the lowest enum", () => {
+    const mesh = parseRenderMetadata(metadataJson([0, 1, 2, 3, 4, 7, 9, 10].map((lod) => part(lod * 3, 3, lod)))).meshes[0];
+    expect(lod0Parts(mesh).map((p) => p.lodCategory)).toEqual([0, 1, 2, 3]);
+  });
+  it("selects the finest available LOD when zero is absent", () => {
+    const mesh = parseRenderMetadata(metadataJson([4, 5, 6, 7, 8, 9].map((lod) => part(lod * 3, 3, lod)))).meshes[0];
+    expect(lod0Parts(mesh).map((p) => p.lodCategory)).toEqual([4, 5, 6]);
+  });
+  it("isolates shadow copies and preserves intentional overlay ranges", () => {
+    const mesh = parseRenderMetadata(JSON.stringify({render_meshes: [{
+      stage_part_offsets: [0, 2, 3, 3, 4],
+      stage_part_list: [part(0, 3, 0, 0, 8), part(3, 3, 1, 2), part(0, 3, 2, 6), part(0, 6, 0, 4)],
+    }]})).meshes[0];
+    expect(lod0Parts(mesh).map((p) => [p.renderStage, p.gearDyeChangeColorIndex, p.decal]))
+      .toEqual([[0, 0, false], [0, 2, false], [1, 6, true]]);
+  });
+  it("keeps separate adjacent slots and deduplicates repeated draw ranges", () => {
+    const mesh = parseRenderMetadata(metadataJson([part(0, 3, 3, 2), part(0, 3, 0, 4), part(3, 3, 1, 4)])).meshes[0];
+    expect(lod0Parts(mesh).map((p) => p.gearDyeChangeColorIndex)).toEqual([2, 4]);
+  });
+  for (const item of corpus.items) {
+    it(`preserves authored material passes: ${item.name}`, () => {
+      const mesh = parseRenderMetadata(JSON.stringify(item)).meshes[0];
+      const selected = lod0Parts(mesh);
+      expect(selected.length).toBeGreaterThan(0);
+      expect(selected.every((p) => p.renderStage === 0 || p.renderStage === 7)).toBe(true);
+      expect(selected.every((p) => !p.decal)).toBe(true);
+      if (item.name === "Cover of the Exile") expect(selected.map((p) => p.gearDyeChangeColorIndex)).toEqual([3]);
+      if (item.name === "Relativism cloth") {
+        expect(selected).toHaveLength(2);
+        expect(selected.every((p) => p.lodCategory === 3 && p.flags === 16392)).toBe(true);
+      }
+      if (item.name === "The Sixth Coyote") {
+        expect(new Set(selected.map((p) => p.gearDyeChangeColorIndex))).toEqual(new Set([2, 4]));
+      }
+    });
+  }
 });

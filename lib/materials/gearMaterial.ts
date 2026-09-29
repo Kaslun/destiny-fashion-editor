@@ -1,59 +1,12 @@
 /**
- * Builds Three.js NODE materials (TSL — WebGPU renderer, WebGL2 fallback) for
- * a gear mesh, one per geometry group.
- *
- * The material model follows Bungie's Destiny 2 shading (GDC 2018
- * "Translating Art into Technology"), layered on three.js's physical BRDF
- * (GGX + Smith visibility + Schlick Fresnel — the same core Bungie moved to),
- * with Disney-principled extensions where three exposes them:
- *
- *   gearstack channels (D2):  R = ambient occlusion
- *                             G = smoothness (inverted -> roughness)
- *                             B = encoded alpha-test + emissive (>~0.5 glows)
- *                             A = dye mask (>40/255) + un-dyed metalness
- *                                 (0..32/255) + wear mask (48/255..1)
- *
- * Dye slot & tint selection — Bungie's documented stage-part encoding:
- *   gear_dye_change_color_index = (slot << 1) | useSecondaryTint
- *   index 0/1 -> slot 0 primary/secondary, 2/3 -> slot 1, 4/5 -> slot 2,
- *   6/7 -> slot 3 (investment decal — never recoloured).
- * A per-pixel dyeslot plate, when the item ships one, refines the slot per
- * texel — R/G/B are independent per-slot weights (argmax picks slot0/1/2;
- * near-zero on all three = baked/no assignment), NOT a single scalar 1-based
- * id (see the dyeslot-decode comment in makeOpaque). Parity (primary vs
- * secondary) stays with the stage part.
- *
- * Per-tint PBR parameters come straight from the dye data (see
- * lib/bungie/gearDyeData.ts for the field mapping established against the
- * 8-helmet corpus): albedo + worn albedo tints, METALNESS
- * (material_params[3] — real data, no name heuristics), fuzz
- * (material_advanced_params[1] -> sheen lobe, Disney-style tinted toward the
- * albedo), roughness/worn-roughness/wear remaps, emissive tint+intensity,
- * and subsurface strength (-> MeshSSSNodeMaterial's wrapped-diffuse
- * approximation, matching Bungie's "wrapped diffuse + view-dependent
- * inverted lobe" translucency).
- *
- * The remap vec4s' exact runtime formula is not public (outputs can leave
- * [0,1] — Bungie's smoothness domain is signed, negative = fuzz), so the
- * interpretation is a LIVE-SWITCHABLE uniform — independently for roughness
- * and wear (see REMAP_MODES / setRoughnessRemapMode / setWearRemapMode)
- * rather than a baked-in guess:
- *   0 = range remap  (in_min, in_max, out_min, out_max)
- *   1 = scale/bias -> lerp of the (z, w) output band
- *   2 = scale/bias -> clamp to the [min(z,w), max(z,w)] band
- *
- * DYE only recolours the greyscale "change-colour" shell. The diffuse plate
- * also carries BAKED-COLOUR cells (e.g. Nighthawk's gold eye, its red/white
- * emblem) that must survive untouched — the plated dye is gated by pixel
- * saturation: near-grey texels take the tint, saturated texels pass through.
- *
- * Decal groups (stage-part flag 0x8) are opaque overlay geometry with their
- * own baked texture; they render with a polygon offset so they sit on the
- * shell without z-fighting.
+ * Destiny 2 mobile gear material model. Sources and known limits are recorded
+ * in docs/DESTINY-MATERIALS.md. Three supplies the physical lighting lobes.
  */
 import * as THREE from "three/webgpu";
 import {
   texture,
+  textureLoad,
+  ivec2,
   uv,
   uniform,
   uniformArray,
@@ -76,10 +29,11 @@ import {
   sin,
   pow,
   dot,
-  transformedNormalView,
+  normalView,
   positionViewDirection,
   attribute,
   sRGBTransferEOTF,
+  sqrt,
 } from "three/tsl";
 import {
   dyeForSlot,
@@ -87,19 +41,10 @@ import {
   type DyeSet,
   type DyeTint,
 } from "./gearDye";
+import { authoredRemap, GEARSTACK } from "./destinyMaterialModel";
 import type { GroupInfo } from "@/lib/geometry/buildGeometry";
+import { isRayGlowGroup, matchRayTextureNames, matchCloudTextureNames, transparentEffect, prepareEffectUVs } from "../geometry/transparentEffects";
 
-/**
- * Live gearstack-channel viewer. 0 = normal rendering; 1-4 override every pixel
- * with a greyscale view of the gearstack R/G/B/A channel — the displayed grey
- * IS the raw 0..1 channel value (see the colorSpaceToWorking note at the
- * outputNode assignment: without it the output stage's sRGB encode inflated
- * every reading); 5 shows the RESOLVED dye slot per pixel, so material
- * boundaries can be inspected directly instead of guessed at from the lit
- * render.
- * Wired to a uniform (not compiled in/out) so `setGearstackDebugChannel` can
- * flip it on an already-loaded model without rebuilding materials.
- */
 export const GEARSTACK_CHANNELS = [
   "off",
   "r (ao)",
@@ -108,47 +53,21 @@ export const GEARSTACK_CHANNELS = [
   "a (dye mask / metalness / wear)",
   "resolved dye slot (red=0, green=1, blue=2, grey=undyed; dim=secondary tint)",
   "a-channel bands (8 hue steps: black,red,orange,yellow,green,cyan,blue,magenta)",
+  "resolved metalness (black=dielectric, white=metal)",
+  "decoded alpha (red=undyed metal, green=dye, blue=wear signal)",
+  "estimated boundaries (yellow=changed alpha class)",
 ] as const;
-export type GearstackDebugChannel = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+export type GearstackDebugChannel = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 
-/**
- * Interpretations of Bungie's `*_roughness_remap` / `*_wear_remap` vec4s —
- * the exact runtime formula is not public, so it's a live-switchable uniform.
- */
+/** Legacy modes are retained for comparison, not used by default. */
 export const REMAP_MODES = [
-  "range (in_min, in_max, out_min, out_max)",
-  "scale/bias → band lerp",
-  "scale/bias → band clamp",
+  "legacy range", "legacy scale/bias band lerp", "legacy scale/bias band clamp",
+  "authored bias + scale, lower + width (default)",
 ] as const;
-export type RemapMode = 0 | 1 | 2;
-/**
- * Roughness and wear remaps are interpreted with INDEPENDENT modes — they
- * used to share one uniform, but that couples two unrelated empirical
- * findings:
- *   - Roughness reads better under "scale/bias → band clamp" (mode 2):
- *     confirmed on Celestial Nighthawk's gold, sharper/more accurate
- *     reflections than the range interpretation.
- *   - Wear must stay on "range" (mode 0) for at least that same item: its
- *     wearRemap vec4 (e.g. gold slot 0: [-3.406, 4.926, 0, 1]) has a bias
- *     term alone exceeding the clamp ceiling, so both scale/bias modes
- *     (1 and 2) saturate wearAmt to 1 for EVERY raw input — full-worn,
- *     always — which replaces the gold tint with wornAlbedo (a neutral
- *     grey) and reads as the gold plate turning silver. Range mode is the
- *     only one of the three that doesn't degenerate like this here.
- * If gold-turning-silver (or similar hue loss) shows up again after
- * changing either default, check whether that item's wearRemap has the
- * same saturating-bias shape before assuming it's a different bug.
- */
-export const DEFAULT_ROUGHNESS_REMAP_MODE: RemapMode = 2;
-export const DEFAULT_WEAR_REMAP_MODE: RemapMode = 0;
+export type RemapMode = 0 | 1 | 2 | 3;
+export const DEFAULT_ROUGHNESS_REMAP_MODE: RemapMode = 3;
+export const DEFAULT_WEAR_REMAP_MODE: RemapMode = 3;
 
-/**
- * Per-pixel material split for single-slot meshes (see the band-split note in
- * the header): thresholds cutting the dyeable A range into ranked slots,
- * ascending A = softer material. Defaults read off Cover of the Exile's
- * A-band visualization (debug channel 6): seam trim < 0.5 ≤ straps < 0.625 ≤
- * dome wraps.
- */
 export interface BandTuning {
   /** below this raw A -> the hardest ranked slot (metal trim) */
   t1: number;
@@ -158,39 +77,6 @@ export interface BandTuning {
 
 export const BAND_DEFAULTS: BandTuning = { t1: 0.5, t2: 0.625 };
 
-/**
- * material_advanced_params[0] (materialTypeId) values already confirmed
- * against the 8-item corpus gearDyeData.ts was built from — where the
- * standard gearstack B-channel "emissive" interpretation (see makeOpaque)
- * has held up. Relativism (2809120022) carries UNSEEN ids (0, 3, 4) —
- * almost certainly a distinct material family (its whole gimmick is a
- * prismatic/iridescent shimmer) — and applying the standard B-channel
- * interpretation there washes ~43% of its surface in a flat placeholder-red
- * emissive tint that doesn't exist in its real in-game render (confirmed:
- * removing the emissive term entirely reproduces the correct clean look,
- * rendering the actual parsed mesh with real sampled textures). Rather than
- * guess at what B actually encodes for an unrecognized material type, the
- * emissive contribution is suppressed for any materialTypeId outside this
- * set — safer than a wrong guess, and doesn't touch any already-confirmed
- * material's look.
- */
-const KNOWN_EMISSIVE_MATERIAL_TYPE_IDS = [-1, 5, 25, 35, 105];
-
-/**
- * Named VFX textures that drive Relativism's (2809120022) real iridescent
- * pattern shimmer, found by parsing the stage part's `shader.static_textures`
- * (see renderMetadata.ts StagePart.staticTextures / GroupInfo.patternTextures)
- * — a per-STAGE-PART signal, not the item/tint-wide materialTypeId guess this
- * replaced (see the removed "iridescent tint for unrecognized material types"
- * comment in git history if you need the old reasoning). Confirmed present on
- * roughly half of Relativism's shell stage parts (the rest are ordinary, no
- * static_textures at all) and absent on every stage part sampled from
- * Celestial Nighthawk (a known-good corpus item) — so requiring BOTH suffixes
- * is a specific positive match, unlike the single-flag-bit heuristics that
- * misfired twice before on this project (see glowAnimatedItems.ts). The
- * numeric prefix on the real entry name varies per item (e.g.
- * "3107841013_vfx_warpmap_noise_a"), hence a suffix match rather than exact.
- */
 const PATTERN_NOISE_SUFFIX = "_vfx_warpmap_noise_a";
 const PATTERN_RIPPLE_SUFFIX = "_vfx_warpmap_ripple_a";
 
@@ -205,45 +91,16 @@ export function matchPatternTextureNames(
   return { noise, ripple };
 }
 
-/**
- * Whether a geometry group's stage part carries the real pattern-shimmer
- * texture pair (see PATTERN_NOISE_SUFFIX/PATTERN_RIPPLE_SUFFIX above). A
- * group with only one of the two, or with an unrelated static_textures set
- * (e.g. Relativism's separate twirl/blob/darkness accent — unconfirmed,
- * intentionally out of scope here), falls through to the ordinary path
- * unchanged.
- */
 export function isPatternGroup(g: GroupInfo): boolean {
   const { noise, ripple } = matchPatternTextureNames(g.patternTextures);
   return !!noise && !!ripple;
 }
 
-/**
- * Tuning constants for the pattern-shimmer warp (see isPatternGroup / the
- * block in makeOpaque). Bungie's exact runtime formula for these VFX warp
- * textures isn't public — same situation as REMAP_MODES above — so these are
- * guesses tuned by eye against Relativism's reference render, not derived
- * values. Expect to retune.
- */
 const PATTERN_TILE_SCALE = 3.0;
 const PATTERN_WARP_STRENGTH = 0.35;
 const PATTERN_FLOW_SPEED = 0.06;
-// How strongly the iridescent oil-slick overlays the base — 1.0 fully replaces
-// the per-slot base colour (erasing the item's distinct sections into one
-// purple), 0.0 disables the shimmer. Set low (user chose "favour distinct
-// sections" over "vivid iridescence"): the base per-slot colour dominates and
-// the shimmer is only a grazing-angle sheen on top, so slot 0/1/2 read as the
-// distinct pale tones the data supports.
 const PATTERN_SHEEN = 0.38;
 
-/**
- * The secondary VFX accent some items carry alongside the shimmer pair — on
- * Relativism (2809120022) it's 8 shell stage parts (shader.type 8) naming a
- * twirl warp-map + a blob diffuse + a darkness plate. Read directly: the
- * twirl is a spiral RG flow field, the blob an organic RG noise, the darkness
- * plate a cloudy grayscale — together a swirling dark-energy overlay. Matched
- * by suffix (numeric prefix varies per item, like the shimmer pair).
- */
 const ACCENT_TWIRL_SUFFIX = "_vfx_warpmap_twirl_a";
 const ACCENT_BLOB_SUFFIX = "blob01_dif";
 const ACCENT_DARKNESS_SUFFIX = "_darkness_plate";
@@ -282,49 +139,17 @@ const ACCENT_SWIRL_STRENGTH = 0.5;
 const ACCENT_FLOW_SPEED = 0.08;
 const ACCENT_STRENGTH = 0.85;
 
-/**
- * How the A channel resolves per-pixel materials on single-slot meshes.
- * Bungie's material set is 3 dye slots x primary/secondary = 6 materials per
- * item (the TFS shader-icon rework shows all six colours per shader), so the
- * 6-band modes cut the dyeable range (48..255) into six equal (slot, parity)
- * bands. The band→pair ordering isn't publicly documented, so both orderings
- * are live-switchable; mode 0 keeps the hand-tunable 3-slot threshold split.
- */
-/**
- * Whether the gearstack B-channel emissive (see the header doc) is an
- * ability-driven effect for THIS item (see lib/bungie/glowAnimatedItems.ts)
- * rather than an always-lit detail. Only those materials get the live
- * uGlowEnabled uniform + flicker animation — everything else keeps rendering
- * its emissive exactly as before, so this is purely additive.
- *
- * Defaults to OFF: on Thy Fearful Symmetry, "glow" isn't just an emissive
- * tint — isAbilityVfxGroup's flame-shaped geometry is real 3D protrusions
- * that don't exist anywhere in the item's actual in-game render (confirmed by
- * rendering the parsed mesh directly and comparing against the reference
- * screenshot). Defaulting this on would show that geometry unconditionally,
- * reproducing the exact "extra geometry" bug being fixed.
- */
 export const DEFAULT_GLOW_ENABLED = false;
 
 export const BAND_MODES = [
   "3-slot thresholds (t1/t2)",
   "6 bands, slot-major (s0P s0S s1P s1S s2P s2S)",
   "6 bands, parity-major (s0P s1P s2P s0S s1S s2S)",
+  "authored material slots (default)",
 ] as const;
-export type BandMode = 0 | 1 | 2;
-// Changed from 2 (parity-major) to 0 (3-slot thresholds), 2026-07-24.
-// BAND_DEFAULTS (t1/t2) were tuned against Cover of the Exile's A-band
-// visualization for mode 0 specifically (see the doc comment above) — mode 2
-// doesn't use t1/t2 at all (a generic 6-equal-band split instead), and git
-// history shows no recorded comparison ever justified it as the default; it
-// happened to land on the same slot assignment as mode 0 for Cover of the
-// Exile (verified: pixel-identical render, no regression) purely because
-// that item's A data splits cleanly either way. On Relativism (2809120022),
-// which doesn't split as cleanly, mode 2's generic equal-band split washes
-// the whole surface in one saturated tint; mode 0's tuned thresholds read
-// far closer to the real in-game look. Re-verify against both items if this
-// is ever reconsidered — don't trust a "looks reasonable" pick without it.
-export const DEFAULT_BAND_MODE: BandMode = 0;
+export type BandMode = 0 | 1 | 2 | 3;
+// Gearstack A stores wear, not a material ID. Other modes are experiments.
+export const DEFAULT_BAND_MODE: BandMode = 3;
 
 interface GearUniforms {
   uDebugChannel?: { value: number };
@@ -385,28 +210,12 @@ export function setWearRemapMode(root: THREE.Object3D, mode: RemapMode): void {
   });
 }
 
-/**
- * Toggle the ability-driven glow (see DEFAULT_GLOW_ENABLED) live on every
- * material under `root` that has one — a no-op on meshes with no glow-capable
- * material (both the shell's emissive and ability-VFX geometry only get one
- * when the item is on GLOW_ANIMATED_ITEMS — see GearMaterialOptions.
- * animatedGlow and isAbilityVfxGroup).
- */
 export function setGlowEnabled(root: THREE.Object3D, enabled: boolean): void {
   forEachGearMaterial(root, (u) => {
     if (u.uGlowEnabled) u.uGlowEnabled.value = enabled ? 1 : 0;
   });
 }
 
-/**
- * Whether `root` has ANY glow-capable material (the shell's ability-gated
- * emissive, or ability-VFX flame/crystal geometry — see isAbilityVfxGroup) —
- * i.e. whether setGlowEnabled/advanceGlowTime would actually do anything.
- * Detected straight from the loaded model's materials rather than an item
- * hash, so UI code (e.g. a "glow" toggle button) doesn't carry its own
- * hash-lookup logic — though today that still bottoms out at the same
- * GLOW_ANIMATED_ITEMS allowlist one layer down, in loadGearModel.ts.
- */
 export function hasAnimatedGlow(root: THREE.Object3D): boolean {
   let found = false;
   forEachGearMaterial(root, (u) => {
@@ -415,28 +224,12 @@ export function hasAnimatedGlow(root: THREE.Object3D): boolean {
   return found;
 }
 
-/**
- * Advance the glow flicker clock by `deltaSeconds` on every material under
- * `root` that has one — call this from a render-loop hook (see GearModel.tsx)
- * so the animation actually progresses. Driven from JS instead of TSL's
- * built-in `time` node: that node is a page-global singleton updated by the
- * renderer's own frame timer, which is one more moving part to get right
- * around an async WebGPU backend and R3F's render loop — advancing our own
- * uniform explicitly is simple to reason about and easy to unit test.
- */
 export function advanceGlowTime(root: THREE.Object3D, deltaSeconds: number): void {
   forEachGearMaterial(root, (u) => {
     if (u.uGlowTime) u.uGlowTime.value += deltaSeconds;
   });
 }
 
-/**
- * Advance the pattern-shimmer clock (see isPatternGroup) by `deltaSeconds` on
- * every material under `root` that has one — call this from the same
- * render-loop hook as advanceGlowTime (see GearModel.tsx / CharacterModel.tsx).
- * Always increments; there's no enable/disable toggle like glow's uGlowEnabled
- * since the shimmer isn't ability-gated.
- */
 export function advancePatternTime(root: THREE.Object3D, deltaSeconds: number): void {
   forEachGearMaterial(root, (u) => {
     if (u.uPatternTime) u.uPatternTime.value += deltaSeconds;
@@ -463,13 +256,18 @@ export function setBandMode(root: THREE.Object3D, mode: BandMode): void {
 
 export interface GearTextureMaps {
   diffuse?: THREE.Texture;
+  /** D2 reference lookup: x=N.V, y=(index+0.5)/height in top-down PNG rows. */
+  iridescenceLookup?: THREE.Texture;
   normal?: THREE.Texture;
   gearstack?: THREE.Texture;
-  /** per-pixel dye-slot mask plate — R/G/B = independent slot0/1/2 weights
-   * (argmax picks the slot), near-zero on all three = baked art */
+  /** Optional locally reconstructed gearstack; original stays available for comparison. */
+  materialBoundaries?: THREE.Texture;
+  /** Decoded categorical dye map: R = change-color ID + 1, A = override coverage. */
   dyeslot?: THREE.Texture;
   /** dedicated glow/illum mask (only some items have one) */
   emissive?: THREE.Texture;
+  /** Exact-name static effect textures; never sampled through the armor atlas. */
+  effectTextures?: Map<string, THREE.Texture>;
   /** Pattern-shimmer warp textures (see isPatternGroup) — only present on
    * items shipping the real noise/ripple VFX texture pair. Grayscale,
    * repeat-wrapped, item-wide (not a plate: the same names can recur across
@@ -488,75 +286,16 @@ export interface GearMaterialOptions {
   useGearstack?: boolean;
   /** Tint the albedo with the resolved dye colours. */
   applyDye?: boolean;
-  /**
-   * True when the item ships plate atlases (vs. a weapon's direct baked-
-   * colour diffuse). Gates the saturation-based tint mask in makeOpaque —
-   * but only for that GROUP's own resolved dye slot: a cloth-flagged slot
-   * (cape body, scarf) always skips the gate and takes the dye directly,
-   * since cloth diffuse art isn't reliably near-grey the way a metal shell's
-   * change-colour art is. Pass the item-wide "has plates" signal here; the
-   * per-group cloth exemption is applied inside makeOpaque, not here — a
-   * mesh can mix cloth (cape) and metal (trim/medallion) groups, and an
-   * item-wide cloth flag would wrongly strip the protective gate from the
-   * metal groups too (see git history: 26be6e9, fa290cb).
-   */
+  /** Compatibility only: plating no longer changes the dye math. */
   plated?: boolean;
-  /**
-   * Whether this item ships as a single geometry file/part overall (e.g.
-   * Cover of the Exile) — the only case the per-pixel A-channel band-split
-   * (see needsBandSplit) is a sound inference. Multi-file items (e.g. a
-   * cloak with a separate hood file) already carry real per-part slot
-   * variation across their OTHER files; guessing hidden material bands
-   * from one file's wear/AO shading — tuned against Cover of the Exile's
-   * A-channel distribution (see BAND_DEFAULTS) — misfires as salt-and-
-   * pepper speckling on a file that is legitimately single-material (the
-   * main cape body). Defaults to true so existing single-mesh call sites
-   * (incl. tests) are unaffected; loadGearModel passes the real item-wide
-   * geometry-file count.
-   */
+  /** Limits the optional legacy band experiment to single-file assets. */
   singlePart?: boolean;
-  /**
-   * True for items on the GLOW_ANIMATED_ITEMS allowlist (see
-   * lib/bungie/glowAnimatedItems.ts) — gates the live uGlowEnabled uniform +
-   * flicker onto BOTH the shell's own gearstack B-channel emissive AND any
-   * ability-VFX geometry (isAbilityVfxGroup, e.g. flame protrusions). Neither
-   * is safe to apply unconditionally: Bungie's data doesn't distinguish an
-   * ability-driven glow from an always-lit detail (a visor LED bakes into the
-   * B channel identically), and the VFX-geometry flag bit turned out to
-   * correlate with real "hide by default" geometry on exactly one item and
-   * with an ordinary always-visible decal part (Relativism's hood) on
-   * another — see isAbilityVfxGroup. So both stay opt-in per confirmed item.
-   */
+  /** Enables the existing approximate ability VFX preview. */
   animatedGlow?: boolean;
-  /**
-   * The mesh's own BufferGeometry — only used to compute a per-vertex
-   * "distance from the head's center" gradient for ability-VFX groups (see
-   * isAbilityVfxGroup), so the flame geometry can shade dark at its base
-   * (attached to the face) and hot/bright at its tip, radiating outward,
-   * instead of a single flat colour. Optional: without it, VFX groups fall
-   * back to a flat mid-gradient tone rather than erroring.
-   */
+
   sourceGeometry?: THREE.BufferGeometry;
 }
 
-/**
- * Whether a mesh needs the per-pixel A-channel band split: it only applies
- * when the mesh gives us NO per-part slot variation to work with (every
- * non-glow stage part decodes to the same slot). Meshes with real per-part
- * slots (e.g. Nighthawk) keep their authored data untouched.
- *
- * No longer gated on dyeslot-plate presence (it used to bail to false
- * whenever `maps.dyeslot` existed, treating the two as mutually exclusive
- * strategies). Found empirically on Relativism (2809120022): its dyeslot
- * plate turned out to be a tiny 128x64 decorative icon (see the plate-stretch
- * fix earlier this session), not a body-wide ID mask — its gearstack A
- * channel, by contrast, clearly outlines a real distinct region (a circular
- * emblem + trim lines the debug "a (dye mask / metalness / wear)" channel
- * shows plainly) that the dyeslot-only path was silently discarding. See
- * makeOpaque: the band result is now used as the FALLBACK wherever the
- * dyeslot plate itself has no positive per-pixel assignment, not skipped
- * outright just because a plate exists.
- */
 export function needsBandSplit(groups: GroupInfo[]): boolean {
   const partSlots = new Set(
     groups
@@ -566,38 +305,23 @@ export function needsBandSplit(groups: GroupInfo[]): boolean {
   return partSlots.size === 1;
 }
 
-/**
- * Decode a raw gear_dye_change_color_index into slot + tint parity.
- *
- * Verified against the verbatim source of lowlidev's Spasm→Three.js port
- * (lowlines/destiny-tgx-loader, three.tgxloader.js parseStagePart): a plain
- * switch over the raw index, `usePrimaryColor` initialized true and set
- * false only on the odd cases (1, 3, 5). So EVEN index = primary, ODD index
- * = secondary. (A prior pass in this project flipped this based on a visual
- * read that turned out to be a misdiagnosis — the "plated" dye path exempts
- * bright/saturated diffuse texels from tinting regardless of which tint is
- * active, which can make a single tint look like two different colours
- * across one stage part. Restored to match the verified source.)
- */
 export function decodeChangeColorIndex(index: number): {
   slot: number;
   useSecondary: boolean;
   decal: boolean;
 } {
-  const raw = Math.max(0, index);
-  const slot = Math.min(raw >> 1, 3);
+  if (!Number.isInteger(index) || index < 0 || index > 7) {
+    return { slot: -1, useSecondary: false, decal: false };
+  }
+  const raw = index;
+  const slot = raw >> 1;
   return { slot, useSecondary: (raw & 1) === 1, decal: slot === 3 };
 }
 
-/**
- * Nighthawk's eye/faceplate: the diffuse is a gold emblem on black (~half/half).
- * Render it as REFLECTIVE gold metal, with the black surround cut out by alpha
- * so it's transparent (not an opaque black socket), plus a subtle self-glow.
- * The diffuse doubles as the alpha map — its green channel is high on the gold,
- * ~0 on the black, so `alphaTest` discards the black and keeps the gold.
- */
 function makeGlow(maps: GearTextureMaps): THREE.Material {
-  if (maps.diffuse) maps.diffuse.colorSpace = THREE.LinearSRGBColorSpace;
+  // The atlas is shared with shell materials; never change its transfer function
+  // based on which geometry group happened to be constructed last.
+  if (maps.diffuse) maps.diffuse.colorSpace = THREE.SRGBColorSpace;
   return new THREE.MeshStandardNodeMaterial({
     map: maps.diffuse ?? null,
     alphaMap: maps.diffuse ?? null,
@@ -612,44 +336,94 @@ function makeGlow(maps: GearTextureMaps): THREE.Material {
   });
 }
 
-/**
- * Bit confirmed empirically on Thy Fearful Symmetry (1400258673): 3 of its 4
- * lod0 stage parts (604/652/790 triangles, raw flags 24592) are separate
- * flame-shaped crystal protrusions at the brow, temple, and jaw that do NOT
- * appear anywhere in the item's actual in-game render — rendering them as
- * ordinary opaque geometry (what makeOpaque would do) produces exactly the
- * jagged "extra geometry" spikes reported against the POC render (compare
- * the reference screenshot: a clean, smooth mask with none of these visible).
- * The main shell (4804 triangles) carries flags 16384 — the only bit that
- * differs from the VFX parts' 24592 that isn't already common to both.
- *
- * NOT a universal signal — confirmed wrong almost immediately: Relativism
- * (2809120022) has a stage part with flags 0x6008 (this bit set alongside
- * the ordinary decal bit 0x8) that's just its hood, an always-visible part,
- * rendered as invisible/glowing VFX geometry when this was applied
- * unconditionally. So — unlike FLAG_DECAL_PASS (0x8), which really is
- * universal — this stays gated behind the same per-item allowlist as the
- * shell's own animatedGlow flicker (see GearMaterialOptions.animatedGlow):
- * one correlation on one item isn't evidence of a general convention, and
- * Bungie's data gives no other way to tell "optional ability VFX" apart from
- * "ordinary decal part" for this bit specifically.
- */
+function makeRayGlow(group: GroupInfo, dyes: DyeSet, maps: GearTextureMaps, hasUV: boolean): THREE.Material {
+  const names = matchRayTextureNames(group.patternTextures);
+  const height = maps.effectTextures?.get(names.height!);
+  const smoke = maps.effectTextures?.get(names.smoke!);
+  const mat = new THREE.MeshBasicNodeMaterial();
+  mat.transparent = true;
+  mat.depthWrite = false;
+  mat.blending = THREE.AdditiveBlending;
+  // These assets contain front/back ribbons already. Drawing both faces doubles them.
+  mat.side = THREE.FrontSide;
+  mat.userData.destiny = { effect: "ray-glow", approximate: true, approximateEffect: true,
+    missingTextures: !height || !smoke, missingUV: !hasUV };
+  if (!hasUV || !height || !smoke) {
+    // Missing effect inputs must never expose the solid carrier polygons.
+    mat.visible = false;
+    return mat;
+  }
+  const { slot, useSecondary } = decodeChangeColorIndex(group.dyeIndex);
+  const dye = dyeForSlot(dyes, slot);
+  const tint = useSecondary ? dye.secondary : dye.primary;
+  const clock = uniform(0);
+  mat.userData.uniforms = { uPatternTime: clock };
+  const local = attribute<"vec2">("effectUv", "vec2");
+  const rays = texture(height, vec2(local.y.mul(0.5).sub(clock.mul(0.035)), local.x)).r;
+  const wisps = texture(smoke, local.mul(vec2(1, 1.5)).sub(vec2(0, clock.mul(0.08)))).r;
+  // Soft longitudinal fade plus a narrow cross-section conceals the carrier edges.
+  // Speeds/envelope are preview approximations; textures and emissive tint are authored.
+  const across = pow(max(float(1).sub(local.x.sub(0.5).abs().mul(2)), 0), 3);
+  const along = pow(clamp(local.y.oneMinus(), 0, 1), 2);
+  mat.colorNode = vec3(tint.emissive.r, tint.emissive.g, tint.emissive.b).mul(tint.emissiveIntensity);
+  mat.opacityNode = across.mul(along).mul(rays).mul(wisps).mul(0.85);
+  return mat;
+}
+
+function makeCloudEffect(group: GroupInfo, dyes: DyeSet, maps: GearTextureMaps, hasUV: boolean): THREE.Material {
+  const names = matchCloudTextureNames(group.patternTextures);
+  const palette = maps.effectTextures?.get(names.palette!);
+  const cloud = maps.effectTextures?.get(names.cloud!);
+  const mask = maps.effectTextures?.get(names.mask!);
+  const mat = new THREE.MeshBasicNodeMaterial();
+  mat.transparent = true;
+  mat.depthWrite = false;
+  mat.side = THREE.DoubleSide;
+  mat.blending = THREE.AdditiveBlending;
+  mat.userData.destiny = { effect: "digital-cloud", approximateEffect: true,
+    coverageSource: "gearstack-blue", missingTextures: !maps.gearstack,
+    missingAnimationTextures: !palette || !cloud || !mask };
+  if (!maps.gearstack) { mat.visible = false; return mat; }
+  const clock = uniform(0);
+  mat.userData.uniforms = { uPatternTime: clock };
+  // The TWO distinct symbol silhouettes are authored in atlas-space gearstack B.
+  // Generic cloud/dust textures are modulation inputs, never their coverage.
+  maps.gearstack.colorSpace = THREE.NoColorSpace;
+  const symbols = clamp(texture(maps.gearstack, uv()).b.sub(GEARSTACK.emissiveStart).div(1 - GEARSTACK.emissiveStart), 0, 1);
+  const local = hasUV ? attribute<"vec2">("effectUv", "vec2") : uv();
+  const density = cloud ? texture(cloud, local.add(vec2(clock.mul(0.025), clock.mul(-0.015)))).r : float(0.5);
+  const dust = mask ? texture(mask, local).r : float(0);
+  const paletteWidth = (palette?.image as { width?: number } | undefined)?.width ?? 128;
+  const halfTexel = 0.5 / paletteWidth;
+  const paletteValue = palette
+    ? texture(palette, vec2(clamp(density, halfTexel, 1 - halfTexel), 0.5)).rgb : vec3(0);
+  const { slot, useSecondary } = decodeChangeColorIndex(group.dyeIndex);
+  const dye = dyeForSlot(dyes, slot), tint = useSecondary ? dye.secondary : dye.primary;
+  // Effect emission is independent of armor dye emission (Spacewalk's is zero).
+  // White is the neutral preview tint when the export supplies no effect color.
+  const color = tint.emissiveIntensity > 0 && tint.emissive.r + tint.emissive.g + tint.emissive.b > 0
+    ? vec3(tint.emissive.r, tint.emissive.g, tint.emissive.b).mul(tint.emissiveIntensity) : vec3(1);
+  mat.colorNode = color.mul(vec3(1).add(paletteValue)).mul(mix(1.25, 1.75, density).add(dust.mul(0.25)));
+  mat.opacityNode = symbols;
+  return mat;
+}
+
+function unsupportedTransparentEffect(group: GroupInfo): THREE.Material {
+  const mat = new THREE.MeshBasicNodeMaterial();
+  mat.transparent = true;
+  mat.depthWrite = false;
+  mat.visible = false;
+  mat.userData.destiny = { unsupportedEffect: true, renderStage: group.renderStage,
+    shaderType: group.shaderType, textures: group.patternTextures ?? [] };
+  return mat;
+}
+
 const ABILITY_VFX_FLAG = 0x2000;
 
 function isAbilityVfxGroup(g: GroupInfo): boolean {
   return ((g.flags ?? 0) & ABILITY_VFX_FLAG) !== 0;
 }
 
-/**
- * Precomputes, once per geometry, a per-vertex [0,1] "vfxRadial" attribute
- * covering every ability-VFX group: distance from the mesh's own bounding-
- * sphere centre, normalized within just the VFX vertices' own min/max range.
- * Since these groups are flame-shaped protrusions radiating outward from the
- * head (see isAbilityVfxGroup), this reads as ~0 at the base (attached to the
- * face) and ~1 at the tip regardless of which direction any one spike points
- * — used to shade a dark ember at the base fading to a hot bright tip.
- * Returns false (no attribute set) when there's nothing to compute from.
- */
 function ensureVfxRadialAttribute(
   geometry: THREE.BufferGeometry,
   groups: GroupInfo[],
@@ -687,26 +461,6 @@ function ensureVfxRadialAttribute(
   return true;
 }
 
-/**
- * Ability-driven decorative geometry (see isAbilityVfxGroup) — invisible by
- * default and, when the SAME uGlowEnabled/uGlowTime uniforms used by the main
- * shell's glow (see makeOpaque) are toggled on via setGlowEnabled/
- * advanceGlowTime, shades like real fire rather than a flat glowing blob:
- *   - a dark-ember-to-hot-tip colour gradient along vfxRadial (base -> tip)
- *   - a per-material random phase offset so the mask's separate flame parts
- *     (brow/temple/jaw are 3 separate materials, one call each) flicker out
- *     of sync instead of pulsing in lockstep.
- * The phase offset is a genuine JS Math.random() constant baked in at build
- * time — NOT the classic `fract(sin(dot(p, magic)) * bigNumber)` shader hash.
- * That trick doesn't actually produce noise: sin() of a value that grows
- * roughly linearly across the surface just oscillates periodically, so it
- * reads as a visible rippled/moiré band pattern following the surface's
- * shape rather than randomness (confirmed — that's exactly what showed up
- * on a zoomed-in render of one of these flame parts). A single random float
- * per material has no spatial component to alias against, so it can't do that.
- * transparent + depthWrite=false so an invisible instance doesn't occlude or
- * z-fight with the shell underneath.
- */
 function makeAbilityVfxGeometry(
   dyeIndex: number,
   dyes: DyeSet,
@@ -753,17 +507,13 @@ function makeOpaque(
   bandSplit = false,
   pattern = false,
   accent = false,
+  renderStage?: number | null,
 ): THREE.Material {
-  const { slot, useSecondary, decal: decalSlot } = decodeChangeColorIndex(dyeIndex);
-  const slotClamped = Math.min(slot, 2);
-  const slotDye = dyeForSlot(dyes, slotClamped);
+  const { slot, useSecondary } = decodeChangeColorIndex(dyeIndex);
+  const validSlot = slot >= 0 && slot <= 2;
+  const slotDye = dyeForSlot(dyes, validSlot ? slot : -1);
   const ownTint: DyeTint = useSecondary ? slotDye.secondary : slotDye.primary;
 
-  // Bungie's material set per item is 3 dye slots × primary/secondary = SIX
-  // full materials (confirmed by the TFS shader-icon rework: all six colours
-  // per shader) — so both parities' parameter arrays go to the GPU and the
-  // (slot, parity) pair resolves per pixel. The stage part's parity is the
-  // default; the 6-band A-channel modes override it per texel.
   const prims: DyeTint[] = [0, 1, 2].map((s) => dyeForSlot(dyes, s).primary);
   const secs: DyeTint[] = [0, 1, 2].map((s) => dyeForSlot(dyes, s).secondary);
 
@@ -777,21 +527,25 @@ function makeOpaque(
     mat.polygonOffsetFactor = -1;
     mat.polygonOffsetUnits = -1;
   }
+  if (renderStage === 6) {
+    mat.transparent = true;
+    mat.depthWrite = false;
+    mat.blending = THREE.AdditiveBlending;
+  }
 
   if (maps.diffuse) maps.diffuse.colorSpace = THREE.SRGBColorSpace;
   if (maps.emissive) maps.emissive.colorSpace = THREE.SRGBColorSpace;
-  const detailDiffuse = slotDye.detailDiffuse ?? null;
-  const detailNormal = slotDye.detailNormal ?? null;
-  if (detailDiffuse) {
-    detailDiffuse.colorSpace = THREE.LinearSRGBColorSpace;
-    detailDiffuse.wrapS = detailDiffuse.wrapT = THREE.RepeatWrapping;
+  for (const dataMap of [maps.normal, maps.gearstack, maps.dyeslot, maps.materialBoundaries]) {
+    if (dataMap) dataMap.colorSpace = THREE.NoColorSpace;
   }
-  if (detailNormal) {
-    detailNormal.wrapS = detailNormal.wrapT = THREE.RepeatWrapping;
+  const detailDiffuse = slotDye.detailDiffuse ?? null;
+  if (detailDiffuse) {
+    detailDiffuse.colorSpace = THREE.SRGBColorSpace;
+    detailDiffuse.wrapS = detailDiffuse.wrapT = THREE.RepeatWrapping;
   }
 
   const wantGearstack = !!opts.useGearstack && !!maps.gearstack && !!maps.diffuse;
-  const wantDetail = !!(detailDiffuse || detailNormal) && !!maps.diffuse;
+  const wantDetail = Object.values(dyes).some((d) => d.detailDiffuse || d.detailNormal) && !!maps.diffuse;
 
   if (!wantGearstack && !wantDetail) {
     // Nothing dynamic to shade — plain textured material.
@@ -823,14 +577,7 @@ function makeOpaque(
     ...(uGlowTime ? { uGlowTime } : {}),
   };
 
-  // ---- per-(slot, parity) parameter table -------------------------------------
-  // All 6 materials (3 slots × 2 tints) packed into ONE uniform vec4 array —
-  // WebGPU caps uniform buffers at 12 per stage, so one binding with computed
-  // indexing instead of one uniformArray per parameter. Layout per material
-  // (ROWS_PER_MATERIAL rows): 0 albedo.rgb+metalness · 1 wornAlbedo.rgb+worn-
-  // metalness · 2 roughnessRemap · 3 wornRoughnessRemap · 4 wearRemap ·
-  // 5 emissive.rgb+intensity · 6 fuzz,detailBlend,sss,materialTypeId.
-  const ROWS_PER_MATERIAL = 7;
+  const ROWS_PER_MATERIAL = 9;
   const matRows: THREE.Vector4[] = [];
   for (const list of [prims, secs]) {
     for (const t of list) {
@@ -847,6 +594,8 @@ function makeOpaque(
         new THREE.Vector4(...t.wearRemap),
         new THREE.Vector4(t.emissive.r, t.emissive.g, t.emissive.b, t.emissiveIntensity),
         new THREE.Vector4(t.fuzz, t.detailBlend, t.sss, t.materialTypeId),
+        new THREE.Vector4(t.detailNormalBlend, t.detailRoughnessBlend, t.transmission, t.wornDetailBlend),
+        new THREE.Vector4(t.wornDetailNormalBlend, t.wornDetailRoughnessBlend, 0, 0),
       );
     }
   }
@@ -861,52 +610,29 @@ function makeOpaque(
   const gs = wantGearstack
     ? texture(maps.gearstack!, uvN)
     : vec4(1.0, 0.5, 0.0, 0.0);
-  // Floor AO's darkening instead of letting a baked 0 remove all indirect
-  // light: on Memory of Cayde's cape, the gearstack R channel bakes a flat 0
-  // across the whole spade/diagonal-band graphic (confirmed via the "r (ao)"
-  // debug channel — a hard-edged silhouette exactly tracing the design, not
-  // organic wrinkle shading), which renders that baked-white art as solid
-  // black. A full-black AO texel removing 100% of indirect light is an
-  // extreme case real-time PBR pipelines routinely clamp against (it rarely
-  // reflects actual runtime lighting balance) — same rationale as the
-  // alpha-test-cutout note below: the raw channel data doesn't always mean
-  // what a literal reading suggests.
-  const ao = mix(0.5, 1.0, gs.r);
-  const smoothRaw = gs.g;
-  // The discrete slot / dye-mask decode reads the A channel through HARD
-  // thresholds (dyeMask step, and the band selects below). Mip minification
-  // blurs A toward the UV-island padding at silhouette/grazing edges, ramping
-  // it across those thresholds and flipping the resolved slot — a thin
-  // wrong-slot fringe tracing the cape edge (visible in the "resolved dye
-  // slot" debug view, and a faint wrong-material sliver in the real render).
-  // Sample A at full resolution (mip 0) for those discrete decisions so band
-  // boundaries stay crisp to the very edge. The CONTINUOUS ramps (undyedMetal,
-  // wearRaw, plus AO/smoothness from RGB) keep the mip-filtered gs — they want
-  // the smoothing and don't threshold, so they'd only alias if sharpened.
-  const gsSharpA = wantGearstack
-    ? texture(maps.gearstack!, uvN).level(int(0)).a
-    : gs.a;
-  const dyeMask = step(40 / 255, gsSharpA);
-  const undyedMetal = clamp(gs.a.mul(255 / 32), 0.0, 1.0);
-  const wearRaw = clamp(gs.a.sub(48 / 255).mul(255 / (255 - 48)), 0.0, 1.0);
+  // GDC 2018 slide 121 assigns the full R range to texture AO.
+  const ao = gs.r;
+  // Alpha packs distinct material classes. Mip/bilinear interpolation can turn
+  // an undyed dielectric next to cloth into metal or dyed cloth. Read the same
+  // exact texel for dye eligibility, undyed metalness and wear classification.
+  const materialMap = maps.materialBoundaries ?? maps.gearstack;
+  const gsImage = materialMap?.image as { width?: number; height?: number } | undefined;
+  const gsSize = vec2(gsImage?.width ?? 1, gsImage?.height ?? 1);
+  const gsMaterial = wantGearstack
+    ? textureLoad(materialMap!, ivec2(clamp(floor(uvN.mul(gsSize)), vec2(0), vec2(gsSize).sub(1))), int(0))
+    : gs;
+  const gsSharpA = gsMaterial.a;
+  // Reconstructed G/B share alpha's boundary. Filtering the original G/B
+  // independently would reintroduce gloss/emission from the other material.
+  const smoothRaw = maps.materialBoundaries ? gsMaterial.g : gs.g;
+  const dyeMask = step(GEARSTACK.dyeThreshold, gsSharpA);
+  const undyedMetal = clamp(gsSharpA.mul(255 / 32), 0.0, 1.0);
+  const wearRaw = clamp(gsSharpA.sub(48 / 255).mul(255 / (255 - 48)), 0.0, 1.0);
   // B channel (per the documented ranges, verified against live plates where
   // ~95% of texels anchor at 32/255): alpha-test cut-outs occupy 0..32,
   // emissive 40..255, mutually exclusive. NOT a 128 midpoint.
-  const emissiveMask = clamp(gs.b.sub(40 / 255).mul(255 / (255 - 40)), 0.0, 1.0);
+  const emissiveMask = clamp(gsMaterial.b.sub(40 / 255).mul(255 / (255 - 40)), 0.0, 1.0);
 
-  // ---- dye slot + tint-parity resolution ---------------------------------------
-  // Per-pixel dyeslot plate when present (R/G/B = independent slot0/1/2
-  // weights, argmax picks the slot — see the decode below); else — for
-  // meshes whose stage parts all share ONE slot (e.g. Cover of the
-  // Exile: a single part, dye index 3, yet visibly cloth + leather + metal +
-  // gold trim) — a per-pixel decode of the gearstack A channel. Bungie's
-  // material set is 3 slots × primary/secondary = 6 materials, so the 6-band
-  // modes divide the dyeable range (48..255) into six equal (slot, parity)
-  // bands; mode 0 keeps the tunable 3-slot threshold split (part parity).
-  // The crown/emblem art sits BELOW the dye threshold = baked + un-dyed
-  // metalness, untouched by any of this. slotF -1 = never dye.
-  // TSL nodes are effectively untyped for TS here (uniformArray elements and
-  // reassigned select() results) — one loose alias covers both cases.
   /* eslint-disable @typescript-eslint/no-explicit-any */
   type TSLNode = any;
   const ranked = rankSlotsSoftToHard(dyes);
@@ -914,19 +640,6 @@ function makeOpaque(
   let slotF: TSLNode;
   let parityF: TSLNode = partParity;
 
-  /**
-   * A discrete slot index as a 3-component weight vector — (1,0,0), (0,1,0) or
-   * (0,0,1). Lets every slot source (per-part, band decode, dyeslot plate) feed
-   * ONE weighted lookup path: a one-hot vector makes the blend below collapse
-   * back to a plain single-row read, so discrete sources are unaffected by it.
-   *
-   * Clamps like the `slotRounded` it replaces, so a negative slot ("never dye",
-   * e.g. a decal group) still selects slot 0's row rather than all-zero. That
-   * matters: several matRow reads — detailBlend at the albedo mix, fuzz, the
-   * pattern-accent strength — are NOT behind the isDyed gate, and zeroing them
-   * would quietly drop detail blending on exactly those groups. "Never dye" is
-   * expressed by isDyed, not by starving the table lookup.
-   */
   const oneHotSlot = (s: TSLNode): TSLNode => {
     const c = clamp(s, 0.0, 2.0);
     return vec3(
@@ -936,19 +649,9 @@ function makeOpaque(
     );
   };
 
-  // Per-pixel A-channel band decode (see needsBandSplit) — computed once,
-  // used either as the PRIMARY slot source (no dyeslot plate) or as the
-  // FALLBACK inside the dyeslot branch below wherever the plate itself has
-  // no positive per-pixel assignment. These used to be mutually exclusive
-  // (a plate's mere presence disabled band-split entirely); found empirically
-  // on Relativism (2809120022) that its dyeslot plate is a tiny 128x64
-  // decorative icon, not a body-wide mask, while its gearstack A channel
-  // plainly outlines a real distinct region (a circular emblem + trim lines,
-  // visible in the debug "a (dye mask / metalness / wear)" channel) that a
-  // dyeslot-only decode was silently discarding down to a single flat slot.
   let bandSlotF: TSLNode | null = null;
   let bandParityF: TSLNode | null = null;
-  if (bandSplit && ranked.length >= 2 && !decalSlot) {
+  if (bandSplit && ranked.length >= 2 && validSlot) {
     // mode 0 — ranked-slot thresholds on raw A (ascending = softer material).
     // Reads the sharp (mip-0) A so band boundaries don't fringe at silhouette
     // edges — see gsSharpA above.
@@ -980,94 +683,30 @@ function makeOpaque(
     );
   }
 
-  // Per-slot BLEND weights (slot0, slot1, slot2), summing to 1 wherever the
-  // pixel is dyed at all. One-hot everywhere except inside a dyeslot plate's
-  // genuinely-shared regions — see the plate branch below.
-  let slotWeights: TSLNode | null = null;
-
-  if (maps.dyeslot) {
-    // R/G/B are independent per-slot weights (slot0/slot1/slot2), NOT a
-    // single scalar 1-based id — confirmed by rendering Relativism's real
-    // dyeslot plate (2809120022) both ways and comparing against its actual
-    // in-game look: reading only R (the old "floor(r*3+0.5)-1" decode) missed
-    // real slot1/slot2 regions entirely wherever the plate expressed them via
-    // G or B (e.g. a cyan G+B region), rendering them as flat undyed grey
-    // instead of the tinted (blue) material they actually are.
-    //
-    // Those weights are USED AS WEIGHTS here. They used to be collapsed to an
-    // argmax ("cheap, no shader rearchitecture needed"), which is fine on a
-    // clear winner but is a coin flip on a tie — and ties are the majority of
-    // the signal, not an edge case. Measured across four real plates (512x512,
-    // via the resolved-slot debug view and a direct read of the assembled
-    // plates): of the texels the plate positively assigns, only 12-39% have a
-    // clear winner, while 34-79% are two-way ties whose average sorted channels
-    // are ~[209, 208, 12] — two slots essentially equal, the third at zero.
-    // Wherever two such weight fields cross, argmax flips slot per texel, which
-    // is precisely the salt-and-pepper speckle in the resolved-slot view.
-    //
-    // These ties are real authored regions, not compression noise: only 4.8-18%
-    // of tie texels touch a clear-winner texel, ~3.8 of their 4 neighbours are
-    // also ties, and their horizontal runs average 13-42px. Block-compression
-    // artifacts at a region boundary would be 1-2px runs almost all of which
-    // touch a clear region. (Nor is filtering to blame — the plate is already
-    // NearestFilter with generateMipmaps=false, and gets a 3x3 median
-    // despeckle at assembly; see loadGearModel/despeckle.ts. A per-channel
-    // median cannot fix this anyway: each channel is individually smooth, it
-    // is the SIGN of their difference that flips.)
-    //
-    // Normalising instead is continuous by construction, so the speckle cannot
-    // occur, and it degenerates exactly to the old behaviour on a clear winner
-    // — a one-hot weight vector reproduces the previous single-row lookup bit
-    // for bit. Only genuinely-shared texels change.
-    const dyeslotTex = texture(maps.dyeslot, uvN);
-    const qr = dyeslotTex.r;
-    const qg = dyeslotTex.g;
-    const qb = dyeslotTex.b;
-    const sum = qr.add(qg).add(qb);
-    // Dominant slot: still needed for the things that must stay discrete —
-    // the "is this dyed at all" gate and materialTypeId, which is an enum and
-    // would be meaningless interpolated.
-    const argmax = select(
-      qr.greaterThanEqual(qg).and(qr.greaterThanEqual(qb)),
-      float(0.0),
-      select(qg.greaterThanEqual(qb), float(1.0), float(2.0)),
-    );
-    // near-zero on all three channels = no per-pixel assignment ("baked").
-    const plateActive = step(0.03, sum);
-    const dyeslotSlot = select(sum.lessThan(0.03), float(-1), argmax);
-    // The plate REFINES the group's slot per texel — it does not get to strand
-    // the whole mesh undyed. Confirmed against Thy Fearful Symmetry's real
-    // dyeslot plate (1400258673): every channel is uniformly 0 (100% "baked")
-    // across the entire 64x64 mask, which — read literally as "0 = never dye"
-    // — left the whole mesh unresolved/undyed. Falling back to the A-channel
-    // band decode (when eligible) wherever the plate doesn't positively
-    // assign a slot keeps the plate authoritative where it DOES have real
-    // per-pixel data, while still recovering real per-pixel variation the
-    // plate itself is silent on — a flat single-slot fallback would just
-    // discard it (see Relativism's emblem above).
-    const fallbackSlotF = bandSlotF ?? float(decalSlot ? -1 : slotClamped);
-    slotF = select(dyeslotSlot.lessThan(-0.5), fallbackSlotF, dyeslotSlot);
-    if (bandSlotF && bandParityF) {
-      parityF = select(dyeslotSlot.lessThan(-0.5), bandParityF, partParity);
-    }
-    // Where the plate speaks, use its normalised weights; where it is silent,
-    // fall back to a one-hot vector on whatever slot the fallback resolved to.
-    slotWeights = mix(
-      oneHotSlot(slotF),
-      vec3(qr, qg, qb).div(max(sum, 1e-5)),
-      plateActive,
-    );
-  } else if (bandSlotF && bandParityF) {
-    slotF = bandSlotF;
-    parityF = bandParityF;
-  } else {
-    slotF = float(decalSlot ? -1 : slotClamped);
+  // Geometry IDs are the baseline; legacy alpha experiments only affect that
+  // fallback. An authored dye map takes precedence in every mode.
+  slotF = bandSlotF ?? float(validSlot ? slot : -1);
+  parityF = bandParityF ?? partParity;
+  slotF = select(uBandMode.greaterThan(2.5), float(validSlot ? slot : -1), slotF);
+  parityF = select(uBandMode.greaterThan(2.5), partParity, parityF);
+  if (maps.dyeslot && validSlot) {
+    // Loader decodes categorical RGB to ID+1 in R. Never blend IDs or use RGB
+    // as material weights. Alpha marks coverage; black source pixels inherit.
+    const image = maps.dyeslot.image as { width?: number; height?: number } | undefined;
+    const size = vec2(image?.width ?? 1, image?.height ?? 1);
+    const dye = textureLoad(maps.dyeslot,
+      ivec2(clamp(floor(uvN.mul(size)), vec2(0), size.sub(1))), int(0));
+    const id = floor(dye.r.mul(255).add(0.5)).sub(1);
+    const active = dye.a.greaterThan(0.5).and(id.greaterThanEqual(0)).and(id.lessThan(6));
+    const mapSlot = floor(id.mul(0.5));
+    slotF = select(active, mapSlot, slotF);
+    parityF = select(active, id.sub(mapSlot.mul(2)), parityF);
   }
-  // Every non-plate path resolves to a single slot, so its weights are one-hot
-  // and the blended lookup below collapses back to the original single-row read.
-  if (!slotWeights) slotWeights = oneHotSlot(slotF);
+  const slotWeights = oneHotSlot(slotF);
   const dyeOn = !!opts.applyDye && wantGearstack;
-  const isDyed = dyeOn ? step(-0.5, slotF).mul(dyeMask) : float(0.0);
+  const resolvedDyeAvailable = dot(slotWeights, vec3(dyes[0] ? 1 : 0, dyes[1] ? 1 : 0, dyes[2] ? 1 : 0));
+  const slotAvailable = validSlot ? resolvedDyeAvailable : float(0);
+  const isDyed = dyeOn ? step(-0.5, slotF).mul(dyeMask).mul(slotAvailable) : float(0.0);
 
   // Per-(slot, parity) lookup into the packed material table: material index =
   // parity*3 + slot, row offset per the layout above. uniformArray elements
@@ -1086,18 +725,6 @@ function makeOpaque(
       ) as TSLNode,
     );
 
-  /**
-   * The material row for this pixel, blended across slots by slotWeights (see
-   * the dyeslot decode above). With one-hot weights — every source except a
-   * dyeslot plate's shared regions — this is exactly the old single-row read;
-   * inside a shared region it interpolates instead of coin-flipping.
-   *
-   * Interpolating the remap vec4s (rows 2-4) is not identical to interpolating
-   * the remapped RESULT, but it is continuous and it is exact at both ends, so
-   * the only pixels it can affect are the ones whose previous value was
-   * arbitrary anyway. materialTypeId is deliberately NOT taken from here — see
-   * matRowDominant.
-   */
   const matRow = (row: number) =>
     matRowAt(float(0.0), row)
       .mul(slotWeights.x)
@@ -1107,114 +734,95 @@ function makeOpaque(
   /** Row from the single dominant slot — for values that must not interpolate. */
   const matRowDominant = (row: number) => matRowAt(slotRounded, row);
 
-  // ---- material-type gate (see KNOWN_EMISSIVE_MATERIAL_TYPE_IDS) --------------
-  // Resolved per-pixel from the SAME (slot, parity) the rest of this function
-  // uses — shared by the emissive gate below and the iridescent tint above
-  // the albedo assignment.
-  // Enum, not a quantity: an interpolated id between two known types would
-  // match neither, silently flipping the emissive gate off in shared regions.
-  const materialTypeId = matRowDominant(6).w;
-  let isKnownMaterial = materialTypeId.equal(KNOWN_EMISSIVE_MATERIAL_TYPE_IDS[0]);
-  for (const id of KNOWN_EMISSIVE_MATERIAL_TYPE_IDS.slice(1)) {
-    isKnownMaterial = isKnownMaterial.or(materialTypeId.equal(id));
-  }
-  const knownMaterialGate = select(isKnownMaterial, float(1.0), float(0.0));
-
-  // ---- remap (interpretation switchable at runtime — see REMAP_MODES) --------
-  // Roughness and wear use INDEPENDENT mode uniforms (see the doc comment on
-  // DEFAULT_ROUGHNESS_REMAP_MODE/DEFAULT_WEAR_REMAP_MODE): band-clamp reads
-  // better for roughness/reflections, but the same mode saturates at least
-  // one real item's wear remap to "always fully worn", overwriting its tint
-  // with wornAlbedo.
   const applyRemap = (raw: TSLNode, r: TSLNode, modeUniform: TSLNode) => {
     const tRange = clamp(raw.sub(r.x).div(max(r.y.sub(r.x), 1e-5)), 0.0, 1.0);
     const range = mix(r.z, r.w, tRange);
     const tBias = clamp(raw.mul(r.x).add(r.y), 0.0, 1.0);
     const lerpBand = mix(r.z, r.w, tBias);
     const clampBand = clamp(raw.mul(r.x).add(r.y), min(r.z, r.w), max(r.z, r.w));
-    return select(
+    const authored = authoredRemap(raw, r.x, r.y, r.z, r.w, {
+      add: (a: TSLNode, b: TSLNode) => a.add(b),
+      mul: (a: TSLNode, b: TSLNode) => a.mul(b),
+      clamp: (a: TSLNode, lo: TSLNode, hi: TSLNode) => clamp(a, lo, hi),
+    });
+    return select(modeUniform.greaterThan(2.5), authored, select(
       modeUniform.lessThan(0.5),
       range,
       select(modeUniform.lessThan(1.5), lerpBand, clampBand),
-    );
+    ));
   };
 
-  const wearAmt = clamp(applyRemap(wearRaw, matRow(4), uWearRemapMode), 0.0, 1.0).mul(isDyed);
+  // Authored remap returns the surviving coating: 1 = pristine, 0 = worn.
+  // [0,0,1,0] is the common explicit no-wear remap.
+  const wearMapped = clamp(applyRemap(wearRaw, matRow(4), uWearRemapMode), 0.0, 1.0);
+  const wearAmt = select(uWearRemapMode.greaterThan(2.5), wearMapped.oneMinus(), wearMapped).mul(isDyed);
+  const detailDiffuseBlend = mix(matRow(6).y, matRow(7).w, wearAmt).mul(isDyed);
+  const detailNormalBlend = mix(matRow(7).x, matRow(8).x, wearAmt).mul(isDyed);
+  const detailRoughnessBlend = mix(matRow(7).y, matRow(8).y, wearAmt).mul(isDyed);
 
-  // ---- albedo -----------------------------------------------------------------
-  let albedo = maps.diffuse
-    ? texture(maps.diffuse, uvN).rgb
-    : vec3(ownTint.albedo.r, ownTint.albedo.g, ownTint.albedo.b);
-
-  if (detailDiffuse && maps.diffuse) {
-    // Tiled micro-surface detail (fabric weave, metal grain) blended with
-    // Bungie's own Spasm operator — detail·saturate(base·4) + saturate(base −
-    // 0.25) — gated per-pixel by the (slot, parity) detail-blend strength:
-    // 0 on Nighthawk's gold plate, 1 on cloth. The old ±luminance wiggle was
-    // far too weak to read as cloth.
-    const dt = slotDye.detailDiffuseTransform;
-    const dUv = uvN.mul(vec2(dt[0], dt[1])).add(vec2(dt[2], dt[3]));
-    const detailRgb = texture(detailDiffuse, dUv).rgb;
-    const blended = detailRgb
-      .mul(clamp(albedo.mul(4.0), 0.0, 1.0))
-      .add(clamp(albedo.sub(0.25), 0.0, 1.0));
-    albedo = mix(albedo, blended, matRow(6).y);
+  // Texture and transform must follow the same resolved slot as the parameters.
+  let detailColor: TSLNode = vec3(0.0);
+  let detailGloss: TSLNode = float(0.0);
+  let detailNormalXY: TSLNode = vec2(0.0);
+  const detailUv = opts.sourceGeometry?.hasAttribute("uv1") ? uv(1) : uvN;
+  for (let i = 0; i < 3; i++) {
+    const d = dyeForSlot(dyes, i);
+    const weight = i === 0 ? slotWeights.x : i === 1 ? slotWeights.y : slotWeights.z;
+    // The mobile blend has a neutral detail pivot at 0.25 linear.
+    let sample: TSLNode = vec4(0.25, 0.25, 0.25, 0.25);
+    if (d.detailDiffuse) {
+      // Decode RGB once; texture alpha remains linear roughness data.
+      d.detailDiffuse.colorSpace = THREE.SRGBColorSpace;
+      d.detailDiffuse.wrapS = d.detailDiffuse.wrapT = THREE.RepeatWrapping;
+      const t = d.detailDiffuseTransform;
+      sample = texture(d.detailDiffuse, detailUv.mul(vec2(t[0], t[1])).add(vec2(t[2], t[3])));
+    }
+    detailColor = detailColor.add(sample.rgb.mul(weight));
+    detailGloss = detailGloss.add(sample.a.mul(weight));
+    if (d.detailNormal) {
+      d.detailNormal.colorSpace = THREE.NoColorSpace;
+      d.detailNormal.wrapS = d.detailNormal.wrapT = THREE.RepeatWrapping;
+      const t = d.detailNormalTransform;
+      const n = texture(d.detailNormal, detailUv.mul(vec2(t[0], t[1])).add(vec2(t[2], t[3])));
+      detailNormalXY = detailNormalXY.add(n.xy.mul(2.0).sub(1.0).mul(weight));
+    }
   }
 
-  const tintN = matRow(0).xyz;
-  const wornN = matRow(1).xyz;
-  // Cloth regions skip the plated saturation gate even on plate-based items
-  // (see GearMaterialOptions.plated) — decided per-group from this group's
-  // own resolved slot, not an item-wide flag.
-  const gatedTint = !!opts.plated && !slotDye.cloth;
-  let dyedColor;
-  if (gatedTint) {
-    // Brightness/saturation gate for baked-colour art, measured on the RAW
-    // albedo BEFORE AO darkening — base material (grey OR light) takes the
-    // tint; only distinctly COLOURED art (saturated) and genuinely NEAR-WHITE
-    // baked insignia pass through untinted.
-    //
-    // Destiny's dye model MULTIPLIES the tint into the change-colour diffuse,
-    // so a light/grey base is exactly what becomes a coloured piece (white ×
-    // blue = blue). The brightness ceiling used to sit at 0.3–0.48, which
-    // wrongly protected ordinary base material: on Relativism (2809120022) the
-    // diffuse mean luminance is 0.42 with ~0 saturation, so that ceiling
-    // suppressed the tint on ~45% of the cape and every resolved slot rendered
-    // the same pale colour despite the dyeslot map showing three distinct
-    // materials. A direct A/B (grey gate fully open vs gated) confirmed the
-    // gate was hiding real per-slot variation — the darker slot-2 leather
-    // panel + lacing only read with the tint applied. Ceiling raised to
-    // 0.85–0.97 so ONLY near-pure-white texels (genuine baked insignia) are
-    // spared; everything else takes its slot's tint. The saturation term still
-    // protects coloured decals, and sub-dye-threshold baked art is already
-    // excluded upstream by dyeMask (A < 40 → isDyed 0). Retune the ceiling if
-    // a real white emblem on some item starts taking dye.
-    const lum = luminance(albedo);
-    const sat = max(albedo.r, max(albedo.g, albedo.b)).sub(
-      min(albedo.r, min(albedo.g, albedo.b)),
-    );
-    const greyMask = smoothstep(0.06, 0.16, sat)
-      .oneMinus()
-      .mul(smoothstep(0.85, 0.97, lum).oneMinus())
-      .mul(smoothstep(0.04, 0.11, lum));
-    const m = isDyed.mul(greyMask);
-    // Blend the TINT colours by wear amount before applying to albedo, once —
-    // not a second multiply on top of the already-tinted result. wornAlbedo
-    // is a normalized [0,1] colour (e.g. 0.55 grey), so multiplying an
-    // already-tinted (already-dark) colour by it can only ever darken
-    // further, never reveal the lighter worn material Bungie's data encodes.
-    const wearTint = mix(tintN, wornN, wearAmt.mul(greyMask));
-    dyedColor = mix(albedo, clamp(albedo.mul(1.7), 0.0, 1.1).mul(wearTint), m);
-  } else {
-    const wearTint = mix(tintN, wornN, wearAmt);
-    dyedColor = mix(albedo, albedo.mul(wearTint), isDyed);
+  const albedo = maps.diffuse ? texture(maps.diffuse, uvN).rgb : vec3(1.0);
+  const wearTint = mix(matRow(0).xyz, matRow(1).xyz, wearAmt);
+  // Use the gearstack mask, never diffuse saturation/brightness, to gate dye.
+  const overlayColor = wearTint.mul(clamp(albedo.mul(4.0), 0.0, 1.0))
+    .add(clamp(albedo.sub(0.25), 0.0, 1.0));
+  let dyedColor = mix(albedo, overlayColor, isDyed);
+  const detailedColor = dyedColor.mul(clamp(detailColor.mul(4.0), 0.0, 1.0))
+    .add(clamp(detailColor.sub(0.25), 0.0, 1.0));
+  dyedColor = mix(dyedColor, detailedColor, detailDiffuseBlend);
+
+  // D2's artist-authored specular palette is not a physical film thickness.
+  const iridescenceIds = [...new Set([...prims, ...secs].map((t) => t.materialTypeId).filter((id) => id >= 0))];
+  mat.userData.destiny = {
+    model: "d2-mobile-mastife", iridescenceIds,
+    missingIridescenceLookup: iridescenceIds.length > 0 && !maps.iridescenceLookup,
+    approximateEffects: [pattern ? "pattern shimmer" : null, accent ? "darkness" : null].filter(Boolean),
+    slotSource: "stage-part",
+    boundaryReconstruction: maps.materialBoundaries?.userData.materialBoundaries ?? null,
+  };
+  let iridescentMetalAmount: TSLNode = float(0);
+  if (maps.iridescenceLookup && iridescenceIds.length) {
+    const id = matRowDominant(6).w;
+    const height = (maps.iridescenceLookup.image as { height?: number } | undefined)?.height ?? 128;
+    const facing = clamp(dot(normalView, positionViewDirection), 0.0, 1.0);
+    const palette = texture(maps.iridescenceLookup, vec2(facing, id.add(0.5).div(height)));
+    const active = select(id.greaterThanEqual(0).and(id.lessThan(height)).and(palette.a.greaterThan(0)), isDyed, float(0));
+    const amount = clamp(float(1).sub(dot(wearTint, vec3(0.2126, 0.7152, 0.0722))), 0, 1).mul(active);
+    const metallicPalette = id.mod(2).equal(0);
+    iridescentMetalAmount = select(metallicPalette, amount, float(0));
+    // Reference even IDs use a metallic color palette; odd IDs tint dielectric
+    // specular. Palette alpha attenuates the coating independently of RGB.
+    dyedColor = mix(dyedColor.mul(mix(1, palette.a, active)), palette.rgb, iridescentMetalAmount);
+    mat.specularColorNode = mix(vec3(1.0), palette.rgb, select(metallicPalette, float(0), amount));
   }
 
-  // Shared animation clock for the pattern shimmer + darkness accent — created
-  // once if either effect is active on this material, advanced by
-  // advancePatternTime() from the render loop. `pattern`/`accent` are fixed
-  // per stage part at material-build time (not runtime uniforms), so which
-  // effect runs is a plain JS branch.
   const wantsPattern = pattern && !!maps.patternNoise && !!maps.patternRipple;
   const wantsAccent =
     accent && !!maps.accentTwirl && !!maps.accentBlob && !!maps.accentDarkness;
@@ -1223,24 +831,6 @@ function makeOpaque(
     mat.userData.uniforms = { ...mat.userData.uniforms, uPatternTime };
   }
 
-  // ---- pattern shimmer (see isPatternGroup) -----------------------------------
-  // Bungie confirmed an "Iridescence" material system exists in Destiny 2's
-  // renderer (GDC 2018, "Physically Inspired Shading in Destiny 2"). Rather
-  // than guess WHICH materials use it from materialTypeId (the old approach —
-  // see git history), this is gated by the real per-stage-part signal: the
-  // group's own stage part shipping the confirmed noise+ripple VFX texture
-  // pair (see PATTERN_NOISE_SUFFIX/PATTERN_RIPPLE_SUFFIX, isPatternGroup).
-  //
-  // Base gradient (white -> pale blue -> pink toward grazing angles) is the
-  // same Fresnel approximation verified by eye against Relativism's reference
-  // render in the previous materialTypeId-gated version. New here: the ripple
-  // texture's per-pixel sample flows the UV fed into the noise sample (a
-  // standard two-texture distortion technique), and both are advanced by
-  // uPatternTime, so the shimmer actually warps/travels across the surface
-  // instead of being a static angle-only gradient. Tiling/warp-strength/speed
-  // (PATTERN_TILE_SCALE/PATTERN_WARP_STRENGTH/PATTERN_FLOW_SPEED) are
-  // unverified guesses — see their doc comment — expect to retune against a
-  // live render.
   if (wantsPattern && uPatternTime && maps.patternNoise && maps.patternRipple) {
     const flow = vec2(
       uPatternTime.mul(PATTERN_FLOW_SPEED),
@@ -1257,32 +847,10 @@ function makeOpaque(
     const noiseSample = texture(maps.patternNoise, noiseUv).r;
 
     const fresnel = pow(
-      clamp(dot(transformedNormalView, positionViewDirection), 0.0, 1.0).oneMinus(),
+      clamp(dot(normalView, positionViewDirection), 0.0, 1.0).oneMinus(),
       3.0,
     );
-    // Reference render (Relativism's real in-game look, compared directly
-    // against this session) shows strong blue/purple mottling across the
-    // WHOLE cape, tracking the fabric's folds — not just a thin band at
-    // grazing silhouette edges the way a pure Fresnel term alone produces.
-    // So the noise sample (the fabric-pattern-driven signal) is weighted as
-    // a near-equal, independent driver of the colour mix rather than a small
-    // perturbation added on top of fresnel — it alone can push well into
-    // colour territory even on a surface facing the camera dead-on. Weights
-    // and thresholds are still unverified guesses tuned by eye against that
-    // reference, not derived values — expect to retune further.
-    // Fresnel-dominant (user chose distinct sections): the iridescence
-    // concentrates at grazing angles / fold silhouettes rather than spreading
-    // across every face-on texel, so flat surfaces keep their per-slot base
-    // colour and only the edges catch the oil-slick sheen.
     const colorMix = clamp(fresnel.mul(0.85).add(noiseSample.mul(0.35)), 0.0, 1.0);
-    // Round 3 (tuned by eye against the user's in-game reference): the earlier
-    // palette was too desaturated (every stop sat near 0.6–1.0), so
-    // multiplying it into the base kept the cape pale. The reference is a
-    // vivid oil-slick — a SATURATED spectrum sweeping white → blue → purple →
-    // magenta as the noise/fresnel term rises, richest on the lower cape.
-    // Lower off-channels = more saturation survives the multiply. Pearl-white
-    // stays the low-mix base so the near-white upper body (slot 0) reads pale
-    // while the bluer lower cape (slot 1) pushes deep into blue/purple.
     const iridescentWhite = vec3(0.9, 0.93, 1.0);
     const iridescentBlue = vec3(0.3, 0.46, 1.0);
     const iridescentPurple = vec3(0.5, 0.28, 0.98);
@@ -1290,37 +858,13 @@ function makeOpaque(
     const lowMix = mix(iridescentWhite, iridescentBlue, smoothstep(0.0, 0.4, colorMix));
     const midMix = mix(lowMix, iridescentPurple, smoothstep(0.4, 0.72, colorMix));
     const iridescentTint = mix(midMix, iridescentMagenta, smoothstep(0.72, 1.0, colorMix));
-    // Pearl-white upper vs vivid lower cape: the reference keeps the near-white
-    // upper body (slot 0) pastel while the bluer lower cape (slot 1) saturates
-    // deep into blue/purple. A saturated tint MULTIPLIED into a near-white base
-    // would recolour it fully (white × purple = purple), erasing that gradient.
-    // So the colour shift is scaled DOWN on bright bases — the shimmer tint is
-    // pulled toward neutral in proportion to the base's own luminance, leaving
-    // the pearl upper a subtle sheen and letting the darker cloth take the full
-    // oil-slick. Capped at 0.7 so even the brightest base keeps some iridescence.
     const baseLum = luminance(dyedColor);
     const shimmerDesat = smoothstep(0.45, 0.8, baseLum).mul(0.82);
     const shimmerTint = mix(iridescentTint, vec3(1.0, 1.0, 1.0), shimmerDesat);
-    // Apply the iridescence as a partial OVERLAY, not a full multiply-replace.
-    // A real iridescent material shows the section's own base colour with a
-    // sheen on top — a blue section stays blue, a grey section stays grey.
-    // Multiplying fully by a saturated tint erased that: every dye slot (the
-    // item's distinct "pieces") collapsed to the same purple. Blending keeps
-    // PATTERN_SHEEN of each pixel's own per-slot dyedColor so the sections
-    // read, while still carrying the strong oil-slick the reference shows.
     const shimmered = dyedColor.mul(shimmerTint).mul(1.25);
     dyedColor = mix(dyedColor, shimmered, PATTERN_SHEEN);
   }
 
-  // ---- swirling-darkness accent (see isAccentGroup) ---------------------------
-  // The type-8 accent trio: a twirl warp-map (spiral RG flow field), a blob
-  // noise, and a cloudy darkness plate. Composited as an animated dark-energy
-  // overlay: the twirl field swirls the sample UVs over time, the darkness
-  // plate × blob noise gives a moving cloud density, and the base colour is
-  // pushed toward a near-black cool void where that density is high. Bungie's
-  // real composite isn't public; the blend + ACCENT_* consts are eyeballed
-  // against the live render (expect to retune) — but the WHICH (this exact
-  // group) is the real per-stage-part signal, not a guess.
   if (
     wantsAccent &&
     uPatternTime &&
@@ -1347,8 +891,11 @@ function makeOpaque(
 
   if (wantGearstack) {
     // ---- smoothness -> roughness (signed domain: negative smoothness = fuzz) --
-    const smoothBase = applyRemap(smoothRaw, matRow(2), uRoughnessRemapMode);
-    const smoothWorn = applyRemap(smoothRaw, matRow(3), uRoughnessRemapMode);
+    const detailSmooth = detailGloss.mul(clamp(smoothRaw.mul(4.0), 0.0, 1.0))
+      .add(clamp(smoothRaw.sub(0.25), 0.0, 1.0));
+    const smoothInput = mix(smoothRaw, detailSmooth, detailRoughnessBlend);
+    const smoothBase = applyRemap(smoothInput, matRow(2), uRoughnessRemapMode);
+    const smoothWorn = applyRemap(smoothInput, matRow(3), uRoughnessRemapMode);
     const smoothness = clamp(
       mix(smoothRaw, mix(smoothBase, smoothWorn, wearAmt), isDyed),
       -1.0,
@@ -1360,7 +907,8 @@ function makeOpaque(
     // ---- metalness: dyed regions use the tint's authored metalness (worn state
     // can differ — paint scratching to bare metal); un-dyed keeps the gearstack's.
     const metalDyed = mix(matRow(0).w, matRow(1).w, wearAmt);
-    mat.metalnessNode = mix(undyedMetal, metalDyed, isDyed);
+    const resolvedMetal = mix(undyedMetal, metalDyed, isDyed);
+    mat.metalnessNode = mix(resolvedMetal, 1, iridescentMetalAmount);
 
     // ---- AO --------------------------------------------------------------------
     mat.aoNode = ao;
@@ -1371,86 +919,47 @@ function makeOpaque(
     const anyFuzz =
       prims.some((t) => t.fuzz > 0) ||
       secs.some((t) => t.fuzz > 0) ||
-      [0, 1, 2].some((s) => dyeForSlot(dyes, s).cloth);
+      [...prims, ...secs].some((t) => t.roughnessRemap[2] < 0 || t.wornRoughnessRemap[2] < 0);
     if (anyFuzz) {
       const fuzzAmt = clamp(
         matRow(6).x.add(fuzzFromNegativeSmoothness),
         0.0,
         1.0,
-      ).mul(dyeOn ? isDyed : float(1.0));
+      ).mul(isDyed);
       mat.sheenNode = dyedColor.mul(fuzzAmt);
       mat.sheenRoughnessNode = float(0.9);
     }
 
-    // ---- emissive: gearstack B band × the slot's emissive tint & intensity ----
-    // Gated by the resolved tint's materialTypeId (see knownMaterialGate above
-    // / KNOWN_EMISSIVE_MATERIAL_TYPE_IDS).
-    //
-    // Placeholder emissive tints (an unset default repeated identically across
-    // every slot — e.g. Relativism's (1,0,0,1) primaries / (1,1,1,1)
-    // secondaries) are zeroed upstream at the data level, so they never reach
-    // here — see neutralizePlaceholderEmissive in gearDye.ts. Anything left in
-    // matRow(5) at this point is authored glow.
+    // Emission is independent of the iridescence index and tint repetition.
     const em = matRow(5);
-    let emissive = em.xyz.mul(em.w).mul(emissiveMask).mul(1.25).mul(knownMaterialGate);
+    let emissive = em.xyz.mul(em.w).mul(emissiveMask).mul(slotAvailable);
     if (maps.emissive) {
-      emissive = emissive.add(texture(maps.emissive, uvN).rgb.mul(1.5));
+      emissive = emissive.add(texture(maps.emissive, uvN).rgb);
     }
     if (uGlowEnabled && uGlowTime) {
-      // Ability-driven glow (see GearMaterialOptions.animatedGlow): flicker
-      // between 55% and 100% intensity instead of the flat, always-on band
-      // the raw B-channel data produces, and let uGlowEnabled kill it
-      // entirely — the mobile gear data has no "ability active" signal to
-      // drive this for real, so it's a live toggle rather than a guess.
-      // uGlowTime is advanced from JS (see advanceGlowTime), not TSL's
-      // built-in `time` node.
       const flicker = sin(uGlowTime.mul(5.0)).mul(0.5).add(0.5);
       emissive = emissive.mul(mix(0.55, 1.0, flicker)).mul(uGlowEnabled);
     }
     mat.emissiveNode = emissive;
 
-    // ---- alpha-test cut-outs: NOT applied here ------------------------------------
-    // The doc's "~32 values" band for alpha-test cutouts is NOT a universal
-    // opaque-anchor-at-32 rule: sampled directly against Celestial Nighthawk's
-    // own UVs, its solid dome shell (no fringe/cutout geometry at all) is 27%
-    // raw B=0 texels. A blind discard-below-half-opacity treated that as a
-    // cutout and punched real holes through the mesh. Bungie's alpha-test
-    // sub-band is evidently only meaningful for stage parts that are actually
-    // flagged as alpha-tested (cape fringe, hair, grates) — a signal not
-    // present in the render metadata we parse today. Discarding on the raw B
-    // value with no such gate is unsafe across items; leaving pixels opaque
-    // (no discard) until that per-part flag is identified is the correct
-    // default.
-
     // ---- subsurface scattering (Bungie: wrapped diffuse + inverted view-
     // dependent lobe; three's SSS node material implements the same family of
     // approximation). Enabled only when the dye ships a strength.
-    const sssStrength = Math.max(0, Math.min(1, (ownTint.sss || 0) / 50));
-    if (sssStrength > 0) {
-      mat.thicknessColorNode = dyedColor.mul(sssStrength);
+    if ([...prims, ...secs].some((t) => t.transmission > 0 || t.sss > 0)) {
+      const sssStrength = clamp(max(matRow(7).z, matRow(6).z.div(50)), 0.0, 1.0).mul(isDyed);
+      mat.thicknessColorNode = dyedColor.mul(sssStrength).mul(mix(undyedMetal, metalDyed, isDyed).oneMinus());
       mat.thicknessDistortionNode = float(0.1);
       mat.thicknessAttenuationNode = float(0.8);
       mat.thicknessPowerNode = float(2.0);
       mat.thicknessScaleNode = float(4.0);
     }
 
-    // ---- debug channel viewer (unlit override of the final output) ------------
-    // Slot view: secondary-parity texels show at half brightness so the
-    // (slot, parity) pair is readable at a glance.
-    // Built from slotWeights, not from the discrete slot, so this view shows
-    // what is actually being rendered. Inside a dyeslot plate's shared regions
-    // that reads as a blend of the two slot colours (e.g. green/blue -> cyan)
-    // rather than the salt-and-pepper the old argmax produced — if speckle
-    // ever reappears here, the decode really has regressed rather than the
-    // view merely disagreeing with the render.
     const slotColor = select(
-      slotF.lessThan(-0.5).or(dyeMask.lessThan(0.5)),
+      isDyed.lessThan(0.5),
       vec3(0.15, 0.15, 0.15),
       slotWeights.mul(parityF.mul(-0.5).add(1.0)),
     );
-    // Channel 6: quantize A into 8 bands with distinct hues, to inspect
-    // whether/where the wear channel doubles as a per-pixel material id on
-    // single-stage-part items (e.g. Cover of the Exile).
+    // Channel 6: visualize the wear range as eight hues for legacy comparisons.
     const band = floor(gs.a.mul(8.0));
     const bandColor = select(
       band.lessThan(0.5),
@@ -1477,6 +986,14 @@ function makeOpaque(
         ),
       ),
     );
+    const decodedAlpha = vec3(undyedMetal.mul(dyeMask.oneMinus()), dyeMask, wearRaw.mul(dyeMask));
+    const originalSize = maps.gearstack!.image as { width?: number; height?: number } | undefined;
+    const originalDimensions = vec2(originalSize?.width ?? 1, originalSize?.height ?? 1);
+    const originalAlpha = textureLoad(maps.gearstack!,
+      ivec2(clamp(floor(uvN.mul(originalDimensions)), vec2(0), originalDimensions.sub(1))), int(0)).a;
+    const alphaClass = (a: TSLNode) => step(8.5 / 255, a).add(step(23.5 / 255, a)).add(step(39.5 / 255, a));
+    const estimatedBoundary = select(alphaClass(originalAlpha).notEqual(alphaClass(gsSharpA)),
+      vec3(1, 0.8, 0), vec3(0.08));
     const dbg = select(
       uDebugChannel.lessThan(1.5),
       vec3(gs.r),
@@ -1489,61 +1006,26 @@ function makeOpaque(
           select(
             uDebugChannel.lessThan(4.5),
             vec3(gs.a),
-            select(uDebugChannel.lessThan(5.5), slotColor, bandColor),
+            select(uDebugChannel.lessThan(5.5), slotColor,
+              select(uDebugChannel.lessThan(6.5), bandColor,
+                select(uDebugChannel.lessThan(7.5), vec3(resolvedMetal),
+                  select(uDebugChannel.lessThan(8.5), decodedAlpha, estimatedBoundary)))),
           ),
         ),
       ),
     );
-    // `outputNode` is written in WORKING (linear) space, and the renderer's
-    // full-screen output pass then applies tone mapping AND a working -> sRGB
-    // encode over the whole frame. Writing a raw channel value straight out
-    // therefore displayed it badly distorted, which meant the four channels
-    // whose entire job is reading data off the model were the ones that lied:
-    // mid-range data read as saturated (raw 0.5 encoded to 0.74) on top of
-    // whatever the tone curve did to it.
-    //
-    // Pre-inverting the encode here (sRGB -> linear, so the output pass's
-    // linear -> sRGB puts it back) makes the ENCODE half round-trip, so the
-    // grey on screen is the raw channel value. The tone-mapping half cannot be
-    // undone here — it is a post pass and `material.toneMapped` is WebGL-only
-    // — so it is switched off at the renderer for as long as a channel is
-    // active; see DebugToneMapping in ModelViewer.tsx. Both halves are
-    // required: with only this one, the undyed-grey constant vec3(0.15) still
-    // measured 20/255 on screen instead of 38/255.
-    //
-    // Channel 6 was never affected (it bands gs.a BEFORE the output stage) and
-    // is what caught the encode bug — on ordinary armor A sits at 0.50-0.75,
-    // which it correctly shows as bands 4-5 while channels 1-4 rendered the
-    // same texels near-white.
-    //
-    // This also fixes the categorical views: slotColor's secondary-parity
-    // texels are specified at half brightness, and now actually read as half
-    // brightness rather than 74%.
-    // Applied directly rather than via colorSpaceToWorking(): that wraps
-    // ColorSpaceNode, which indexes .rgb/.a off its input, and the builder
-    // flattens the vec4() wrapper back to the underlying vec3 before it gets
-    // there — so `.a` compiles to a `.w` swizzle on a vec3 and the whole
-    // pipeline fails to build (silently, as a WGSL error at runtime, not a TS
-    // one: the model simply vanishes). sRGBTransferEOTF is vec3 -> vec3 and is
-    // exactly the inverse of the OETF the output pass applies, so it does the
-    // same job with no vec4 plumbing to get wrong.
     const dbgOut = sRGBTransferEOTF(dbg) as TSLNode;
     mat.outputNode = select(uDebugChannel.greaterThan(0.5), vec4(dbgOut, 1.0), output);
   }
 
-  // ---- detail normal blended over the plate normal ----------------------------
-  if (maps.normal) {
-    let packedNormal = texture(maps.normal, uvN).xyz;
-    if (detailNormal) {
-      const nt = slotDye.detailNormalTransform;
-      const dnUv = uvN.mul(vec2(nt[0], nt[1])).add(vec2(nt[2], nt[3]));
-      const base = packedNormal.mul(2.0).sub(1.0);
-      const detail = texture(detailNormal, dnUv).xyz.mul(2.0).sub(1.0);
-      const strength = matRow(6).y.mul(0.4);
-      const combined = vec3(base.xy.add(detail.xy.mul(strength)), base.z).normalize();
-      packedNormal = combined.mul(0.5).add(0.5);
-    }
-    mat.normalNode = normalMap(packedNormal);
+  // Normal maps encode XY; reconstruct Z instead of using the cavity channel.
+  if (maps.normal || Object.values(dyes).some((d) => d.detailNormal)) {
+    const baseXY = vec2(maps.normal ? texture(maps.normal, uvN).xy.mul(2.0).sub(1.0) : vec2(0.0));
+    const detailXY = detailNormalXY.mul(detailNormalBlend);
+    const baseZ = sqrt(max(float(1.0).sub(dot(baseXY, baseXY)), 1e-5));
+    const detailZ = sqrt(max(float(1.0).sub(dot(detailXY, detailXY)), 1e-5));
+    const combined = vec3(baseXY.x.add(detailXY.x), baseXY.y.add(detailXY.y), baseZ.mul(detailZ)).normalize();
+    mat.normalNode = normalMap(combined.mul(0.5).add(0.5));
   }
 
   return mat;
@@ -1558,37 +1040,23 @@ export function createGearMaterials(
   if (groups.length === 0) {
     return [makeOpaque(0, dyes, maps, opts)];
   }
-  // The singlePart gate exists to stop band-split guessing wrongly when it
-  // would be the PRIMARY slot source on a multi-file item (see the doc
-  // comment above and Cayde's cloak speckle history) — but when a dyeslot
-  // plate exists, band-split is only ever used as makeOpaque's FALLBACK for
-  // texels the plate itself leaves unassigned (see needsBandSplit), not as
-  // the primary decision-maker. That's a much lower-risk use the singlePart
-  // caution wasn't calibrated against, so it's skipped in that case —
-  // otherwise Relativism (2 real geometry files: shell + cloth, so
-  // singlePart is correctly false) would never get a chance to recover its
-  // emblem/trim-line region at all, even though the plate itself concedes no
-  // data there.
   const bandSplit =
     ((opts.singlePart ?? true) || !!maps.dyeslot) && needsBandSplit(groups);
-  // isAbilityVfxGroup is gated behind animatedGlow (per-item allowlist), NOT
-  // applied unconditionally — a real counter-example turned up almost
-  // immediately: Relativism (2809120022) has a stage part with flags 0x6008,
-  // i.e. the SAME 0x2000 bit found on Thy Fearful Symmetry's flame geometry,
-  // set alongside the ordinary decal bit (0x8) on what all evidence says is
-  // just its hood — an always-visible part, not optional ability VFX. The
-  // bit correlated with real ability-VFX geometry on exactly one item; that's
-  // not enough evidence to treat it as a universal signal. See
-  // GearMaterialOptions.animatedGlow for the actual gating.
   const hasVfxGroups = !!opts.animatedGlow && groups.some(isAbilityVfxGroup);
   const hasRadialGradient =
     hasVfxGroups && !!opts.sourceGeometry && ensureVfxRadialAttribute(opts.sourceGeometry, groups);
+  const hasEffectUV = !!opts.sourceGeometry && prepareEffectUVs(opts.sourceGeometry, groups);
   return groups.map((g) => {
+    if (isRayGlowGroup(g)) return makeRayGlow(g, dyes, maps, hasEffectUV);
+    if (transparentEffect(g)?.kind === "digital-cloud") return makeCloudEffect(g, dyes, maps, hasEffectUV);
     if (g.glow) return makeGlow(maps);
     if (opts.animatedGlow && isAbilityVfxGroup(g)) {
       return makeAbilityVfxGeometry(g.dyeIndex, dyes, hasRadialGradient);
     }
-    return makeOpaque(
+    // All transparent passes must leave the opaque-armor path, even when their
+    // effect program is unknown. Keep a diagnostic instead of solid carrier cards.
+    if (g.renderStage === 7) return unsupportedTransparentEffect(g);
+    const material = makeOpaque(
       g.dyeIndex,
       dyes,
       maps,
@@ -1597,6 +1065,14 @@ export function createGearMaterials(
       bandSplit,
       isPatternGroup(g),
       isAccentGroup(g),
+      g.renderStage,
     );
+    material.userData.destiny = {
+      ...material.userData.destiny,
+      slotSource: maps.dyeslot && decodeChangeColorIndex(g.dyeIndex).slot < 3 && g.dyeIndex >= 0
+        ? "dye-map" : g.dyeSource ?? "stage-part",
+      geometrySlotSource: g.dyeSource ?? "stage-part",
+    };
+    return material;
   });
 }

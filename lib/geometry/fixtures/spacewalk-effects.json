@@ -1,0 +1,247 @@
+{
+  "itemHash": 2041120767,
+  "retrieved": "2026-09-28",
+  "note": "Real stage-7 LOD01 draws. Original vertex bytes; unused vertices removed and indices remapped.",
+  "variants": [
+    {
+      "file": "048cdb453df968951f9f1a8d88dc75de.tgxm",
+      "metadata": {
+        "render_model": {
+          "render_meshes": [
+            {
+              "position_scale": [
+                0.313572,
+                0.313572,
+                0.313571
+              ],
+              "position_offset": [
+                0.022535,
+                0.003313,
+                1.352254
+              ],
+              "texcoord_scale": [
+                0.49384,
+                0.49384
+              ],
+              "texcoord_offset": [
+                0.5,
+                1.000008
+              ],
+              "stage_part_vertex_stream_layout_definitions": [
+                {
+                  "type": "k_first_dynamic_vertex_stream_layout",
+                  "formats": [
+                    {
+                      "stride": 32,
+                      "elements": [
+                        {
+                          "type": "_vertex_format_attribute_float4",
+                          "semantic": "_tfx_vb_semantic_position",
+                          "normalized": false,
+                          "size": 16,
+                          "offset": 0,
+                          "semantic_index": 0
+                        },
+                        {
+                          "type": "_vertex_format_attribute_short4",
+                          "semantic": "_tfx_vb_semantic_normal",
+                          "normalized": true,
+                          "size": 8,
+                          "offset": 8,
+                          "semantic_index": 0
+                        },
+                        {
+                          "type": "_vertex_format_attribute_short4",
+                          "semantic": "_tfx_vb_semantic_tangent",
+                          "normalized": true,
+                          "size": 8,
+                          "offset": 16,
+                          "semantic_index": 0
+                        }
+                      ]
+                    },
+                    {
+                      "stride": 4,
+                      "elements": [
+                        {
+                          "type": "_vertex_format_attribute_short2",
+                          "semantic": "_tfx_vb_semantic_texcoord",
+                          "normalized": true,
+                          "size": 4,
+                          "offset": 0,
+                          "semantic_index": 0
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "stage_part_offsets": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                1
+              ],
+              "stage_part_list": [
+                {
+                  "shader": {
+                    "static_textures": [
+                      "2846779858_taken_stain_etch_palette",
+                      "1363171116_digital_cloud_plate",
+                      "4137719177_dust_snow_mask_med01"
+                    ],
+                    "type": 8
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 0,
+                  "index_count": 9,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16400,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 1,
+                    "name": "_lod_category_01"
+                  },
+                  "lod_run": 1
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "buffers": {
+        "0.0.vertexbuffer.tgx": "uHPLPWzSRz63PZk/AAApxZZfIFUAABiA4KqWXwAAAYCBVjI+7JXjPbc9mT8AACnFll8gVQAAGIDgqpZfAAABgLhzyz1s0kc+kfOEPwAAKcWWXyBVAAAYgOCqll8AAAGAgVYyPuyV4z2R84Q/ABApxZZfIFUAABiA4KqWXwAAAYC/5hI+thaLPFCmuj8AADBBxWVJEnJLGID45Tt9wgQBgGsYQj7t3e08plGyPwAAMEHFZUkScksYgPjlO33CBAGARiDmPSKcKj6UYLs/AAAwQcVlSRJySxiA+OU7fcIEAYBMPyI+hvI2PuoLsz8AADBBxWVJEnJLGID45Tt9wgQBgA==",
+        "0.1.vertexbuffer.tgx": "ZLWlsvGipbJktaTM8aKkzE0vt7ZNL/DDYUi3tmFI8MM=",
+        "0.indexbuffer.tgx": "AAABAAIAAwD//wQABQAGAAcA"
+      }
+    },
+    {
+      "file": "e2ff6ef31132e4422a88e6c5c189ac0b.tgxm",
+      "metadata": {
+        "render_model": {
+          "render_meshes": [
+            {
+              "position_scale": [
+                0.324345,
+                0.324345,
+                0.324345
+              ],
+              "position_offset": [
+                0.02154,
+                0.004702,
+                1.348013
+              ],
+              "texcoord_scale": [
+                0.49384,
+                0.49384
+              ],
+              "texcoord_offset": [
+                0.5,
+                1.000008
+              ],
+              "stage_part_vertex_stream_layout_definitions": [
+                {
+                  "type": "k_first_dynamic_vertex_stream_layout",
+                  "formats": [
+                    {
+                      "stride": 32,
+                      "elements": [
+                        {
+                          "type": "_vertex_format_attribute_float4",
+                          "semantic": "_tfx_vb_semantic_position",
+                          "normalized": false,
+                          "size": 16,
+                          "offset": 0,
+                          "semantic_index": 0
+                        },
+                        {
+                          "type": "_vertex_format_attribute_short4",
+                          "semantic": "_tfx_vb_semantic_normal",
+                          "normalized": true,
+                          "size": 8,
+                          "offset": 8,
+                          "semantic_index": 0
+                        },
+                        {
+                          "type": "_vertex_format_attribute_short4",
+                          "semantic": "_tfx_vb_semantic_tangent",
+                          "normalized": true,
+                          "size": 8,
+                          "offset": 16,
+                          "semantic_index": 0
+                        }
+                      ]
+                    },
+                    {
+                      "stride": 4,
+                      "elements": [
+                        {
+                          "type": "_vertex_format_attribute_short2",
+                          "semantic": "_tfx_vb_semantic_texcoord",
+                          "normalized": true,
+                          "size": 4,
+                          "offset": 0,
+                          "semantic_index": 0
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "stage_part_offsets": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                1
+              ],
+              "stage_part_list": [
+                {
+                  "shader": {
+                    "static_textures": [
+                      "2846779858_taken_stain_etch_palette",
+                      "1363171116_digital_cloud_plate",
+                      "4137719177_dust_snow_mask_med01"
+                    ],
+                    "type": 8
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 0,
+                  "index_count": 9,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16400,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 1,
+                    "name": "_lod_category_01"
+                  },
+                  "lod_run": 1
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "buffers": {
+        "0.0.vertexbuffer.tgx": "g3nXPdKHVj49v5k/AOAYRU5btFkAABiATKZOWwAAAYDOfkA+jUAAPj2/mT8A4BhFTlu0WQAAGIBMpk5bAAABgIN51z3Sh1Y+3HGEPwDgGEVOW7RZAAAYgEymTlsAAAGAzn5APo1AAD7ccYQ/AOAYRU5btFkAABiATKZOWwAAAYDDCxw+RNOHPMO6uz8AADBB4HIfEnc1GIAU7HB+8v8BgFF7Pz5ILrQ84PmxPwAAMEHgch8SdzUYgBTscH7y/wGAqbQCPlHRMT59uLs/AAAwQeByHxJ3NRiAFOxwfvL/AYA4JCY+sVw3Ppv3sT8AADBB4HIfEnc1GIAU7HB+8v8BgA==",
+        "0.1.vertexbuffer.tgx": "ZLWlsvGipbJktaTM8aKkzE0vt7ZNL/DDYUi3tmFI8MM=",
+        "0.indexbuffer.tgx": "AAABAAIAAwD//wQABQAGAAcA"
+      }
+    }
+  ]
+}

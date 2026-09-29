@@ -12,9 +12,11 @@ hash resolves to real `.tgxm` geometry which parses and renders in Three.js
 (verified with Gjallarhorn → 3 meshes / ~158k triangles). **Path taken: real
 gear assets**, not the stylized proxy fallback.
 
-Still to come (steps 2–5): textures/gearstack shading (geometry currently renders
-untextured), Bungie OAuth + token storage, manifest ingestion to a database, the
-manual-mode editor UI, and logged-in mode via `GetProfile`.
+The renderer now supports textured gear, dye/shader selection, worn materials,
+detail normals, cloth, transmission and emission. See
+[Destiny material implementation](docs/DESTINY-MATERIALS.md) for the September
+2026 reference audit, supported material families and remaining fidelity limits.
+The `/poc` page accepts an item hash and an optional applied shader hash.
 
 ## Stack
 Next.js (App Router, TS) · React Three Fiber / Three.js · Zustand · sql.js ·

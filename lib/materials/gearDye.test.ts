@@ -4,7 +4,6 @@ import {
   dyeForSlot,
   rankSlotsSoftToHard,
   resolveDyeSet,
-  neutralizePlaceholderEmissive,
 } from "./gearDye";
 import type { DyeSet } from "./gearDye";
 
@@ -130,7 +129,7 @@ describe("dyeForSlot — neutral fallback", () => {
     const slot = dyeForSlot({}, 1);
     expect(slot.cloth).toBe(false);
     expect(slot.primary.metalness).toBeLessThan(0.5);
-    expect(slot.primary.wearRemap).toEqual([0, 0, 0, 0]);
+    expect(slot.primary.wearRemap).toEqual([0, 0, 1, 0]);
   });
 });
 
@@ -172,87 +171,20 @@ describe("resolveDyeSet — locked > custom > default dye priority", () => {
   });
 });
 
-describe("neutralizePlaceholderEmissive — uniform-across-slots default detection", () => {
-  it("zeros a placeholder repeated identically across every slot (Relativism: (1,0,0,1) primaries + (1,1,1,1) secondaries)", () => {
+describe("authored emissive preservation", () => {
+  it("preserves matching glow on every slot and both tint parities", () => {
+    const tint = { emissive: [1, 0.3, 0.1], emissiveIntensity: 2 };
     const set = dyeSetFromGearDyes({
-      "0": {
-        primary: { emissive: [1, 0, 0], emissiveIntensity: 1 },
-        secondary: { emissive: [1, 1, 1], emissiveIntensity: 1 },
-      },
-      "1": {
-        primary: { emissive: [1, 0, 0], emissiveIntensity: 1 },
-        secondary: { emissive: [1, 1, 1], emissiveIntensity: 1 },
-      },
-      "2": {
-        primary: { emissive: [1, 0, 0], emissiveIntensity: 1 },
-        secondary: { emissive: [1, 1, 1], emissiveIntensity: 1 },
-      },
+      "0": { primary: tint, secondary: tint },
+      "1": { primary: tint, secondary: tint },
+      "2": { primary: tint, secondary: tint },
     });
-    for (const slot of [0, 1, 2]) {
-      expect(set[slot].primary.emissive.getHex()).toBe(0x000000);
-      expect(set[slot].primary.emissiveIntensity).toBe(0);
-      expect(set[slot].secondary.emissive.getHex()).toBe(0x000000);
-      expect(set[slot].secondary.emissiveIntensity).toBe(0);
+    for (const slot of Object.values(set)) {
+      for (const t of [slot.primary, slot.secondary]) {
+        expect(t.emissive.r).toBe(1);
+        expect(t.emissiveIntensity).toBe(2);
+      }
     }
-  });
-
-  it("preserves a real per-slot glow (Nighthawk: gold eye on slot 0 only, black on 1 & 2)", () => {
-    const set = dyeSetFromGearDyes({
-      "0": {
-        primary: { emissive: [0.87, 0.157, 0.043], emissiveIntensity: 1 },
-        secondary: { emissive: [0.87, 0.157, 0.043], emissiveIntensity: 1 },
-      },
-      "1": { primary: { emissive: [0, 0, 0] }, secondary: { emissive: [0, 0, 0] } },
-      "2": { primary: { emissive: [0, 0, 0] }, secondary: { emissive: [0, 0, 0] } },
-    });
-    // slot 0's authored gold survives — not all slots contribute, so it's not
-    // the uniform placeholder signature.
-    expect(set[0].primary.emissive.r).toBeCloseTo(0.87);
-    expect(set[0].primary.emissiveIntensity).toBe(1);
-  });
-
-  it("neutralizes one parity independently of the other", () => {
-    // primaries are a uniform placeholder; secondaries carry a real per-slot
-    // glow (only slot 1). Only the primaries should be zeroed.
-    const set = dyeSetFromGearDyes({
-      "0": {
-        primary: { emissive: [1, 0, 0], emissiveIntensity: 1 },
-        secondary: { emissive: [0, 0, 0] },
-      },
-      "1": {
-        primary: { emissive: [1, 0, 0], emissiveIntensity: 1 },
-        secondary: { emissive: [0.9, 0.3, 0.1], emissiveIntensity: 1 },
-      },
-    });
-    expect(set[0].primary.emissive.getHex()).toBe(0x000000);
-    expect(set[1].primary.emissive.getHex()).toBe(0x000000);
-    expect(set[1].secondary.emissive.r).toBeCloseTo(0.9);
-  });
-
-  it("leaves a single-slot item's emissive untouched (nothing to compare against)", () => {
-    // With one slot there's no cross-slot uniformity to distinguish a lone
-    // glow from a lone placeholder — preserve it.
-    const set = dyeSetFromGearDyes({
-      "0": { primary: { emissive: [1, 0, 0], emissiveIntensity: 1 } },
-    });
-    expect(set[0].primary.emissive.r).toBeCloseTo(1);
-    expect(set[0].primary.emissiveIntensity).toBe(1);
-  });
-
-  it("preserves emissive when a slot has zero intensity (doesn't actually contribute)", () => {
-    // Same colour across slots but one has intensity 0 → not 'all contribute'
-    // → not the placeholder signature → left as-is.
-    const set = dyeSetFromGearDyes({
-      "0": { primary: { emissive: [1, 0, 0], emissiveIntensity: 1 } },
-      "1": { primary: { emissive: [1, 0, 0], emissiveIntensity: 0 } },
-    });
-    expect(set[0].primary.emissive.r).toBeCloseTo(1);
-    expect(set[0].primary.emissiveIntensity).toBe(1);
-  });
-
-  it("is a no-op on an empty set", () => {
-    const empty: DyeSet = {};
-    expect(() => neutralizePlaceholderEmissive(empty)).not.toThrow();
   });
 });
 

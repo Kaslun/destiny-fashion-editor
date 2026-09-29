@@ -31,8 +31,12 @@ import {
   matchAccentTextureNames,
   type GearTextureMaps,
 } from "@/lib/materials/gearMaterial";
-import { medianDespeckleRGB } from "@/lib/geometry/despeckle";
+import { decodeDataPng, placeDataTile, type RgbaImage } from "@/lib/geometry/dataTexture";
+import { partitionGlowGroups } from "@/lib/geometry/glowGroups";
+import { reconstructMaterialBoundaries } from "@/lib/geometry/materialBoundaries";
+import { decodeDyeSlotMap, dyeSlotPlate } from "@/lib/geometry/dyeSlotMap";
 import { itemHasAnimatedGlow } from "@/lib/bungie/glowAnimatedItems";
+import { transparentEffect } from "@/lib/geometry/transparentEffects";
 
 export interface GearModelDebug {
   itemHash: number;
@@ -45,6 +49,7 @@ export interface GearModelDebug {
   totalTriangles: number;
   metadataSummaries: unknown[];
   warnings: string[];
+  notes?: string[];
 }
 
 export interface LoadedGearModel {
@@ -80,22 +85,26 @@ interface GearAssetResponse {
 }
 
 interface FetchedDyes {
+  warning?: string;
   default: DyeSet;
   /** locked_dyes — always render regardless of an applied shader (exotics). */
   locked: DyeSet;
 }
 
-async function fetchDyeSet(hash: number): Promise<FetchedDyes> {
+async function fetchDyeSet(hash: number, targetHash?: number): Promise<FetchedDyes> {
   try {
-    const res = await fetch(`/api/dyes/${hash}`).then((r) => r.json());
+    const response = await fetch(`/api/dyes/${hash}${targetHash ? `?target=${targetHash}` : ""}`);
+    if (!response.ok) throw new Error(`dye lookup failed (${response.status})`);
+    const res = await response.json();
     return {
       default: res.slots ? dyeSetFromGearDyes(res.slots) : {},
       locked: res.locked ? dyeSetFromGearDyes(res.locked) : {},
+      warning: targetHash && !Object.keys(res.slots ?? {}).length
+        ? `Shader ${hash} has no exported dyes matching item ${targetHash}'s material channels.` : undefined,
     };
-  } catch {
-    /* ignore — model still renders with baked textures */
+  } catch (error) {
+    return { default: {}, locked: {}, warning: `Dyes for ${hash} unavailable: ${error instanceof Error ? error.message : String(error)}` };
   }
-  return { default: {}, locked: {} };
 }
 
 /** geometryIndex -> texture-container indices, from region_index_sets. */
@@ -115,55 +124,33 @@ function buildGeomTextureMap(
   return map;
 }
 
-/**
- * Flag geometry groups whose UVs sit (mostly) inside a self-illuminated glow
- * region (e.g. `exotic_hawkeye_glow`). Those render additively so the black
- * around the glow is transparent instead of an opaque black socket.
- */
-function markGlowGroups(
-  geometry: THREE.BufferGeometry,
-  groups: import("@/lib/geometry/buildGeometry").GroupInfo[],
-  plate: TexturePlate | undefined,
-): void {
-  if (!plate) return;
-  const uv = geometry.getAttribute("uv");
-  const idx = geometry.getIndex();
-  if (!uv || !idx) return;
-  const [pw, ph] = plate.size;
-  const glowRects = plate.placements
-    .filter((p) => /glow|hawkeye/i.test(p.name))
-    .map((p) => ({ x: p.x / pw, y: p.y / ph, w: p.w / pw, h: p.h / ph }));
-  if (glowRects.length === 0) return;
-
-  for (const gr of geometry.groups) {
-    let inGlow = 0;
-    let total = 0;
-    for (let i = gr.start; i < gr.start + gr.count; i += 3) {
-      const vi = idx.getX(i);
-      const u = uv.getX(vi);
-      const v = uv.getY(vi);
-      total++;
-      if (glowRects.some((r) => u >= r.x && u < r.x + r.w && v >= r.y && v < r.y + r.h)) {
-        inGlow++;
-      }
-    }
-    const g = groups[gr.materialIndex ?? -1];
-    if (g && total > 0 && inGlow / total > 0.7) g.glow = true;
-  }
-}
-
 async function bytesToTexture(
   bytes: Uint8Array,
   srgb: boolean,
 ): Promise<THREE.Texture> {
+  if (!srgb && bytes[0] === 137 && bytes[1] === 80) {
+    return dataTexture(decodeDataPng(bytes), false, true);
+  }
   // Copy into a fresh ArrayBuffer (bytes is a subarray view of the container).
   const blob = new Blob([bytes.slice()]);
   const bitmap = await createImageBitmap(blob, { imageOrientation: "none" });
   const tex = new THREE.Texture(bitmap);
-  tex.flipY = false; // UVs are already V-flipped in buildGeometry
+  tex.flipY = false; // Destiny UVs follow image rows directly.
   tex.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
   tex.anisotropy = 16; // max out filtering — mobile plates are only 512px
+  tex.needsUpdate = true;
+  return tex;
+}
+
+function dataTexture(image: RgbaImage, nearest = false, repeat = false): THREE.DataTexture {
+  const tex = new THREE.DataTexture(image.data, image.width, image.height, THREE.RGBAFormat);
+  tex.colorSpace = THREE.NoColorSpace;
+  tex.flipY = false;
+  tex.wrapS = tex.wrapT = repeat ? THREE.RepeatWrapping : THREE.ClampToEdgeWrapping;
+  tex.magFilter = nearest ? THREE.NearestFilter : THREE.LinearFilter;
+  tex.minFilter = nearest ? THREE.NearestFilter : THREE.LinearMipmapLinearFilter;
+  tex.generateMipmaps = !nearest;
   tex.needsUpdate = true;
   return tex;
 }
@@ -193,6 +180,7 @@ export async function loadGearModel(
   opts: LoadOptions = {},
 ): Promise<LoadedGearModel> {
   const warnings: string[] = [];
+  const notes: string[] = [];
 
   const res = await fetch(`/api/gearasset/${itemHash}`);
   if (!res.ok) {
@@ -214,13 +202,29 @@ export async function loadGearModel(
   // regardless of the applied shader (Bungie's documented resolution order:
   // defaultDyes -> customDyes -> lockedDyes, locked last = highest priority).
   const itemDyes = await fetchDyeSet(itemHash);
-  const shaderDyes = opts.shaderHash ? await fetchDyeSet(opts.shaderHash) : null;
+  const shaderDyes = opts.shaderHash ? await fetchDyeSet(opts.shaderHash, itemHash) : null;
+  if (itemDyes.warning) warnings.push(itemDyes.warning);
+  if (shaderDyes?.warning) warnings.push(shaderDyes.warning);
   const dyeSet: DyeSet = resolveDyeSet(
     itemDyes.default,
     shaderDyes?.default ?? {},
     itemDyes.locked,
   );
   const applyDye = Object.keys(dyeSet).length > 0;
+  let iridescenceLookup: THREE.Texture | undefined;
+  if (Object.values(dyeSet).some((d) => d.primary.materialTypeId >= 0 || d.secondary.materialTypeId >= 0)) {
+    try {
+      const response = await fetch("/textures/iridescence-lookup.png");
+      if (!response.ok) throw new Error(`lookup ${response.status}`);
+      iridescenceLookup = dataTexture(decodeDataPng(new Uint8Array(await response.arrayBuffer())), false);
+      iridescenceLookup.colorSpace = THREE.SRGBColorSpace;
+      iridescenceLookup.generateMipmaps = false;
+      iridescenceLookup.minFilter = THREE.LinearFilter;
+      iridescenceLookup.magFilter = THREE.LinearFilter;
+    } catch (error) {
+      warnings.push(`Iridescence texture failed to load: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
 
   // Which geometry to render (skip gender/class body overrides that overlap).
   const renderSet = data.renderGeometryIndices
@@ -269,6 +273,30 @@ export async function loadGearModel(
     for (const img of await imagesFor(allTextureIndices)) {
       if (!map.has(img.name)) map.set(img.name, img);
     }
+    // Applied dyes reference the SHADER's texture containers. Looking only in
+    // the armor's containers silently lost weave/grain/normal detail on swaps.
+    const needed = new Set(Object.values(dyeSet).flatMap((d) =>
+      [d.detailDiffuseName, d.detailNormalName].filter((n): n is string => !!n),
+    ));
+    if (opts.shaderHash && [...needed].some((name) => !map.has(name))) {
+      try {
+        const response = await fetch(`/api/gearasset/${opts.shaderHash}`);
+        if (!response.ok) throw new Error(`shader asset ${response.status}`);
+        const shaderAsset = await response.json() as GearAssetResponse;
+        const files = new Map(shaderAsset.content.flatMap((c) => c.textures)
+          .map((file) => [file.proxyUrl, file]));
+        for (const file of files.values()) {
+          if ([...needed].every((name) => map.has(name))) break;
+          const response = await fetch(file.proxyUrl);
+          if (!response.ok) throw new Error(`shader texture ${response.status}`);
+          for (const image of extractTextureImages(await response.arrayBuffer())) {
+            if (needed.has(image.name) && !map.has(image.name)) map.set(image.name, image);
+          }
+        }
+      } catch (error) {
+        warnings.push(`Shader detail textures: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
     entriesByNameMemo = map;
     return map;
   }
@@ -283,27 +311,29 @@ export async function loadGearModel(
     srgb: boolean,
     nearest = false,
     cleanChroma = false,
-    despeckle = false,
   ): Promise<THREE.Texture | null> {
     const lookup = await entriesByName();
+    if (!srgb) {
+      const [width, height] = plate.size;
+      const atlas: RgbaImage = { width, height, data: new Uint8Array(width * height * 4) };
+      let placed = 0;
+      for (const pl of plate.placements) {
+        const entry = lookup.get(pl.name);
+        if (!entry) { warnings.push(`Plate entry not found: ${pl.name}`); continue; }
+        try {
+          placeDataTile(atlas, decodeDataPng(entry.bytes), pl.x, pl.y, pl.w, pl.h);
+          placed++;
+        } catch (error) {
+          warnings.push(`Material data ${pl.name}: ${error instanceof Error ? error.message : String(error)}`);
+        }
+      }
+      return placed ? dataTexture(atlas, nearest) : null;
+    }
     const canvas = new OffscreenCanvas(plate.size[0], plate.size[1]);
     const ctx = canvas.getContext("2d");
     if (!ctx) return null;
     ctx.imageSmoothingEnabled = !nearest;
-    // Always draw each placement at its own real position/size — a single
-    // small placement at the origin used to be stretched to fill the whole
-    // plate on the assumption it was a downsampled whole-body ID mask. That
-    // assumption doesn't hold in general: sampled at native resolution,
-    // Relativism's lone dyeslot placement (128x64, gbit slot "_3") turned out
-    // to be a small, deliberately-composed eye/gem icon — stretching it
-    // smeared that icon's own internal shapes (its border, iris, background)
-    // across the entire character as if they were body-wide material regions
-    // (e.g. a large "undyed" wedge on the back that was really just the
-    // icon's black background). Drawing at native size instead leaves
-    // everywhere the placement doesn't cover exactly as an empty dyeslot
-    // plate already behaves — falling back to each stage part's own slot —
-    // which is what the data actually supports, not an invented middle
-    // ground.
+    // Each tile keeps its authored position and extent within its role's atlas.
     let drawn = 0;
     for (const pl of plate.placements) {
       const entry = lookup.get(pl.name);
@@ -378,16 +408,6 @@ export async function loadGearModel(
       ctx.putImageData(img, 0, 0);
     }
 
-    // ID-mask plates (dyeslot): remove isolated single-pixel compression
-    // noise without blending across real slot boundaries — see despeckle.ts
-    // for how this was diagnosed on Relativism's dyeslot plate specifically.
-    if (despeckle) {
-      const w = canvas.width, h = canvas.height;
-      const img = ctx.getImageData(0, 0, w, h);
-      medianDespeckleRGB(img.data, w, h);
-      ctx.putImageData(img, 0, 0);
-    }
-
     const tex = new THREE.CanvasTexture(canvas);
     tex.flipY = false; // Destiny UVs are v-down, matching image rows directly
     tex.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;
@@ -409,19 +429,91 @@ export async function loadGearModel(
     const diffuse = plates.diffuse ? await assemblePlate(plates.diffuse, true, false, true) : null;
     const normal = plates.normal ? await assemblePlate(plates.normal, false) : null;
     const gearstack = plates.gearstack ? await assemblePlate(plates.gearstack, false) : null;
-    const dyeslot = plates.dyeslot
-      ? await assemblePlate(plates.dyeslot, false, true, false, true)
-      : null;
+    let dyeslot: THREE.Texture | null = null;
+    if (plates.dyeslot) {
+      try {
+        const raw = await assemblePlate(dyeSlotPlate(plates.dyeslot), false, true);
+        if (raw) {
+          const decoded = decodeDyeSlotMap(raw.image as RgbaImage);
+          dyeslot = dataTexture(decoded, true);
+          dyeslot.userData.encoding = "change-color-index-plus-one";
+          const overrideTexelsById = [0, 0, 0, 0, 0, 0];
+          for (let p = 0; p < decoded.data.length; p += 4) {
+            const id = decoded.data[p] - 1;
+            if (id >= 0) overrideTexelsById[id]++;
+          }
+          dyeslot.userData.dyeMap = { width: decoded.width, height: decoded.height, overrideTexelsById };
+          raw.dispose();
+        }
+      } catch (error) {
+        warnings.push(`Dye map unavailable: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
     if (diffuse) maps.diffuse = diffuse;
     if (normal) maps.normal = normal;
     if (gearstack) maps.gearstack = gearstack;
-    // A real dyeslot plate (per-pixel slot mask) when present; otherwise slots
-    // come from each geometry group's gear_dye_change_color_index.
+    if (plates.gearstack && plates.diffuse && gearstack) {
+      maps.materialBoundaries = await materialBoundaryPlate(plates);
+    }
+    // Authored per-pixel IDs override geometry IDs where the map is active.
     if (dyeslot) maps.dyeslot = dyeslot;
     // Dedicated glow containers (e.g. weapons) still apply on top of plates.
     const emissive = pickBestByRole(await imagesFor(allTextureIndices), "emissive");
     if (emissive) maps.emissive = await bytesToTexture(emissive.bytes, true);
     return maps;
+  }
+
+  async function materialBoundaryPlate(plates: TexturePlateSet): Promise<THREE.Texture | undefined> {
+    const gs = plates.gearstack!, dif = plates.diffuse!;
+    if (dif.size[0] < gs.size[0] || dif.size[1] < gs.size[1] ||
+        dif.size[0] * dif.size[1] > 4_194_304) return;
+    const lookup = await entriesByName();
+    const atlas: RgbaImage = { width: dif.size[0], height: dif.size[1], data: new Uint8Array(dif.size[0] * dif.size[1] * 4) };
+    let estimatedTexels = 0, refinedTiles = 0;
+    // Match normalized atlas rectangles, not names or material-name guesses.
+    const matching = (plate: TexturePlate | undefined, tile: TexturePlate["placements"][number]) =>
+      plate?.placements.find((p) =>
+        Math.abs(p.x / plate.size[0] - tile.x / gs.size[0]) < 1e-6 &&
+        Math.abs(p.y / plate.size[1] - tile.y / gs.size[1]) < 1e-6 &&
+        Math.abs(p.w / plate.size[0] - tile.w / gs.size[0]) < 1e-6 &&
+        Math.abs(p.h / plate.size[1] - tile.h / gs.size[1]) < 1e-6);
+    for (const tile of gs.placements) {
+      const entry = lookup.get(tile.name);
+      // A partial reconstruction must not replace the complete original map.
+      if (!entry) return;
+      try {
+        const source = decodeDataPng(entry.bytes);
+        const colorTile = matching(dif, tile), normalTile = matching(plates.normal, tile);
+        const colorEntry = colorTile && lookup.get(colorTile.name);
+        const normalEntry = normalTile && lookup.get(normalTile.name);
+        let color: RgbaImage | undefined;
+        if (colorEntry) {
+          const bitmap = await createImageBitmap(new Blob([colorEntry.bytes.slice()]), { imageOrientation: "none" });
+          try {
+            const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+            const ctx = canvas.getContext("2d");
+            if (ctx) {
+              ctx.drawImage(bitmap, 0, 0);
+              const pixels = ctx.getImageData(0, 0, bitmap.width, bitmap.height);
+              color = { width: bitmap.width, height: bitmap.height, data: new Uint8Array(pixels.data.buffer) };
+            }
+          } finally { bitmap.close(); }
+        }
+        const result = reconstructMaterialBoundaries(source, color, normalEntry ? decodeDataPng(normalEntry.bytes) : undefined);
+        if (result.image !== source) refinedTiles++;
+        estimatedTexels += result.estimatedTexels;
+        placeDataTile(atlas, result.image,
+          Math.round(tile.x * atlas.width / gs.size[0]), Math.round(tile.y * atlas.height / gs.size[1]),
+          Math.round(tile.w * atlas.width / gs.size[0]), Math.round(tile.h * atlas.height / gs.size[1]));
+      } catch (error) {
+        warnings.push(`Material boundary refinement unavailable: ${error instanceof Error ? error.message : String(error)}`);
+        return;
+      }
+    }
+    if (!refinedTiles) return;
+    const tex = dataTexture(atlas, true);
+    tex.userData.materialBoundaries = { method: "alpha-color-smoothness-normal", estimatedTexels, refinedTiles };
+    return tex;
   }
 
   // Pattern-shimmer warp textures (see gearMaterial.ts isPatternGroup), keyed
@@ -503,6 +595,11 @@ export async function loadGearModel(
         dye.detailNormal = await bytesToTexture(norm.bytes, false);
         dye.detailNormal.wrapS = dye.detailNormal.wrapT = THREE.RepeatWrapping;
       }
+      for (const name of [dye.detailDiffuseName, dye.detailNormalName]) {
+        if (name && !lookup.has(name) && !warnings.includes(`Missing detail texture: ${name}`)) {
+          warnings.push(`Missing detail texture: ${name}`);
+        }
+      }
     }
   }
 
@@ -550,7 +647,6 @@ export async function loadGearModel(
       });
       const container = parseTgxm(buf);
       const built = buildGeometryFromContainer(container);
-      metadataSummaries.push({ file: geom.file, ...summarize(built.metadata) });
       // Dev aid: expose raw metadata + container file names for skeleton R&D.
       if (typeof window !== "undefined") {
         const w = window as unknown as Record<string, unknown>;
@@ -570,6 +666,13 @@ export async function loadGearModel(
       if (!maps.diffuse) {
         maps = { ...(await texturesForGeometry(gi)), ...maps };
       }
+      if (iridescenceLookup) maps.iridescenceLookup = iridescenceLookup;
+      metadataSummaries.push({ file: geom.file, ...summarize(built.metadata),
+        dyeMap: maps.dyeslot?.userData.dyeMap ?? null,
+        resolvedMaterials: built.meshes.map((m) => m.groups.map((g, i) => ({
+          dyeIndex: g.dyeIndex, source: g.dyeSource, triangles: m.geometry.groups[i].count / 3,
+        }))),
+        materialBoundaries: maps.materialBoundaries?.userData.materialBoundaries ?? null });
       const hasTex = !!(maps.diffuse || maps.normal || maps.gearstack);
 
       // Pattern-shimmer textures (see isPatternGroup) — resolved once for
@@ -590,32 +693,40 @@ export async function loadGearModel(
       }
 
       for (const m of built.meshes) {
+        for (const g of m.groups) {
+          const effect = transparentEffect(g);
+          if (!effect) continue;
+          maps.effectTextures ??= new Map();
+          for (const name of effect.textures) {
+            if (!name || maps.effectTextures.has(name)) continue;
+            try {
+              const tex = await resolvePatternTexture(name);
+              if (tex) maps.effectTextures.set(name, tex);
+              else warnings.push(`Missing glow texture: ${name}`);
+            } catch (error) {
+              warnings.push(`Glow texture unavailable: ${error instanceof Error ? error.message : String(error)}`);
+            }
+          }
+        }
         // Flag glow geometry (Nighthawk's eye) so it renders additively.
-        markGlowGroups(m.geometry, m.groups, built.metadata.plates?.diffuse);
-        // Gearstack drives AO/roughness/emissive; the dyeslot plate (or
-        // gearstack alpha) masks dye zones; decal groups render additively.
-        // Whether the saturation-gated "plated" tint applies is decided per
-        // GROUP inside createGearMaterials (each group's own resolved dye
-        // slot may be cloth or metal) — a single item-wide cloth flag here
-        // would blanket-disable the gate for mixed-material meshes like
-        // cloaks (cloth cape + metal trim/medallion), over-tinting baked art
-        // that should have stayed protected. See gearMaterial.ts `plated`.
+        partitionGlowGroups(m.geometry, m.groups, built.metadata.plates?.diffuse);
+        // Groups include packed vertex material IDs within each authored pass.
         const materials = createGearMaterials(m.groups, dyeSet, maps, {
-         useGearstack: true,
+          useGearstack: true,
           applyDye,
           plated: !!built.metadata.plates,
-          // The per-pixel A-channel band-split (needsBandSplit) guesses at
-          // hidden material regions from one file's wear/AO shading — a
-          // sound inference only for genuinely single-file items like
-          // Cover of the Exile, whose A-channel distribution the tuning
-          // (BAND_DEFAULTS) was calibrated against. Multi-file items (a
-          // cloak's separate hood + cape) already carry real per-part slot
-          // variation across their OTHER files, so guessing bands within a
-          // single-slot file like the cape misfires as speckled noise.
           singlePart: content.geometry.length <= 1,
           animatedGlow: itemHasAnimatedGlow(itemHash),
           sourceGeometry: m.geometry,
         });
+        if (materials.some((material) => material.userData.destiny?.approximateEffect)) {
+          const note = "Effect shapes use the exported textures. Motion and brightness are preview approximations.";
+          if (!notes.includes(note)) notes.push(note);
+        }
+        if (materials.some((material) => material.userData.destiny?.unsupportedEffect)) {
+          const warning = "An unsupported transparent effect is hidden because its material cannot yet be reconstructed.";
+          if (!warnings.includes(warning)) warnings.push(warning);
+        }
         const mesh = new THREE.Mesh(m.geometry, materials);
         mesh.name = geom.file;
         mesh.userData.maps = maps; // dev aid: inspectable from the console
@@ -672,6 +783,7 @@ export async function loadGearModel(
       totalTriangles: Math.round(totalTriangles),
       metadataSummaries,
       warnings,
+      notes,
     };
   }
 }

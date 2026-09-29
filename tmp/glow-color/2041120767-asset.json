@@ -1,0 +1,114 @@
+{
+  "itemHash": 2041120767,
+  "signedId": 2041120767,
+  "found": true,
+  "manifestVersion": "244213.26.06.29.2000-1-bnet.65864",
+  "gearCdn": {
+    "Geometry": "/common/destiny2_content/geometry/platform/mobile/geometry",
+    "Texture": "/common/destiny2_content/geometry/platform/mobile/textures",
+    "PlateRegion": "/common/destiny2_content/geometry/platform/mobile/plated_textures",
+    "Gear": "/common/destiny2_content/geometry/gear",
+    "Shader": "/common/destiny2_content/geometry/platform/mobile/shaders"
+  },
+  "content": [
+    {
+      "platform": "mobile",
+      "geometry": [
+        {
+          "file": "e2ff6ef31132e4422a88e6c5c189ac0b.tgxm",
+          "cdnPath": "/common/destiny2_content/geometry/platform/mobile/geometry/e2ff6ef31132e4422a88e6c5c189ac0b.tgxm",
+          "proxyUrl": "/api/asset?path=%2Fcommon%2Fdestiny2_content%2Fgeometry%2Fplatform%2Fmobile%2Fgeometry%2Fe2ff6ef31132e4422a88e6c5c189ac0b.tgxm"
+        },
+        {
+          "file": "048cdb453df968951f9f1a8d88dc75de.tgxm",
+          "cdnPath": "/common/destiny2_content/geometry/platform/mobile/geometry/048cdb453df968951f9f1a8d88dc75de.tgxm",
+          "proxyUrl": "/api/asset?path=%2Fcommon%2Fdestiny2_content%2Fgeometry%2Fplatform%2Fmobile%2Fgeometry%2F048cdb453df968951f9f1a8d88dc75de.tgxm"
+        }
+      ],
+      "textures": [
+        {
+          "file": "19ebbc6f58cfcaea99af8bd8f4920920.tgxm.bin",
+          "cdnPath": "/common/destiny2_content/geometry/platform/mobile/textures/19ebbc6f58cfcaea99af8bd8f4920920.tgxm.bin",
+          "proxyUrl": "/api/asset?path=%2Fcommon%2Fdestiny2_content%2Fgeometry%2Fplatform%2Fmobile%2Ftextures%2F19ebbc6f58cfcaea99af8bd8f4920920.tgxm.bin"
+        },
+        {
+          "file": "fe63392c00680c5087740ca3c92a9ab2.tgxm.bin",
+          "cdnPath": "/common/destiny2_content/geometry/platform/mobile/textures/fe63392c00680c5087740ca3c92a9ab2.tgxm.bin",
+          "proxyUrl": "/api/asset?path=%2Fcommon%2Fdestiny2_content%2Fgeometry%2Fplatform%2Fmobile%2Ftextures%2Ffe63392c00680c5087740ca3c92a9ab2.tgxm.bin"
+        },
+        {
+          "file": "0affaf9003a0439e9e67ffad46f895ea.tgxm.bin",
+          "cdnPath": "/common/destiny2_content/geometry/platform/mobile/textures/0affaf9003a0439e9e67ffad46f895ea.tgxm.bin",
+          "proxyUrl": "/api/asset?path=%2Fcommon%2Fdestiny2_content%2Fgeometry%2Fplatform%2Fmobile%2Ftextures%2F0affaf9003a0439e9e67ffad46f895ea.tgxm.bin"
+        },
+        {
+          "file": "c8c96eb095db616ee6f90d484d26b2da.tgxm.bin",
+          "cdnPath": "/common/destiny2_content/geometry/platform/mobile/textures/c8c96eb095db616ee6f90d484d26b2da.tgxm.bin",
+          "proxyUrl": "/api/asset?path=%2Fcommon%2Fdestiny2_content%2Fgeometry%2Fplatform%2Fmobile%2Ftextures%2Fc8c96eb095db616ee6f90d484d26b2da.tgxm.bin"
+        },
+        {
+          "file": "4b31d0e7a88d98a15d174fbd31ecb886.tgxm.bin",
+          "cdnPath": "/common/destiny2_content/geometry/platform/mobile/textures/4b31d0e7a88d98a15d174fbd31ecb886.tgxm.bin",
+          "proxyUrl": "/api/asset?path=%2Fcommon%2Fdestiny2_content%2Fgeometry%2Fplatform%2Fmobile%2Ftextures%2F4b31d0e7a88d98a15d174fbd31ecb886.tgxm.bin"
+        },
+        {
+          "file": "ba92dd4f90cf8633d236850a27b2f3f3.tgxm.bin",
+          "cdnPath": "/common/destiny2_content/geometry/platform/mobile/textures/ba92dd4f90cf8633d236850a27b2f3f3.tgxm.bin",
+          "proxyUrl": "/api/asset?path=%2Fcommon%2Fdestiny2_content%2Fgeometry%2Fplatform%2Fmobile%2Ftextures%2Fba92dd4f90cf8633d236850a27b2f3f3.tgxm.bin"
+        },
+        {
+          "file": "7abea87e679e9243d4db6886a3ab7210.tgxm.bin",
+          "cdnPath": "/common/destiny2_content/geometry/platform/mobile/textures/7abea87e679e9243d4db6886a3ab7210.tgxm.bin",
+          "proxyUrl": "/api/asset?path=%2Fcommon%2Fdestiny2_content%2Fgeometry%2Fplatform%2Fmobile%2Ftextures%2F7abea87e679e9243d4db6886a3ab7210.tgxm.bin"
+        },
+        {
+          "file": "bc2934bf3bd9e21cd2ef41484ac6f963.tgxm.bin",
+          "cdnPath": "/common/destiny2_content/geometry/platform/mobile/textures/bc2934bf3bd9e21cd2ef41484ac6f963.tgxm.bin",
+          "proxyUrl": "/api/asset?path=%2Fcommon%2Fdestiny2_content%2Fgeometry%2Fplatform%2Fmobile%2Ftextures%2Fbc2934bf3bd9e21cd2ef41484ac6f963.tgxm.bin"
+        },
+        {
+          "file": "d8713cf378448fab1015df977a0443cb.tgxm.bin",
+          "cdnPath": "/common/destiny2_content/geometry/platform/mobile/textures/d8713cf378448fab1015df977a0443cb.tgxm.bin",
+          "proxyUrl": "/api/asset?path=%2Fcommon%2Fdestiny2_content%2Fgeometry%2Fplatform%2Fmobile%2Ftextures%2Fd8713cf378448fab1015df977a0443cb.tgxm.bin"
+        },
+        {
+          "file": "4aaad5af1918db33ece049a944967101.tgxm.bin",
+          "cdnPath": "/common/destiny2_content/geometry/platform/mobile/textures/4aaad5af1918db33ece049a944967101.tgxm.bin",
+          "proxyUrl": "/api/asset?path=%2Fcommon%2Fdestiny2_content%2Fgeometry%2Fplatform%2Fmobile%2Ftextures%2F4aaad5af1918db33ece049a944967101.tgxm.bin"
+        },
+        {
+          "file": "e3162b0e341d6a8bf2d5bd695657416e.tgxm.bin",
+          "cdnPath": "/common/destiny2_content/geometry/platform/mobile/textures/e3162b0e341d6a8bf2d5bd695657416e.tgxm.bin",
+          "proxyUrl": "/api/asset?path=%2Fcommon%2Fdestiny2_content%2Fgeometry%2Fplatform%2Fmobile%2Ftextures%2Fe3162b0e341d6a8bf2d5bd695657416e.tgxm.bin"
+        },
+        {
+          "file": "f7c5c56deecc6e1480d1957a53f22e6c.tgxm.bin",
+          "cdnPath": "/common/destiny2_content/geometry/platform/mobile/textures/f7c5c56deecc6e1480d1957a53f22e6c.tgxm.bin",
+          "proxyUrl": "/api/asset?path=%2Fcommon%2Fdestiny2_content%2Fgeometry%2Fplatform%2Fmobile%2Ftextures%2Ff7c5c56deecc6e1480d1957a53f22e6c.tgxm.bin"
+        },
+        {
+          "file": "ba08b0e9336ae9e3cc07e4c629aaf1ab.tgxm.bin",
+          "cdnPath": "/common/destiny2_content/geometry/platform/mobile/textures/ba08b0e9336ae9e3cc07e4c629aaf1ab.tgxm.bin",
+          "proxyUrl": "/api/asset?path=%2Fcommon%2Fdestiny2_content%2Fgeometry%2Fplatform%2Fmobile%2Ftextures%2Fba08b0e9336ae9e3cc07e4c629aaf1ab.tgxm.bin"
+        }
+      ],
+      "gear": [],
+      "dye_index_set": {
+        "textures": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "geometry": []
+      },
+      "region_index_sets": null
+    }
+  ],
+  "renderGeometryIndices": [
+    0
+  ]
+}

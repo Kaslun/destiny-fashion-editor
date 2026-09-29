@@ -33,6 +33,25 @@ import type { GroupInfo } from "@/lib/geometry/buildGeometry";
 const noDyes: DyeSet = {};
 const tex = () => new THREE.Texture();
 
+describe("reference iridescence palette", () => {
+  it.each([0, 1, 10])("connects valid palette row %i including row zero", (materialTypeId) => {
+    const dyes = dyeSetFromGearDyes({ "0": { primary: { materialTypeId } } });
+    const groups: GroupInfo[] = [{ dyeIndex: 0, decal: false }];
+    const [fallback] = createGearMaterials(groups, dyes, { diffuse: tex(), gearstack: tex() }, { useGearstack: true, applyDye: true });
+    expect(fallback.userData.destiny.missingIridescenceLookup).toBe(true);
+    const [material] = createGearMaterials(groups, dyes, { diffuse: tex(), gearstack: tex(), iridescenceLookup: tex() }, { useGearstack: true, applyDye: true });
+    expect(material.userData.destiny.missingIridescenceLookup).toBe(false);
+    expect(material.userData.destiny.iridescenceIds).toContain(materialTypeId);
+    expect((material as THREE.MeshPhysicalNodeMaterial).specularColorNode).toBeTruthy();
+    expect((material as THREE.MeshPhysicalNodeMaterial).metalnessNode).toBeTruthy();
+  });
+  it("does not classify ordinary materials as iridescent", () => {
+    const [material] = createGearMaterials([{ dyeIndex: 0, decal: false }], noDyes, { diffuse: tex(), gearstack: tex() }, { useGearstack: true, applyDye: true });
+    expect(material.userData.destiny.iridescenceIds).toEqual([]);
+    expect(material.userData.destiny.missingIridescenceLookup).toBe(false);
+  });
+});
+
 function twoSlotDyes(): DyeSet {
   return dyeSetFromGearDyes({
     "0": {
@@ -66,13 +85,25 @@ describe("decodeChangeColorIndex — stage-part encoding (slot << 1 | parity)", 
     expect(decodeChangeColorIndex(7)).toEqual({ slot: 3, useSecondary: true, decal: true });
   });
 
-  it("negative/garbage indices clamp safely", () => {
-    expect(decodeChangeColorIndex(-1).slot).toBe(0);
-    expect(decodeChangeColorIndex(99).slot).toBe(3);
+  it("invalid indices stay unassigned rather than inheriting another material", () => {
+    for (const index of [-1, 99, 0.5, NaN, Infinity]) {
+      expect(decodeChangeColorIndex(index)).toEqual({ slot: -1, useSecondary: false, decal: false });
+    }
   });
 });
 
 describe("createGearMaterials — material class & decal handling", () => {
+  it("uses additive blending only for the authored additive-decal stage", () => {
+    const mats = createGearMaterials([
+      { dyeIndex: 0, decal: false, flags: 8, renderStage: 0 },
+      { dyeIndex: 6, decal: true, renderStage: 6 },
+    ], noDyes);
+    expect(mats[0].transparent).toBe(false);
+    expect(mats[0].blending).toBe(THREE.NormalBlending);
+    expect(mats[1].transparent).toBe(true);
+    expect(mats[1].depthWrite).toBe(false);
+    expect(mats[1].blending).toBe(THREE.AdditiveBlending);
+  });
   it("builds node materials (WebGPU/TSL), one per group", () => {
     const groups: GroupInfo[] = [
       { dyeIndex: 0, decal: false },
@@ -157,6 +188,18 @@ describe("createGearMaterials — full gearstack node graph", () => {
     expect((m.userData as { uniforms?: unknown }).uniforms).toBeUndefined();
   });
 
+  it("retains source textures and dye assignments when reconstructed boundaries are present", () => {
+    const maps = fullMaps();
+    const materialBoundaries = new THREE.DataTexture(new Uint8Array([255,80,32,200]), 1, 1);
+    materialBoundaries.userData.materialBoundaries = { estimatedTexels: 1 };
+    const material = createGearMaterials([{ dyeIndex: 3, decal: false }], twoSlotDyes(),
+      { ...maps, materialBoundaries }, { useGearstack: true, applyDye: true })[0];
+    expect(material.userData.destiny.slotSource).toBe("stage-part");
+    expect(material.userData.destiny.boundaryReconstruction).toEqual({ estimatedTexels: 1 });
+    expect(materialBoundaries.colorSpace).toBe(THREE.NoColorSpace);
+    expect(maps.gearstack).not.toBe(materialBoundaries);
+  });
+
   it("static metalness fallback comes from the decoded tint (gold slot 0 -> 1, secondary black paint -> 0)", () => {
     // dyeIndex 0 (even) is PRIMARY, dyeIndex 1 (odd) is SECONDARY — see
     // decodeChangeColorIndex.
@@ -213,8 +256,7 @@ describe("createGearMaterials — full gearstack node graph", () => {
   });
 
   it("builds cleanly (colorNode/emissiveNode still wired) with a real dyeslot plate present", () => {
-    // Dyeslot decode is now argmax(R,G,B) rather than R-only — this just
-    // confirms the node graph still constructs when a dyeslot map is given.
+    // The map overrides both slot and parity in the default authored mode.
     const m = createGearMaterials(
       [{ dyeIndex: 0, decal: false }],
       twoSlotDyes(),
@@ -223,6 +265,7 @@ describe("createGearMaterials — full gearstack node graph", () => {
     )[0] as THREE.MeshSSSNodeMaterial;
     expect(m.colorNode).not.toBeNull();
     expect(m.emissiveNode).not.toBeNull();
+    expect(m.userData.destiny.slotSource).toBe("dye-map");
   });
 
   it("builds cleanly regardless of materialTypeId (the emissive gate multiplies a factor, never skips node construction)", () => {
@@ -245,13 +288,9 @@ describe("createGearMaterials — full gearstack node graph", () => {
     expect(m.emissiveNode).not.toBeNull();
   });
 
-  it("builds cleanly for an item whose emissive tints are the uniform-across-slots placeholder (Relativism shape)", () => {
-    // Placeholder emissive is now zeroed at the data level (see
-    // neutralizePlaceholderEmissive in gearDye.ts, and its dedicated tests) —
-    // by the time it reaches the shader the tint is already (0,0,0,0). This
-    // just confirms the material graph still constructs for a Relativism-shape
-    // set (all 3 primaries (1,0,0,1), all 3 secondaries (1,1,1,1)).
-    const placeholderEmissiveDyes = dyeSetFromGearDyes({
+  it("builds cleanly with repeated emissive tints (Relativism export shape)", () => {
+    // Equality does not establish that exported emission is a placeholder.
+    const repeatedEmissiveDyes = dyeSetFromGearDyes({
       "0": {
         primary: { materialTypeId: -1, emissive: [1, 0, 0], emissiveIntensity: 1 },
         secondary: { materialTypeId: -1, emissive: [1, 1, 1], emissiveIntensity: 1 },
@@ -268,7 +307,7 @@ describe("createGearMaterials — full gearstack node graph", () => {
     });
     const m = createGearMaterials(
       [{ dyeIndex: 2, decal: false }],
-      placeholderEmissiveDyes,
+      repeatedEmissiveDyes,
       fullMaps(),
       { useGearstack: true, applyDye: true },
     )[0] as THREE.MeshSSSNodeMaterial;
@@ -626,19 +665,22 @@ describe("live uniform setters", () => {
       root: THREE.Group;
       u: { uBandMode: { value: number } };
     };
-    expect(BAND_MODES).toHaveLength(3);
+    expect(BAND_MODES).toHaveLength(4);
     expect(u.uBandMode.value).toBe(DEFAULT_BAND_MODE);
     setBandMode(root, 1);
     expect(u.uBandMode.value).toBe(1);
   });
 
-  it("exposes exactly 7 channel labels (off + r/g/b/a + resolved slot + a-bands)", () => {
-    expect(GEARSTACK_CHANNELS).toHaveLength(7);
+  it("exposes raw channels, resolved materials, decoded alpha, and estimated boundaries", () => {
+    expect(GEARSTACK_CHANNELS).toHaveLength(10);
     expect(GEARSTACK_CHANNELS[0]).toBe("off");
   });
 
-  it("exposes 3 remap interpretations", () => {
-    expect(REMAP_MODES).toHaveLength(3);
+  it("offers authored remapping alongside three legacy comparisons", () => {
+    expect(REMAP_MODES).toHaveLength(4);
+    expect(DEFAULT_ROUGHNESS_REMAP_MODE).toBe(3);
+    expect(DEFAULT_WEAR_REMAP_MODE).toBe(3);
+    expect(DEFAULT_BAND_MODE).toBe(3);
   });
 });
 
@@ -654,7 +696,7 @@ describe("animated glow (GearMaterialOptions.animatedGlow)", () => {
     expect(u.uGlowEnabled).toBeUndefined();
   });
 
-  it("exposes uGlowEnabled, defaulted on, when animatedGlow is set", () => {
+  it("exposes uGlowEnabled with the configured default when animatedGlow is set", () => {
     const mats = createGearMaterials(
       [{ dyeIndex: 0, decal: false }],
       twoSlotDyes(),

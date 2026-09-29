@@ -126,10 +126,8 @@ export default function GearDebugControls({
           ROUGHNESS REMAP INTERPRETATION
         </label>
         <p style={{ fontSize: 10, color: "var(--d2-text-faint)", marginTop: 4, lineHeight: 1.5 }}>
-          Bungie doesn&apos;t publish the runtime formula for the dye remap vec4s —
-          switch live to compare readings against the in-game look. Independent from
-          wear below: band-clamp reads best for reflections (default), but the same
-          mode saturates at least one item&apos;s wear remap to always-fully-worn.
+          Authored mode applies each material&apos;s bias, scale, lower bound and
+          range width. The legacy modes are retained for comparison only.
         </p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
           {REMAP_MODES.map((label, mode) => (
@@ -150,10 +148,8 @@ export default function GearDebugControls({
           WEAR REMAP INTERPRETATION
         </label>
         <p style={{ fontSize: 10, color: "var(--d2-text-faint)", marginTop: 4, lineHeight: 1.5 }}>
-          Range (default) is the only mode that doesn&apos;t degenerate on items like
-          Celestial Nighthawk — scale/bias modes saturate its gold slot&apos;s wear
-          remap to 1 for every input, replacing the gold tint with wornAlbedo (reads
-          as the gold turning silver).
+          Authored mode treats the remapped value as surviving coating: one
+          preserves the original finish, zero reveals the worn material.
         </p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
           {REMAP_MODES.map((label, mode) => (
@@ -197,9 +193,9 @@ export default function GearDebugControls({
           SINGLE-SLOT BAND DECODE
         </label>
         <p style={{ fontSize: 10, color: "var(--d2-text-faint)", marginTop: 4, lineHeight: 1.5 }}>
-          Bungie ships 6 materials per item (3 slots × primary/secondary). The 6-band
-          modes cut the dyeable A range into equal (slot, tint) bands; the ordering
-          isn&apos;t public, so compare live.
+          Authored material slots are the default. The other modes are legacy
+          experiments on eligible meshes: gearstack alpha encodes wear, not six
+          material IDs. They are not faithful material decoders.
         </p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
           {BAND_MODES.map((label, mode) => (
@@ -240,6 +236,7 @@ export default function GearDebugControls({
             </span>
             <input
               type="range"
+              disabled={bandMode !== 0}
               min={0}
               max={1}
               step={0.005}

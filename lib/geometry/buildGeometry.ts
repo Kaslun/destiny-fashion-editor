@@ -8,8 +8,8 @@
  *
  * We decode the vertex streams according to the metadata's stream layout,
  * unpack fixed-point positions/uvs with the mesh scale+offset, and build an
- * index from the LOD-0 stage parts. Each stage part becomes a geometry group
- * (materialIndex = dye slot) so the material layer can dye parts independently.
+ * index from the LOD-0 stage parts. D2 strips pack dye IDs in normal.w;
+ * split those into geometry groups without interpolating IDs across surfaces.
  *
  * Exact fixed-point conventions for D2 mobile are partly undocumented; where a
  * mesh lacks scale/offset we fall back to normalized values and let the viewer
@@ -36,16 +36,20 @@ const SEM_NORMAL = "_tfx_vb_semantic_normal";
 const SEM_TEXCOORD = "_tfx_vb_semantic_texcoord";
 
 export interface GroupInfo {
-  /** gear_dye_change_color_index of the stage part (÷2 = dye slot) */
+  /** Resolved change-color index (÷2 = dye slot, low bit = secondary). */
   dyeIndex: number;
-  /** transparent decal pass — render additive (black = transparent) */
+  dyeSource?: "vertex-normal-w" | "stage-part";
+  /** Authored overlay pass, independent of the dye slot. */
   decal: boolean;
+  renderStage?: number | null;
   /**
    * Self-illuminated glow geometry (e.g. Nighthawk's eye) — the diffuse is a
    * bright emblem on black. Set by the loader from texture-region analysis;
    * rendered additively so the black surround is transparent.
    */
   glow?: boolean;
+  /** Shader selector, interpreted only together with stage and texture signature. */
+  shaderType?: number;
   /** Raw stage-part flags — see gearMaterial.ts ABILITY_VFX_FLAG. Defaults to
    * 0 (no bits set) at call sites that don't carry real stage-part data (e.g.
    * tests), which is a safe "no special flags" default. */
@@ -101,9 +105,10 @@ function readComponent(
 function findSemantic(
   streams: VertexStreamLayout[],
   semantic: string,
+  semanticIndex = 0,
 ): { streamIndex: number; element: VertexElement } | null {
   for (let s = 0; s < streams.length; s++) {
-    const element = streams[s].elements.find((e) => e.semantic === semantic);
+    const element = streams[s].elements.find((e) => e.semantic === semantic && e.semanticIndex === semanticIndex);
     if (element) return { streamIndex: s, element };
   }
   return null;
@@ -155,6 +160,8 @@ function buildMesh(
   if (!posInfo) return null;
   const normalInfo = findSemantic(mesh.streams, SEM_NORMAL);
   const uvInfo = findSemantic(mesh.streams, SEM_TEXCOORD);
+  // Spasm exports tiled-detail UVs as TEXCOORD2 (TEXCOORD1 is not that map).
+  const detailUvInfo = findSemantic(mesh.streams, SEM_TEXCOORD, 2);
 
   // Load the vertex-stream buffers referenced by the layout.
   const streamViews: (DataView | null)[] = mesh.streams.map((_, s) => {
@@ -172,6 +179,18 @@ function buildMesh(
   const positions = new Float32Array(vertexCount * 3);
   const normals = normalInfo ? new Float32Array(vertexCount * 3) : null;
   const uvs = uvInfo ? new Float32Array(vertexCount * 2) : null;
+  const detailUvs = detailUvInfo && streamViews[detailUvInfo.streamIndex]
+    ? new Float32Array(vertexCount * 2) : null;
+  // D2 mobile triangle strips store a categorical dye ID in the low three
+  // bits of the *raw* short4 normal's fourth component. Normalizing it loses
+  // those bits. Zero is a real primary-metal ID; the high bit is NOT a presence
+  // flag (both 0x0004 and 0x800c occur on Cover of the Exile's tube).
+  // Reference: Destiny Collada Generator, WriteCOLLADA.cs, D2 strip path.
+  const packedNormal = normalInfo && normalInfo.element.components === 4 &&
+    normalInfo.element.componentBytes === 2 && normalInfo.element.numeric === "int" &&
+    normalInfo.element.normalized && streamViews[normalInfo.streamIndex]
+    ? normalInfo : null;
+  const vertexDyes = packedNormal ? new Uint8Array(vertexCount) : null;
 
   // Float positions are already in Destiny's shared character space (Z-up); the
   // bounding_volume + position_offset confirm e.g. a helmet sits at z≈1.7 (head
@@ -182,6 +201,17 @@ function buildMesh(
   const posIsFloat = posInfo.element.numeric === "float";
 
   for (let v = 0; v < vertexCount; v++) {
+    if (packedNormal && vertexDyes) {
+      const base = v * mesh.streams[packedNormal.streamIndex].stride + packedNormal.element.offset;
+      vertexDyes[v] = streamViews[packedNormal.streamIndex]!.getUint16(base + 6, true) & 7;
+    }
+    // Tiled detail coordinates are independent of the atlas UV transform.
+    if (detailUvInfo && detailUvs) {
+      const view = streamViews[detailUvInfo.streamIndex]!;
+      const base = v * mesh.streams[detailUvInfo.streamIndex].stride + detailUvInfo.element.offset;
+      detailUvs[v * 2] = readComponent(view, base, detailUvInfo.element, 0);
+      detailUvs[v * 2 + 1] = readComponent(view, base, detailUvInfo.element, 1);
+    }
     // position
     {
       const stride = mesh.streams[posInfo.streamIndex].stride;
@@ -273,13 +303,38 @@ function buildMesh(
 
     const groupCount = combined.length - groupStart;
     if (groupCount > 0) {
-      geometry.addGroup(groupStart, groupCount, groups.length);
-      groups.push({
-        dyeIndex: part.gearDyeChangeColorIndex,
+      const info: GroupInfo = {
+        dyeIndex: part.gearDyeChangeColorIndex, dyeSource: "stage-part",
         decal: part.decal,
+        renderStage: part.renderStage,
+        shaderType: part.shaderType,
         flags: part.flags,
         patternTextures: part.staticTextures,
-      });
+      };
+      if (vertexDyes && part.primitiveType === PRIMITIVE_TRIANGLE_STRIP &&
+          (part.renderStage === 0 || part.renderStage === null)) {
+        // Bucket whole triangles inside their original pass. Never interpolate
+        // slot numbers or use a majority vote on inconsistent vertices. Keep
+        // the part assignment for those ambiguous triangles and for overlays.
+        const buckets = new Map<number, number[]>();
+        const triangles = combined.splice(groupStart);
+        for (let i = 0; i < triangles.length; i += 3) {
+          const a = triangles[i], b = triangles[i + 1], c = triangles[i + 2];
+          const id = vertexDyes[a];
+          const key = id !== undefined && id === vertexDyes[b] && id === vertexDyes[c] ? id : -1;
+          const bucket = buckets.get(key) ?? [];
+          bucket.push(a, b, c);
+          buckets.set(key, bucket);
+        }
+        for (const [id, bucket] of buckets) {
+          geometry.addGroup(combined.length, bucket.length, groups.length);
+          for (const index of bucket) combined.push(index);
+          groups.push(id < 0 ? info : { ...info, dyeIndex: id, dyeSource: "vertex-normal-w" });
+        }
+      } else {
+        geometry.addGroup(groupStart, groupCount, groups.length);
+        groups.push(info);
+      }
     }
   }
 
@@ -288,6 +343,7 @@ function buildMesh(
   geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
   if (normals) geometry.setAttribute("normal", new THREE.BufferAttribute(normals, 3));
   if (uvs) geometry.setAttribute("uv", new THREE.BufferAttribute(uvs, 2));
+  if (detailUvs) geometry.setAttribute("uv1", new THREE.BufferAttribute(detailUvs, 2));
   geometry.setIndex(combined);
   if (!normals) geometry.computeVertexNormals();
   geometry.computeBoundingBox();

@@ -74,7 +74,7 @@ export default function GearModel({ itemHash, shaderHash, onStatus, onModel }: P
     }
   });
 
-  if (group) return <primitive object={group} />;
+  if (group) return <primitive key={group.uuid} object={group} />;
   if (failed) return <FallbackModel />;
   return null;
 }

@@ -35,6 +35,7 @@ import {
   dyeSetFromGearDyes,
   dyeForSlot,
   rankSlotsSoftToHard,
+  resolveDyeSet,
 } from "@/lib/materials/gearDye";
 import GearDebugControls from "@/components/editor/GearDebugControls";
 import {
@@ -75,7 +76,11 @@ const DEFAULT_HASH = "1363886209";
 
 export default function PocPage() {
   const [input, setInput] = useState(DEFAULT_HASH);
+  const [shaderInput, setShaderInput] = useState("");
+  const [activeShader, setActiveShader] = useState<number | null>(null);
   const [activeHash, setActiveHash] = useState<number | null>(null);
+  const [loadRevision, setLoadRevision] = useState(0);
+  const loadRequest = useRef(0);
   const [path, setPath] = useState<LoadPath | null>(null);
   const [debug, setDebug] = useState<GearModelDebug | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -155,26 +160,41 @@ export default function PocPage() {
 
   const load = useCallback(() => {
     const n = Number(input.trim());
+    const shader = shaderInput.trim() ? Number(shaderInput.trim()) : null;
     if (!Number.isFinite(n) || n <= 0) {
       setError("Enter a numeric item hash.");
       return;
     }
+    if (shader !== null && (!Number.isInteger(shader) || shader <= 0)) {
+      setError("Enter a numeric shader hash or leave it blank.");
+      return;
+    }
     setError(null);
+    const request = ++loadRequest.current;
+    setLoadRevision(request);
     setDebug(null);
     setPath(null);
     setItemName(null);
     setMaterials(null);
     setActiveHash(n);
+    setActiveShader(shader);
     // Resolve the item's display name to label the rendered mesh.
     fetch(`/api/items?hash=${n}`)
       .then((r) => r.json())
-      .then((d) => setItemName(d.item?.name ?? null))
-      .catch(() => setItemName(null));
+      .then((d) => { if (request === loadRequest.current) setItemName(d.item?.name ?? null); })
+      .catch(() => { if (request === loadRequest.current) setItemName(null); });
     // Resolve each dye slot's material data for the materials panel.
-    fetch(`/api/dyes/${n}`)
-      .then((r) => r.json())
-      .then((d) => {
-        const dyeSet = dyeSetFromGearDyes(d.slots ?? {});
+    Promise.all([
+      fetch(`/api/dyes/${n}`).then((r) => r.json()),
+      shader ? fetch(`/api/dyes/${shader}?target=${n}`).then((r) => r.json()) : Promise.resolve(null),
+    ])
+      .then(([d, custom]) => {
+        if (request !== loadRequest.current) return;
+        const dyeSet = resolveDyeSet(
+          dyeSetFromGearDyes(d.slots ?? {}),
+          dyeSetFromGearDyes(custom?.slots ?? {}),
+          dyeSetFromGearDyes(d.locked ?? {}),
+        );
         const ordered = rankSlotsSoftToHard(dyeSet);
         const list: MaterialInfo[] = ordered.map((slot) => {
           const dc = dyeForSlot(dyeSet, slot);
@@ -190,8 +210,8 @@ export default function PocPage() {
         });
         setMaterials(list.length > 0 ? list : null);
       })
-      .catch(() => setMaterials(null));
-  }, [input]);
+      .catch(() => { if (request === loadRequest.current) setMaterials(null); });
+  }, [input, shaderInput]);
 
   const onStatus = useCallback(
     (s: { path: LoadPath; debug?: GearModelDebug; error?: string }) => {
@@ -208,7 +228,7 @@ export default function PocPage() {
       <section className="poc-viewport">
         {activeHash ? (
           <ModelViewer rawOutput={debugChannel !== 0} toneMapping={toneMapping}>
-            <GearModel itemHash={activeHash} onStatus={onStatus} onModel={onModel} />
+            <GearModel key={loadRevision} itemHash={activeHash} shaderHash={activeShader} onStatus={onStatus} onModel={onModel} />
           </ModelViewer>
         ) : (
           <div
@@ -251,6 +271,7 @@ export default function PocPage() {
         <label style={{ fontSize: 12, color: "var(--d2-text-dim)" }}>ITEM HASH</label>
         <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
           <input
+            aria-label="Item hash"
             className="d2-input mono"
             style={{ flex: 1 }}
             value={input}
@@ -262,6 +283,12 @@ export default function PocPage() {
             Load
           </button>
         </div>
+        <label htmlFor="shader-hash" style={{ display: "block", marginTop: 12, fontSize: 12, color: "var(--d2-text-dim)" }}>
+          SHADER HASH (OPTIONAL)
+        </label>
+        <input id="shader-hash" className="d2-input mono" style={{ width: "100%", marginTop: 6 }}
+          value={shaderInput} onChange={(e) => setShaderInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && load()} placeholder="Blank uses the item's default finish" />
 
         <div style={{ marginTop: 16 }}>
           <GearDebugControls
@@ -444,6 +471,13 @@ function DebugPanel({ debug }: { debug: GearModelDebug }) {
           </ul>
         </details>
       )}
+
+      {!!debug.notes?.length && <details style={{ marginTop: 10 }}>
+        <summary style={{ cursor: "pointer", fontSize: 12, color: "var(--d2-text-dim)" }}>Rendering notes</summary>
+        <ul style={{ fontSize: 11, color: "var(--d2-text-dim)", paddingLeft: 16 }}>
+          {debug.notes.map((note, i) => <li key={i}>{note}</li>)}
+        </ul>
+      </details>}
 
       <details style={{ marginTop: 10 }}>
         <summary style={{ cursor: "pointer", fontSize: 12, color: "var(--d2-cyan)" }}>

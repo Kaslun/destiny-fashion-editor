@@ -3,7 +3,7 @@
  * Empty object for items without a gear file.
  */
 import { NextRequest, NextResponse } from "next/server";
-import { getItemGear } from "@/lib/bungie/gearDyeData";
+import { getItemGear, getShaderDyesForItem } from "@/lib/bungie/gearDyeData";
 import { apiError } from "@/lib/http";
 
 export const runtime = "nodejs";
@@ -30,7 +30,12 @@ export async function GET(
       return NextResponse.json({ hash: n, rawDefaultDyes: gear.rawDefaultDyes });
     }
     const gear = await getItemGear(n);
-    return NextResponse.json({ hash: n, slots: gear.dyes, locked: gear.lockedDyes });
+    const target = _req.nextUrl.searchParams.get("target");
+    if (target !== null && (!Number.isInteger(Number(target)) || Number(target) <= 0)) {
+      return NextResponse.json({ error: "Invalid target hash" }, { status: 400 });
+    }
+    const slots = target === null ? gear.dyes : await getShaderDyesForItem(n, Number(target));
+    return NextResponse.json({ hash: n, slots, locked: gear.lockedDyes });
   } catch (err) {
     return apiError(err, 500, "dyes");
   }

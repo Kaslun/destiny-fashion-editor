@@ -1,0 +1,3576 @@
+{
+  "retrieved": "2026-09-22",
+  "manifest": "244213.26.06.29.2000-1-bnet.65864",
+  "items": [
+    {
+      "name": "nighthawk",
+      "hash": 3960926756,
+      "dyes": [
+        {
+          "slot_type_index": 0,
+          "cloth": false,
+          "material_properties": {
+            "detail_diffuse_transform": [
+              7.5,
+              7.5,
+              0,
+              0
+            ],
+            "detail_normal_transform": [
+              7.5,
+              7.5,
+              0,
+              0
+            ],
+            "primary_albedo_tint": [
+              0.995018,
+              0.740509,
+              0.208356,
+              1
+            ],
+            "primary_emissive_tint_color": [
+              0.870555,
+              0.156635,
+              0.043272,
+              1
+            ],
+            "primary_material_params": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "primary_material_advanced_params": [
+              -1,
+              0,
+              0,
+              0
+            ],
+            "primary_roughness_remap": [
+              -4.933334,
+              6.666668,
+              0.74,
+              0.15
+            ],
+            "primary_worn_albedo_tint": [
+              0.552011,
+              0.571125,
+              0.571125,
+              1
+            ],
+            "primary_wear_remap": [
+              -3.406,
+              4.926,
+              0,
+              1
+            ],
+            "primary_worn_roughness_remap": [
+              -1.273333,
+              3.006667,
+              0.74,
+              0.15
+            ],
+            "primary_worn_material_parameters": [
+              0,
+              0,
+              1,
+              1
+            ],
+            "secondary_albedo_tint": [
+              0.877438,
+              0.90782,
+              0.90782,
+              1
+            ],
+            "secondary_emissive_tint_color": [
+              0.870555,
+              0.156635,
+              0.043272,
+              1
+            ],
+            "secondary_material_params": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "secondary_material_advanced_params": [
+              -1,
+              0,
+              0,
+              0
+            ],
+            "secondary_roughness_remap": [
+              2.022222,
+              6.31111,
+              0.25,
+              0.09
+            ],
+            "secondary_worn_albedo_tint": [
+              0.552011,
+              0.571125,
+              0.571125,
+              1
+            ],
+            "secondary_wear_remap": [
+              -3.406,
+              4.926,
+              0,
+              1
+            ],
+            "secondary_worn_roughness_remap": [
+              -1.273333,
+              3.006667,
+              0.74,
+              0.15
+            ],
+            "secondary_worn_material_parameters": [
+              0,
+              0,
+              1,
+              1
+            ],
+            "primary_emissive_tint_color_and_intensity_bias": [
+              0.870555,
+              0.156635,
+              0.043272,
+              1
+            ],
+            "secondary_emissive_tint_color_and_intensity_bias": [
+              0.870555,
+              0.156635,
+              0.043272,
+              1
+            ],
+            "primary_subsurface_scattering_strength_and_emissive": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "secondary_subsurface_scattering_strength_and_emissive": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "textures": {
+            "diffuse": {
+              "name": "3104558709_Kevlar_dif",
+              "reference_id": "b6d39e5930b394ae3cdd3d7f07ec5118"
+            },
+            "normal": {
+              "name": "3104558709_Kevlar_norm",
+              "reference_id": "cfb094eab1892e62871bf19af8664b8d"
+            },
+            "primary_diffuse": {
+              "name": "_FFFFFFFF_3104558709_Kevlar_dif",
+              "reference_id": "b6d39e5930b394ae3cdd3d7f07ec5118"
+            },
+            "secondary_diffuse": {
+              "name": "_FFFFFFFF_3104558709_Kevlar_dif",
+              "reference_id": "b6d39e5930b394ae3cdd3d7f07ec5118"
+            }
+          }
+        },
+        {
+          "slot_type_index": 1,
+          "cloth": true,
+          "material_properties": {
+            "detail_diffuse_transform": [
+              4,
+              4,
+              0,
+              0
+            ],
+            "detail_normal_transform": [
+              4,
+              4,
+              0,
+              0
+            ],
+            "primary_albedo_tint": [
+              0.099645,
+              0.036602,
+              0.025613,
+              1
+            ],
+            "primary_emissive_tint_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "primary_material_params": [
+              1,
+              1,
+              0,
+              0
+            ],
+            "primary_material_advanced_params": [
+              -1,
+              0.15,
+              0.2,
+              0
+            ],
+            "primary_roughness_remap": [
+              0,
+              0,
+              0.2,
+              0
+            ],
+            "primary_worn_albedo_tint": [
+              0.1,
+              0.1,
+              0.1,
+              1
+            ],
+            "primary_wear_remap": [
+              0.7868,
+              2.2022,
+              0,
+              1
+            ],
+            "primary_worn_roughness_remap": [
+              0,
+              1,
+              0,
+              1
+            ],
+            "primary_worn_material_parameters": [
+              1,
+              1,
+              1,
+              0
+            ],
+            "secondary_albedo_tint": [
+              0.223949,
+              0.157672,
+              0.052833,
+              1
+            ],
+            "secondary_emissive_tint_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "secondary_material_params": [
+              0.09,
+              0.686,
+              0.033,
+              0
+            ],
+            "secondary_material_advanced_params": [
+              -1,
+              0,
+              0,
+              0
+            ],
+            "secondary_roughness_remap": [
+              0,
+              1.2245,
+              0,
+              1
+            ],
+            "secondary_worn_albedo_tint": [
+              0.1,
+              0.1,
+              0.1,
+              1
+            ],
+            "secondary_wear_remap": [
+              0.7868,
+              2.2022,
+              0,
+              1
+            ],
+            "secondary_worn_roughness_remap": [
+              0,
+              1,
+              0,
+              1
+            ],
+            "secondary_worn_material_parameters": [
+              1,
+              1,
+              1,
+              0
+            ],
+            "primary_emissive_tint_color_and_intensity_bias": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "secondary_emissive_tint_color_and_intensity_bias": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "primary_subsurface_scattering_strength_and_emissive": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "secondary_subsurface_scattering_strength_and_emissive": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "textures": {
+            "diffuse": {
+              "name": "401755037_detail_fabric01_dif",
+              "reference_id": "8a19934137c833e3f242403b94f74001"
+            },
+            "normal": {
+              "name": "401755037_detail_fabric01_norm",
+              "reference_id": "7fbd5e724f95279582164ba7018e227a"
+            },
+            "primary_diffuse": {
+              "name": "_FFFFFFFF_401755037_detail_fabric01_dif",
+              "reference_id": "8a19934137c833e3f242403b94f74001"
+            },
+            "secondary_diffuse": {
+              "name": "_FFFFFFFF_401755037_detail_fabric01_dif",
+              "reference_id": "8a19934137c833e3f242403b94f74001"
+            }
+          }
+        },
+        {
+          "slot_type_index": 2,
+          "cloth": false,
+          "material_properties": {
+            "detail_diffuse_transform": [
+              5,
+              5,
+              0,
+              0
+            ],
+            "detail_normal_transform": [
+              5,
+              5,
+              0,
+              0
+            ],
+            "primary_albedo_tint": [
+              0.130727,
+              0.116924,
+              0.110358,
+              1
+            ],
+            "primary_emissive_tint_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "primary_material_params": [
+              1,
+              1,
+              0,
+              0
+            ],
+            "primary_material_advanced_params": [
+              -1,
+              0,
+              0,
+              0
+            ],
+            "primary_roughness_remap": [
+              -0.134615,
+              1.557692,
+              0.41,
+              0.26
+            ],
+            "primary_worn_albedo_tint": [
+              1,
+              0,
+              0,
+              1
+            ],
+            "primary_wear_remap": [
+              0,
+              0,
+              1,
+              0
+            ],
+            "primary_worn_roughness_remap": [
+              0,
+              1,
+              0,
+              1
+            ],
+            "primary_worn_material_parameters": [
+              1,
+              1,
+              1,
+              0
+            ],
+            "secondary_albedo_tint": [
+              0.061074,
+              0.031373,
+              0.020649,
+              1
+            ],
+            "secondary_emissive_tint_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "secondary_material_params": [
+              0,
+              1,
+              0.077,
+              0
+            ],
+            "secondary_material_advanced_params": [
+              -1,
+              0,
+              0,
+              0
+            ],
+            "secondary_roughness_remap": [
+              -1.869565,
+              4.347826,
+              0.43,
+              0.23
+            ],
+            "secondary_worn_albedo_tint": [
+              1,
+              0,
+              0,
+              1
+            ],
+            "secondary_wear_remap": [
+              0,
+              0,
+              1,
+              0
+            ],
+            "secondary_worn_roughness_remap": [
+              0,
+              1,
+              0,
+              1
+            ],
+            "secondary_worn_material_parameters": [
+              1,
+              1,
+              1,
+              0
+            ],
+            "primary_emissive_tint_color_and_intensity_bias": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "secondary_emissive_tint_color_and_intensity_bias": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "primary_subsurface_scattering_strength_and_emissive": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "secondary_subsurface_scattering_strength_and_emissive": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "textures": {
+            "diffuse": {
+              "name": "3104558709_Rubber_01_dif",
+              "reference_id": "02e2d0d2d5a993210220eead62f93d45"
+            },
+            "normal": {
+              "name": "3104558709_Rubber_01_norm",
+              "reference_id": "1083a50d55fc2724a4db4826461ecb0b"
+            },
+            "primary_diffuse": {
+              "name": "_FFFFFFFF_3104558709_Rubber_01_dif",
+              "reference_id": "02e2d0d2d5a993210220eead62f93d45"
+            },
+            "secondary_diffuse": {
+              "name": "_FFFFFFFF_3104558709_Rubber_01_dif",
+              "reference_id": "02e2d0d2d5a993210220eead62f93d45"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "relativism",
+      "hash": 2809120022,
+      "dyes": [
+        {
+          "slot_type_index": 0,
+          "cloth": false,
+          "material_properties": {
+            "detail_diffuse_transform": [
+              1.5,
+              1.5,
+              0,
+              0
+            ],
+            "detail_normal_transform": [
+              1.5,
+              1.5,
+              0,
+              0
+            ],
+            "primary_albedo_tint": [
+              0.847,
+              0.898106,
+              1.1,
+              1
+            ],
+            "primary_emissive_tint_color": [
+              1,
+              0,
+              0,
+              1
+            ],
+            "primary_material_params": [
+              0.25,
+              1,
+              0.5,
+              0
+            ],
+            "primary_material_advanced_params": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "primary_roughness_remap": [
+              -40,
+              80,
+              0,
+              0.25
+            ],
+            "primary_worn_albedo_tint": [
+              1.15,
+              1.15,
+              1.15,
+              1
+            ],
+            "primary_wear_remap": [
+              -2,
+              12,
+              0,
+              1
+            ],
+            "primary_worn_roughness_remap": [
+              0.909091,
+              0.606061,
+              0,
+              0.66
+            ],
+            "primary_worn_material_parameters": [
+              0,
+              0,
+              0.900901,
+              1
+            ],
+            "secondary_albedo_tint": [
+              0,
+              0.113,
+              0.710284,
+              1
+            ],
+            "secondary_emissive_tint_color": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "secondary_material_params": [
+              0.179775,
+              0.082089,
+              0.25,
+              0
+            ],
+            "secondary_material_advanced_params": [
+              4,
+              0,
+              0,
+              0
+            ],
+            "secondary_roughness_remap": [
+              0.025074,
+              1.174926,
+              0,
+              1
+            ],
+            "secondary_worn_albedo_tint": [
+              0.676768,
+              0.676768,
+              0.676768,
+              1
+            ],
+            "secondary_wear_remap": [
+              -0.5,
+              4,
+              0,
+              1
+            ],
+            "secondary_worn_roughness_remap": [
+              -0.25,
+              2.75,
+              0.5,
+              0.4
+            ],
+            "secondary_worn_material_parameters": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "primary_emissive_tint_color_and_intensity_bias": [
+              1,
+              0,
+              0,
+              1
+            ],
+            "secondary_emissive_tint_color_and_intensity_bias": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "primary_subsurface_scattering_strength_and_emissive": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "secondary_subsurface_scattering_strength_and_emissive": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "textures": {
+            "diffuse": {
+              "name": "327503503_gear_detail_metal_dif",
+              "reference_id": "eb7fe6e3dc78173b8c541396f833f534"
+            },
+            "normal": {
+              "name": "327503503_gear_detail_metal_norm",
+              "reference_id": "13621895091c36553dc1e66b04c7af43"
+            },
+            "primary_diffuse": {
+              "name": "_FFFFFFFF_327503503_gear_detail_metal_dif",
+              "reference_id": "eb7fe6e3dc78173b8c541396f833f534"
+            },
+            "secondary_diffuse": {
+              "name": "_FFFFFFFF_327503503_gear_detail_metal_dif",
+              "reference_id": "eb7fe6e3dc78173b8c541396f833f534"
+            }
+          }
+        },
+        {
+          "slot_type_index": 1,
+          "cloth": true,
+          "material_properties": {
+            "detail_diffuse_transform": [
+              1.25,
+              1.25,
+              0,
+              0
+            ],
+            "detail_normal_transform": [
+              1.25,
+              1.25,
+              0,
+              0
+            ],
+            "primary_albedo_tint": [
+              0.640273,
+              0.692659,
+              0.880375,
+              1
+            ],
+            "primary_emissive_tint_color": [
+              1,
+              0,
+              0,
+              1
+            ],
+            "primary_material_params": [
+              0.786517,
+              0.921348,
+              0.561799,
+              0.202247
+            ],
+            "primary_material_advanced_params": [
+              -1,
+              0.5,
+              0,
+              0
+            ],
+            "primary_roughness_remap": [
+              -0.5,
+              1.375,
+              -1,
+              2
+            ],
+            "primary_worn_albedo_tint": [
+              0.54147,
+              0.539527,
+              0.573467,
+              1
+            ],
+            "primary_wear_remap": [
+              -3,
+              6.5,
+              0,
+              1
+            ],
+            "primary_worn_roughness_remap": [
+              0,
+              0,
+              1,
+              0
+            ],
+            "primary_worn_material_parameters": [
+              0.263877,
+              0.169114,
+              1,
+              0
+            ],
+            "secondary_albedo_tint": [
+              0.216153,
+              0.314621,
+              0.504994,
+              1
+            ],
+            "secondary_emissive_tint_color": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "secondary_material_params": [
+              0.966292,
+              0.932584,
+              0.842696,
+              0.404495
+            ],
+            "secondary_material_advanced_params": [
+              -1,
+              0.5,
+              0,
+              0
+            ],
+            "secondary_roughness_remap": [
+              -0.5,
+              2,
+              -1,
+              2
+            ],
+            "secondary_worn_albedo_tint": [
+              0.253059,
+              0.546377,
+              0.86763,
+              1
+            ],
+            "secondary_wear_remap": [
+              -1,
+              4,
+              0,
+              1
+            ],
+            "secondary_worn_roughness_remap": [
+              -3,
+              4,
+              0.75,
+              0.25
+            ],
+            "secondary_worn_material_parameters": [
+              0,
+              0.720721,
+              0,
+              0.33
+            ],
+            "primary_emissive_tint_color_and_intensity_bias": [
+              1,
+              0,
+              0,
+              1
+            ],
+            "secondary_emissive_tint_color_and_intensity_bias": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "primary_subsurface_scattering_strength_and_emissive": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "secondary_subsurface_scattering_strength_and_emissive": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "textures": {
+            "diffuse": {
+              "name": "401755037_detail_cloth_weave_dif",
+              "reference_id": "3d9bc5caa3a1ce01fb5bf5cab8dee76a"
+            },
+            "normal": {
+              "name": "401755037_detail_cloth_weave_norm",
+              "reference_id": "e0d264c956fe3084854a6fcb1b5513b6"
+            },
+            "primary_diffuse": {
+              "name": "_FFFFFFFF_401755037_detail_cloth_weave_dif",
+              "reference_id": "3d9bc5caa3a1ce01fb5bf5cab8dee76a"
+            },
+            "secondary_diffuse": {
+              "name": "_FFFFFFFF_401755037_detail_cloth_weave_dif",
+              "reference_id": "3d9bc5caa3a1ce01fb5bf5cab8dee76a"
+            }
+          }
+        },
+        {
+          "slot_type_index": 2,
+          "cloth": false,
+          "material_properties": {
+            "detail_diffuse_transform": [
+              3,
+              3,
+              0,
+              0
+            ],
+            "detail_normal_transform": [
+              3,
+              3,
+              0,
+              0
+            ],
+            "primary_albedo_tint": [
+              0.424306,
+              0.435697,
+              0.469869,
+              1
+            ],
+            "primary_emissive_tint_color": [
+              1,
+              0,
+              0,
+              1
+            ],
+            "primary_material_params": [
+              0.5,
+              1,
+              0.468468,
+              0
+            ],
+            "primary_material_advanced_params": [
+              3,
+              0.25,
+              0,
+              0
+            ],
+            "primary_roughness_remap": [
+              -1.75,
+              3.5,
+              0,
+              4
+            ],
+            "primary_worn_albedo_tint": [
+              0.0855,
+              0.131037,
+              0.15,
+              1
+            ],
+            "primary_wear_remap": [
+              -1.8,
+              5.15,
+              0,
+              1
+            ],
+            "primary_worn_roughness_remap": [
+              -5,
+              11,
+              0,
+              1
+            ],
+            "primary_worn_material_parameters": [
+              0,
+              1,
+              0,
+              0
+            ],
+            "secondary_albedo_tint": [
+              0.0804,
+              0.083172,
+              0.12,
+              1
+            ],
+            "secondary_emissive_tint_color": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "secondary_material_params": [
+              0.5,
+              1,
+              0.468468,
+              0
+            ],
+            "secondary_material_advanced_params": [
+              3,
+              0,
+              0,
+              0
+            ],
+            "secondary_roughness_remap": [
+              -0.657875,
+              1.845375,
+              0.144144,
+              0.720721
+            ],
+            "secondary_worn_albedo_tint": [
+              0.344637,
+              0.526344,
+              0.602544,
+              1
+            ],
+            "secondary_wear_remap": [
+              -16.9999962,
+              32.9999924,
+              0.9,
+              0.1
+            ],
+            "secondary_worn_roughness_remap": [
+              0,
+              1.71875,
+              0,
+              0.288288
+            ],
+            "secondary_worn_material_parameters": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "primary_emissive_tint_color_and_intensity_bias": [
+              1,
+              0,
+              0,
+              1
+            ],
+            "secondary_emissive_tint_color_and_intensity_bias": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "primary_subsurface_scattering_strength_and_emissive": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "secondary_subsurface_scattering_strength_and_emissive": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "textures": {
+            "diffuse": {
+              "name": "327503503_gear_detail_leather_dif",
+              "reference_id": "ec27aa4bc898474ebe15b7f8ae86ae1c"
+            },
+            "normal": {
+              "name": "3079566084_gear_detail_leather_norm",
+              "reference_id": "b63e38c33dc37f26e2b4c28e795b914a"
+            },
+            "primary_diffuse": {
+              "name": "_FFFFFFFF_327503503_gear_detail_leather_dif",
+              "reference_id": "ec27aa4bc898474ebe15b7f8ae86ae1c"
+            },
+            "secondary_diffuse": {
+              "name": "_FFFFFFFF_327503503_gear_detail_leather_dif",
+              "reference_id": "ec27aa4bc898474ebe15b7f8ae86ae1c"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "cover-of-exile",
+      "hash": 571925067,
+      "dyes": [
+        {
+          "slot_type_index": 0,
+          "cloth": false,
+          "material_properties": {
+            "detail_diffuse_transform": [
+              2,
+              2,
+              0,
+              0
+            ],
+            "detail_normal_transform": [
+              3,
+              3,
+              0,
+              0
+            ],
+            "primary_albedo_tint": [
+              1,
+              0.617896,
+              0.196,
+              1
+            ],
+            "primary_emissive_tint_color": [
+              0.428,
+              1,
+              0.890176,
+              1
+            ],
+            "primary_material_params": [
+              0.5,
+              0.5,
+              0,
+              0.9
+            ],
+            "primary_material_advanced_params": [
+              -1,
+              0,
+              0,
+              0
+            ],
+            "primary_roughness_remap": [
+              -1.666667,
+              5.208333,
+              0.65,
+              0.24
+            ],
+            "primary_worn_albedo_tint": [
+              0.393123,
+              0.393123,
+              0.393123,
+              1
+            ],
+            "primary_wear_remap": [
+              -1,
+              2.65,
+              0,
+              1
+            ],
+            "primary_worn_roughness_remap": [
+              0,
+              1,
+              0,
+              1
+            ],
+            "primary_worn_material_parameters": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "secondary_albedo_tint": [
+              0.040249,
+              0.040249,
+              0.040249,
+              1
+            ],
+            "secondary_emissive_tint_color": [
+              0,
+              0.078695,
+              0.894262,
+              1
+            ],
+            "secondary_material_params": [
+              0.5,
+              0.3,
+              0.3,
+              0
+            ],
+            "secondary_material_advanced_params": [
+              35,
+              0,
+              0,
+              0
+            ],
+            "secondary_roughness_remap": [
+              -1.2,
+              2.8,
+              0.6,
+              0.25
+            ],
+            "secondary_worn_albedo_tint": [
+              0.546756,
+              0.546756,
+              0.546756,
+              1
+            ],
+            "secondary_wear_remap": [
+              -0.5,
+              3.5,
+              0,
+              1
+            ],
+            "secondary_worn_roughness_remap": [
+              0,
+              1,
+              0,
+              1
+            ],
+            "secondary_worn_material_parameters": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "primary_emissive_tint_color_and_intensity_bias": [
+              0.428,
+              1,
+              0.890176,
+              1
+            ],
+            "secondary_emissive_tint_color_and_intensity_bias": [
+              0,
+              0.078695,
+              0.894262,
+              1
+            ],
+            "primary_subsurface_scattering_strength_and_emissive": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "secondary_subsurface_scattering_strength_and_emissive": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "textures": {
+            "diffuse": {
+              "name": "327503503_gear_detail_metal_dif",
+              "reference_id": "eb7fe6e3dc78173b8c541396f833f534"
+            },
+            "normal": {
+              "name": "327503503_gear_detail_metal_norm",
+              "reference_id": "13621895091c36553dc1e66b04c7af43"
+            },
+            "primary_diffuse": {
+              "name": "_FFFFFFFF_327503503_gear_detail_metal_dif",
+              "reference_id": "eb7fe6e3dc78173b8c541396f833f534"
+            },
+            "secondary_diffuse": {
+              "name": "_FFFFFFFF_327503503_gear_detail_metal_dif",
+              "reference_id": "eb7fe6e3dc78173b8c541396f833f534"
+            }
+          }
+        },
+        {
+          "slot_type_index": 1,
+          "cloth": true,
+          "material_properties": {
+            "detail_diffuse_transform": [
+              1,
+              1,
+              0,
+              0
+            ],
+            "detail_normal_transform": [
+              2,
+              2,
+              0,
+              0
+            ],
+            "primary_albedo_tint": [
+              0.053364,
+              0.284864,
+              0.292935,
+              1
+            ],
+            "primary_emissive_tint_color": [
+              0.428,
+              1,
+              0.890176,
+              1
+            ],
+            "primary_material_params": [
+              0.3,
+              1.5,
+              0.7,
+              0.7
+            ],
+            "primary_material_advanced_params": [
+              105,
+              0,
+              0,
+              0
+            ],
+            "primary_roughness_remap": [
+              -0.428571,
+              3,
+              0.1,
+              0.35
+            ],
+            "primary_worn_albedo_tint": [
+              0.091709,
+              0.110061,
+              0.114083,
+              1
+            ],
+            "primary_wear_remap": [
+              -4,
+              13,
+              0,
+              1
+            ],
+            "primary_worn_roughness_remap": [
+              0,
+              1,
+              0,
+              1
+            ],
+            "primary_worn_material_parameters": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "secondary_albedo_tint": [
+              0.535011,
+              0.535011,
+              0.535011,
+              1
+            ],
+            "secondary_emissive_tint_color": [
+              0,
+              0.078695,
+              0.894262,
+              1
+            ],
+            "secondary_material_params": [
+              0.65,
+              0,
+              0.364,
+              0
+            ],
+            "secondary_material_advanced_params": [
+              -1,
+              0,
+              0,
+              0
+            ],
+            "secondary_roughness_remap": [
+              -0.775194,
+              2.325582,
+              0,
+              0.645
+            ],
+            "secondary_worn_albedo_tint": [
+              0.339761,
+              0.300339,
+              0.227229,
+              1
+            ],
+            "secondary_wear_remap": [
+              -1,
+              3.5,
+              0,
+              1
+            ],
+            "secondary_worn_roughness_remap": [
+              0,
+              1,
+              0,
+              1
+            ],
+            "secondary_worn_material_parameters": [
+              0.35,
+              0,
+              0.766,
+              0
+            ],
+            "primary_emissive_tint_color_and_intensity_bias": [
+              0.428,
+              1,
+              0.890176,
+              1
+            ],
+            "secondary_emissive_tint_color_and_intensity_bias": [
+              0,
+              0.078695,
+              0.894262,
+              1
+            ],
+            "primary_subsurface_scattering_strength_and_emissive": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "secondary_subsurface_scattering_strength_and_emissive": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "textures": {
+            "diffuse": {
+              "name": "369636616_gear_detail_crust2_overdif",
+              "reference_id": "982f3e1fa0506caba1ac3260630d8aeb"
+            },
+            "normal": {
+              "name": "327503503_gear_detail_suit_quilted_norm",
+              "reference_id": "52e04fb63d14acab27e3d8e61fe78d84"
+            },
+            "primary_diffuse": {
+              "name": "_FFFFFFFF_369636616_gear_detail_crust2_overdif",
+              "reference_id": "982f3e1fa0506caba1ac3260630d8aeb"
+            },
+            "secondary_diffuse": {
+              "name": "_FFFFFFFF_369636616_gear_detail_crust2_overdif",
+              "reference_id": "982f3e1fa0506caba1ac3260630d8aeb"
+            }
+          }
+        },
+        {
+          "slot_type_index": 2,
+          "cloth": false,
+          "material_properties": {
+            "detail_diffuse_transform": [
+              2,
+              2,
+              0,
+              0
+            ],
+            "detail_normal_transform": [
+              1.5,
+              1.5,
+              0,
+              0
+            ],
+            "primary_albedo_tint": [
+              0.052307,
+              0.052307,
+              0.052307,
+              1
+            ],
+            "primary_emissive_tint_color": [
+              0.428,
+              1,
+              0.890176,
+              1
+            ],
+            "primary_material_params": [
+              0.179,
+              1,
+              0.152,
+              0
+            ],
+            "primary_material_advanced_params": [
+              -1,
+              0,
+              0,
+              0
+            ],
+            "primary_roughness_remap": [
+              -0.791667,
+              3.791667,
+              0.25,
+              0.36
+            ],
+            "primary_worn_albedo_tint": [
+              0.243872,
+              0.193077,
+              0.127814,
+              1
+            ],
+            "primary_wear_remap": [
+              -1.5,
+              4.75,
+              0,
+              1
+            ],
+            "primary_worn_roughness_remap": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "primary_worn_material_parameters": [
+              0,
+              0.063,
+              1,
+              0
+            ],
+            "secondary_albedo_tint": [
+              0.024579,
+              0.024579,
+              0.028213,
+              1
+            ],
+            "secondary_emissive_tint_color": [
+              0,
+              0.078695,
+              0.894262,
+              1
+            ],
+            "secondary_material_params": [
+              0.2,
+              0.35,
+              0.3,
+              0
+            ],
+            "secondary_material_advanced_params": [
+              25,
+              0,
+              0,
+              0
+            ],
+            "secondary_roughness_remap": [
+              -0.8,
+              5.2,
+              0.1,
+              0.25
+            ],
+            "secondary_worn_albedo_tint": [
+              0.061231,
+              0.061231,
+              0.061231,
+              1
+            ],
+            "secondary_wear_remap": [
+              4,
+              -5.2,
+              0,
+              1
+            ],
+            "secondary_worn_roughness_remap": [
+              0,
+              5,
+              0,
+              1
+            ],
+            "secondary_worn_material_parameters": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "primary_emissive_tint_color_and_intensity_bias": [
+              0.428,
+              1,
+              0.890176,
+              1
+            ],
+            "secondary_emissive_tint_color_and_intensity_bias": [
+              0,
+              0.078695,
+              0.894262,
+              1
+            ],
+            "primary_subsurface_scattering_strength_and_emissive": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "secondary_subsurface_scattering_strength_and_emissive": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "textures": {
+            "diffuse": {
+              "name": "327503503_gear_detail_leather_dif",
+              "reference_id": "ec27aa4bc898474ebe15b7f8ae86ae1c"
+            },
+            "normal": {
+              "name": "327503503_gear_detail_leather_norm",
+              "reference_id": "b63e38c33dc37f26e2b4c28e795b914a"
+            },
+            "primary_diffuse": {
+              "name": "_FFFFFFFF_327503503_gear_detail_leather_dif",
+              "reference_id": "ec27aa4bc898474ebe15b7f8ae86ae1c"
+            },
+            "secondary_diffuse": {
+              "name": "_FFFFFFFF_327503503_gear_detail_leather_dif",
+              "reference_id": "ec27aa4bc898474ebe15b7f8ae86ae1c"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "photo-finish",
+      "hash": 2450544934,
+      "dyes": [
+        {
+          "slot_type_index": 0,
+          "cloth": false,
+          "material_properties": {
+            "detail_diffuse_transform": [
+              1.5,
+              1.5,
+              0,
+              0
+            ],
+            "detail_normal_transform": [
+              1.5,
+              1.5,
+              0,
+              0
+            ],
+            "primary_albedo_tint": [
+              0.018579,
+              0.018579,
+              0.018579,
+              1
+            ],
+            "primary_emissive_tint_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "primary_material_params": [
+              0.25,
+              0.5,
+              0.25,
+              0
+            ],
+            "primary_material_advanced_params": [
+              101,
+              0,
+              0,
+              0
+            ],
+            "primary_roughness_remap": [
+              -2.4,
+              7.6,
+              0.7,
+              0.25
+            ],
+            "primary_worn_albedo_tint": [
+              0.676768,
+              0.676768,
+              0.676768,
+              1
+            ],
+            "primary_wear_remap": [
+              -0.7,
+              4.2,
+              0,
+              1
+            ],
+            "primary_worn_roughness_remap": [
+              -0.25,
+              2.75,
+              0.5,
+              0.4
+            ],
+            "primary_worn_material_parameters": [
+              1,
+              1,
+              0.136,
+              1
+            ],
+            "secondary_albedo_tint": [
+              0.080966,
+              0.080966,
+              0.080966,
+              1
+            ],
+            "secondary_emissive_tint_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "secondary_material_params": [
+              1,
+              1,
+              0.5,
+              0
+            ],
+            "secondary_material_advanced_params": [
+              101,
+              0,
+              0,
+              0
+            ],
+            "secondary_roughness_remap": [
+              0,
+              3.333333,
+              0,
+              0.3
+            ],
+            "secondary_worn_albedo_tint": [
+              0.676768,
+              0.676768,
+              0.676768,
+              1
+            ],
+            "secondary_wear_remap": [
+              -2,
+              5,
+              0,
+              1
+            ],
+            "secondary_worn_roughness_remap": [
+              -0.25,
+              2.75,
+              0.5,
+              0.4
+            ],
+            "secondary_worn_material_parameters": [
+              1,
+              1,
+              0.136,
+              1
+            ],
+            "primary_emissive_tint_color_and_intensity_bias": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "secondary_emissive_tint_color_and_intensity_bias": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "primary_subsurface_scattering_strength_and_emissive": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "secondary_subsurface_scattering_strength_and_emissive": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "textures": {
+            "diffuse": {
+              "name": "327503503_gear_detail_metal_dif",
+              "reference_id": "eb7fe6e3dc78173b8c541396f833f534"
+            },
+            "normal": {
+              "name": "327503503_gear_detail_metal_norm",
+              "reference_id": "13621895091c36553dc1e66b04c7af43"
+            },
+            "primary_diffuse": {
+              "name": "_FFFFFFFF_327503503_gear_detail_metal_dif",
+              "reference_id": "eb7fe6e3dc78173b8c541396f833f534"
+            },
+            "secondary_diffuse": {
+              "name": "_FFFFFFFF_327503503_gear_detail_metal_dif",
+              "reference_id": "eb7fe6e3dc78173b8c541396f833f534"
+            }
+          }
+        },
+        {
+          "slot_type_index": 2,
+          "cloth": false,
+          "material_properties": {
+            "detail_diffuse_transform": [
+              2,
+              2,
+              0,
+              0
+            ],
+            "detail_normal_transform": [
+              1.5,
+              1.5,
+              0,
+              0
+            ],
+            "primary_albedo_tint": [
+              0.202033,
+              0.202033,
+              0.202033,
+              1
+            ],
+            "primary_emissive_tint_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "primary_material_params": [
+              1,
+              1,
+              0.5,
+              0
+            ],
+            "primary_material_advanced_params": [
+              -1,
+              0,
+              0,
+              0
+            ],
+            "primary_roughness_remap": [
+              0,
+              3.367003,
+              0,
+              0.297
+            ],
+            "primary_worn_albedo_tint": [
+              0.074748,
+              0.051813,
+              0.03896,
+              1
+            ],
+            "primary_wear_remap": [
+              -3,
+              7,
+              0,
+              1
+            ],
+            "primary_worn_roughness_remap": [
+              0,
+              0.7,
+              0,
+              1
+            ],
+            "primary_worn_material_parameters": [
+              1,
+              1,
+              0,
+              0
+            ],
+            "secondary_albedo_tint": [
+              0.024436,
+              0.024436,
+              0.024436,
+              1
+            ],
+            "secondary_emissive_tint_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "secondary_material_params": [
+              1,
+              1,
+              0.5,
+              0
+            ],
+            "secondary_material_advanced_params": [
+              1,
+              0,
+              0,
+              0
+            ],
+            "secondary_roughness_remap": [
+              0,
+              3.367003,
+              0,
+              0.297
+            ],
+            "secondary_worn_albedo_tint": [
+              0.074748,
+              0.051813,
+              0.03896,
+              1
+            ],
+            "secondary_wear_remap": [
+              -3,
+              7,
+              0,
+              1
+            ],
+            "secondary_worn_roughness_remap": [
+              0,
+              0.7,
+              0,
+              1
+            ],
+            "secondary_worn_material_parameters": [
+              1,
+              1,
+              0,
+              0
+            ],
+            "primary_emissive_tint_color_and_intensity_bias": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "secondary_emissive_tint_color_and_intensity_bias": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "primary_subsurface_scattering_strength_and_emissive": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "secondary_subsurface_scattering_strength_and_emissive": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "textures": {
+            "diffuse": {
+              "name": "327503503_gear_detail_fallen_pattern_dif",
+              "reference_id": "0d51599cd94fa3dfcdf1db91fce7710a"
+            },
+            "normal": {
+              "name": "2582884296_fallen_skull_gear_detail_leather_norm",
+              "reference_id": "b63e38c33dc37f26e2b4c28e795b914a"
+            },
+            "primary_diffuse": {
+              "name": "_FFFFFFFF_327503503_gear_detail_fallen_pattern_dif",
+              "reference_id": "0d51599cd94fa3dfcdf1db91fce7710a"
+            },
+            "secondary_diffuse": {
+              "name": "_FFFFFFFF_327503503_gear_detail_fallen_pattern_dif",
+              "reference_id": "0d51599cd94fa3dfcdf1db91fce7710a"
+            }
+          }
+        },
+        {
+          "slot_type_index": 1,
+          "cloth": true,
+          "material_properties": {
+            "detail_diffuse_transform": [
+              3.5,
+              3.5,
+              0,
+              0
+            ],
+            "detail_normal_transform": [
+              3.5,
+              3.5,
+              0,
+              0
+            ],
+            "primary_albedo_tint": [
+              0.026377,
+              0.027051,
+              0.028657,
+              1
+            ],
+            "primary_emissive_tint_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "primary_material_params": [
+              0.3,
+              1,
+              1,
+              0
+            ],
+            "primary_material_advanced_params": [
+              101,
+              0.341,
+              0,
+              0
+            ],
+            "primary_roughness_remap": [
+              -0.5,
+              2,
+              0,
+              0.4
+            ],
+            "primary_worn_albedo_tint": [
+              0.103285,
+              0.103285,
+              0.103285,
+              1
+            ],
+            "primary_wear_remap": [
+              -1.72,
+              6.72,
+              0,
+              1
+            ],
+            "primary_worn_roughness_remap": [
+              0.4,
+              0.2,
+              -1,
+              2
+            ],
+            "primary_worn_material_parameters": [
+              0.5,
+              0.2,
+              1,
+              0
+            ],
+            "secondary_albedo_tint": [
+              0.222552,
+              0.222552,
+              0.222552,
+              1
+            ],
+            "secondary_emissive_tint_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "secondary_material_params": [
+              0.3,
+              1,
+              1,
+              0
+            ],
+            "secondary_material_advanced_params": [
+              101,
+              0.341,
+              0,
+              0
+            ],
+            "secondary_roughness_remap": [
+              -0.5,
+              2,
+              0,
+              0.4
+            ],
+            "secondary_worn_albedo_tint": [
+              0.057805,
+              0.057805,
+              0.057805,
+              1
+            ],
+            "secondary_wear_remap": [
+              -2,
+              7,
+              0,
+              1
+            ],
+            "secondary_worn_roughness_remap": [
+              0.4,
+              0.2,
+              -1,
+              2
+            ],
+            "secondary_worn_material_parameters": [
+              0.5,
+              0.2,
+              1,
+              0
+            ],
+            "primary_emissive_tint_color_and_intensity_bias": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "secondary_emissive_tint_color_and_intensity_bias": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "primary_subsurface_scattering_strength_and_emissive": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "secondary_subsurface_scattering_strength_and_emissive": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "textures": {
+            "diffuse": {
+              "name": "327503503_gear_detail_cotton_fabric_d2_dif",
+              "reference_id": "d921fda85845cded2ea2e39d4ce87f23"
+            },
+            "normal": {
+              "name": "327503503_gear_detail_cotton_fabric_d2_norm",
+              "reference_id": "094bbf810e70c489289e1db795dd7406"
+            },
+            "primary_diffuse": {
+              "name": "_FFFFFFFF_327503503_gear_detail_cotton_fabric_d2_dif",
+              "reference_id": "d921fda85845cded2ea2e39d4ce87f23"
+            },
+            "secondary_diffuse": {
+              "name": "_FFFFFFFF_327503503_gear_detail_cotton_fabric_d2_dif",
+              "reference_id": "d921fda85845cded2ea2e39d4ce87f23"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "superblack",
+      "hash": 2653012761,
+      "dyes": [
+        {
+          "slot_type_index": 0,
+          "cloth": false,
+          "material_properties": {
+            "detail_diffuse_transform": [
+              1.5,
+              1.5,
+              0,
+              0
+            ],
+            "detail_normal_transform": [
+              1,
+              1,
+              0,
+              0
+            ],
+            "primary_albedo_tint": [
+              0.060788,
+              0.055262,
+              0.060788,
+              1
+            ],
+            "primary_emissive_tint_color": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "primary_material_params": [
+              0.333333,
+              1,
+              0,
+              0.9
+            ],
+            "primary_material_advanced_params": [
+              -1,
+              0,
+              0,
+              0
+            ],
+            "primary_roughness_remap": [
+              -0.22471,
+              2.696706,
+              0,
+              1
+            ],
+            "primary_worn_albedo_tint": [
+              0.050325,
+              0.050325,
+              0.050325,
+              1
+            ],
+            "primary_wear_remap": [
+              -1.024549,
+              3.043014,
+              0,
+              1
+            ],
+            "primary_worn_roughness_remap": [
+              -2.92585,
+              3.886522,
+              0,
+              1
+            ],
+            "primary_worn_material_parameters": [
+              0.387388,
+              1,
+              0,
+              0.9
+            ],
+            "secondary_albedo_tint": [
+              0.101569,
+              0.097124,
+              0.106446,
+              1
+            ],
+            "secondary_emissive_tint_color": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "secondary_material_params": [
+              0,
+              1,
+              0,
+              0.9
+            ],
+            "secondary_material_advanced_params": [
+              -1,
+              0,
+              0,
+              0
+            ],
+            "secondary_roughness_remap": [
+              -2.382016,
+              3.292465,
+              0,
+              1
+            ],
+            "secondary_worn_albedo_tint": [
+              0.100868,
+              0.095907,
+              0.110661,
+              1
+            ],
+            "secondary_wear_remap": [
+              -0.76242,
+              2.728204,
+              0,
+              1
+            ],
+            "secondary_worn_roughness_remap": [
+              -1.573029,
+              4.083798,
+              0,
+              1
+            ],
+            "secondary_worn_material_parameters": [
+              0.27027,
+              1,
+              0,
+              0.8
+            ],
+            "primary_emissive_tint_color_and_intensity_bias": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "secondary_emissive_tint_color_and_intensity_bias": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "primary_subsurface_scattering_strength_and_emissive": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "secondary_subsurface_scattering_strength_and_emissive": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "textures": {
+            "diffuse": {
+              "name": "327503503_gear_detail_metal_noise_clean_dif",
+              "reference_id": "32f12e5f118023c8dddbf82a6a2931a0"
+            },
+            "normal": {
+              "name": "327503503_gear_detail_metal_noise_clean_norm",
+              "reference_id": "2e1cfe03fc0a7db47202759673b063e0"
+            },
+            "primary_diffuse": {
+              "name": "_FFFFFFFF_327503503_gear_detail_metal_noise_clean_dif",
+              "reference_id": "32f12e5f118023c8dddbf82a6a2931a0"
+            },
+            "secondary_diffuse": {
+              "name": "_FFFFFFFF_327503503_gear_detail_metal_noise_clean_dif",
+              "reference_id": "32f12e5f118023c8dddbf82a6a2931a0"
+            }
+          }
+        },
+        {
+          "slot_type_index": 2,
+          "cloth": false,
+          "material_properties": {
+            "detail_diffuse_transform": [
+              2,
+              2,
+              0,
+              0
+            ],
+            "detail_normal_transform": [
+              3,
+              3,
+              0,
+              0
+            ],
+            "primary_albedo_tint": [
+              0.039747,
+              0.039747,
+              0.043271,
+              1
+            ],
+            "primary_emissive_tint_color": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "primary_material_params": [
+              1,
+              1,
+              0,
+              0.7
+            ],
+            "primary_material_advanced_params": [
+              -1,
+              0,
+              0,
+              0
+            ],
+            "primary_roughness_remap": [
+              -1.978,
+              3.877,
+              0,
+              1
+            ],
+            "primary_worn_albedo_tint": [
+              0.069526,
+              0.069526,
+              0.069526,
+              1
+            ],
+            "primary_wear_remap": [
+              -3.426972,
+              7.426972,
+              0,
+              1
+            ],
+            "primary_worn_roughness_remap": [
+              -2.471904,
+              5.033697,
+              0,
+              1
+            ],
+            "primary_worn_material_parameters": [
+              0.741573,
+              0.235956,
+              0,
+              0.5
+            ],
+            "secondary_albedo_tint": [
+              0.048155,
+              0.048155,
+              0.048155,
+              1
+            ],
+            "secondary_emissive_tint_color": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "secondary_material_params": [
+              1,
+              0.426967,
+              0,
+              0.5
+            ],
+            "secondary_material_advanced_params": [
+              -1,
+              0,
+              0,
+              0
+            ],
+            "secondary_roughness_remap": [
+              -1.16854,
+              2.16854,
+              0,
+              1
+            ],
+            "secondary_worn_albedo_tint": [
+              0.116466,
+              0.116466,
+              0.116466,
+              1
+            ],
+            "secondary_wear_remap": [
+              -1.098877,
+              3.807868,
+              0,
+              1
+            ],
+            "secondary_worn_roughness_remap": [
+              -1.258428,
+              2.407867,
+              0,
+              1
+            ],
+            "secondary_worn_material_parameters": [
+              0.730337,
+              1,
+              0,
+              0.8
+            ],
+            "primary_emissive_tint_color_and_intensity_bias": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "secondary_emissive_tint_color_and_intensity_bias": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "primary_subsurface_scattering_strength_and_emissive": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "secondary_subsurface_scattering_strength_and_emissive": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "textures": {
+            "diffuse": {
+              "name": "327503503_gear_detail_armor_battleworn_dif",
+              "reference_id": "2462ef3939e3de56272a64bff6d998e0"
+            },
+            "normal": {
+              "name": "327503503_gear_detail_leather_worn_norm",
+              "reference_id": "3d06baba9cc4e9520cb8ab35e6670239"
+            },
+            "primary_diffuse": {
+              "name": "_FFFFFFFF_327503503_gear_detail_armor_battleworn_dif",
+              "reference_id": "2462ef3939e3de56272a64bff6d998e0"
+            },
+            "secondary_diffuse": {
+              "name": "_FFFFFFFF_327503503_gear_detail_armor_battleworn_dif",
+              "reference_id": "2462ef3939e3de56272a64bff6d998e0"
+            }
+          }
+        },
+        {
+          "slot_type_index": 1,
+          "cloth": true,
+          "material_properties": {
+            "detail_diffuse_transform": [
+              1,
+              1,
+              0,
+              0
+            ],
+            "detail_normal_transform": [
+              1,
+              1,
+              0,
+              0
+            ],
+            "primary_albedo_tint": [
+              0.034499,
+              0.034499,
+              0.034499,
+              1
+            ],
+            "primary_emissive_tint_color": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "primary_material_params": [
+              1,
+              0,
+              0,
+              0
+            ],
+            "primary_material_advanced_params": [
+              -1,
+              0.3,
+              0.05,
+              0
+            ],
+            "primary_roughness_remap": [
+              -0.942191,
+              2.245549,
+              0,
+              1
+            ],
+            "primary_worn_albedo_tint": [
+              0.109678,
+              0.109678,
+              0.109678,
+              1
+            ],
+            "primary_wear_remap": [
+              0,
+              2.516841,
+              0,
+              1
+            ],
+            "primary_worn_roughness_remap": [
+              -2.112357,
+              3.480895,
+              0,
+              1
+            ],
+            "primary_worn_material_parameters": [
+              1,
+              1,
+              0,
+              0.21
+            ],
+            "secondary_albedo_tint": [
+              0.057075,
+              0.052088,
+              0.058363,
+              1
+            ],
+            "secondary_emissive_tint_color": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "secondary_material_params": [
+              1,
+              0,
+              0,
+              0.5
+            ],
+            "secondary_material_advanced_params": [
+              -1,
+              0.5,
+              0,
+              0
+            ],
+            "secondary_roughness_remap": [
+              -0.942191,
+              2.245549,
+              0,
+              1
+            ],
+            "secondary_worn_albedo_tint": [
+              0.05571,
+              0.053025,
+              0.059568,
+              1
+            ],
+            "secondary_wear_remap": [
+              -1.033697,
+              4.312977,
+              0,
+              1
+            ],
+            "secondary_worn_roughness_remap": [
+              -3.460671,
+              4.40448,
+              0,
+              1
+            ],
+            "secondary_worn_material_parameters": [
+              1,
+              0.477477,
+              0,
+              0
+            ],
+            "primary_emissive_tint_color_and_intensity_bias": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "secondary_emissive_tint_color_and_intensity_bias": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "primary_subsurface_scattering_strength_and_emissive": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "secondary_subsurface_scattering_strength_and_emissive": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "textures": {
+            "diffuse": {
+              "name": "3104558709_edz_common_1_armor_dif",
+              "reference_id": "9d716b25b56f136d5bc8f5159b118c20"
+            },
+            "normal": {
+              "name": "327503503_gear_detail_fabric_knit_worn_norm",
+              "reference_id": "1361030c74d3675c7de121a3823b2f4b"
+            },
+            "primary_diffuse": {
+              "name": "_FFFFFFFF_3104558709_edz_common_1_armor_dif",
+              "reference_id": "9d716b25b56f136d5bc8f5159b118c20"
+            },
+            "secondary_diffuse": {
+              "name": "_FFFFFFFF_3104558709_edz_common_1_armor_dif",
+              "reference_id": "9d716b25b56f136d5bc8f5159b118c20"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "prismatic-expanse",
+      "hash": 4182403848,
+      "dyes": [
+        {
+          "slot_type_index": 0,
+          "cloth": false,
+          "material_properties": {
+            "detail_diffuse_transform": [
+              1,
+              1,
+              0,
+              0
+            ],
+            "detail_normal_transform": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "primary_albedo_tint": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "primary_emissive_tint_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "primary_material_params": [
+              0.957865,
+              0.3,
+              0.764045,
+              0.550562
+            ],
+            "primary_material_advanced_params": [
+              2,
+              0,
+              0,
+              0
+            ],
+            "primary_roughness_remap": [
+              -2.031443,
+              5.829697,
+              0.306742,
+              0.643258
+            ],
+            "primary_worn_albedo_tint": [
+              0.972671,
+              0.972671,
+              0.972671,
+              1
+            ],
+            "primary_wear_remap": [
+              -0.5,
+              4,
+              0,
+              1
+            ],
+            "primary_worn_roughness_remap": [
+              -0.073726,
+              1.789544,
+              0.061798,
+              0.838202
+            ],
+            "primary_worn_material_parameters": [
+              1,
+              0.213483,
+              0.382022,
+              0.94382
+            ],
+            "secondary_albedo_tint": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "secondary_emissive_tint_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "secondary_material_params": [
+              1,
+              0,
+              0.69663,
+              0
+            ],
+            "secondary_material_advanced_params": [
+              2,
+              0,
+              0,
+              0
+            ],
+            "secondary_roughness_remap": [
+              0,
+              1,
+              0,
+              1
+            ],
+            "secondary_worn_albedo_tint": [
+              0.676768,
+              0.676768,
+              0.676768,
+              1
+            ],
+            "secondary_wear_remap": [
+              -0.5,
+              4,
+              0,
+              1
+            ],
+            "secondary_worn_roughness_remap": [
+              -0.25,
+              2.75,
+              0.5,
+              0.4
+            ],
+            "secondary_worn_material_parameters": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "primary_emissive_tint_color_and_intensity_bias": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "secondary_emissive_tint_color_and_intensity_bias": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "primary_subsurface_scattering_strength_and_emissive": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "secondary_subsurface_scattering_strength_and_emissive": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "textures": {
+            "diffuse": {
+              "name": "327898660_car_paint_dif",
+              "reference_id": "412377c25164f7bc5f3122df2af14143"
+            },
+            "normal": {
+              "name": "327898660_car_paint_norm",
+              "reference_id": "8aa634c68ac4f3cc29a94d5ab95225ca"
+            },
+            "primary_diffuse": {
+              "name": "_FFFFFFFF_327898660_car_paint_dif",
+              "reference_id": "412377c25164f7bc5f3122df2af14143"
+            },
+            "secondary_diffuse": {
+              "name": "_FFFFFFFF_327898660_car_paint_dif",
+              "reference_id": "412377c25164f7bc5f3122df2af14143"
+            }
+          }
+        },
+        {
+          "slot_type_index": 2,
+          "cloth": false,
+          "material_properties": {
+            "detail_diffuse_transform": [
+              1,
+              1,
+              0,
+              0
+            ],
+            "detail_normal_transform": [
+              3,
+              3,
+              0,
+              0
+            ],
+            "primary_albedo_tint": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "primary_emissive_tint_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "primary_material_params": [
+              0.77528,
+              1,
+              0.674158,
+              0.134832
+            ],
+            "primary_material_advanced_params": [
+              2,
+              0,
+              0,
+              0
+            ],
+            "primary_roughness_remap": [
+              -0.618182,
+              1.618182,
+              0.134832,
+              0.865169
+            ],
+            "primary_worn_albedo_tint": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "primary_wear_remap": [
+              -0.2,
+              2.1,
+              0,
+              1
+            ],
+            "primary_worn_roughness_remap": [
+              0,
+              0.7,
+              0,
+              1
+            ],
+            "primary_worn_material_parameters": [
+              0.449438,
+              0.52809,
+              0,
+              0
+            ],
+            "secondary_albedo_tint": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "secondary_emissive_tint_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "secondary_material_params": [
+              0.52809,
+              1,
+              0.674158,
+              0
+            ],
+            "secondary_material_advanced_params": [
+              2,
+              0,
+              0,
+              0
+            ],
+            "secondary_roughness_remap": [
+              -0.618182,
+              1.618182,
+              0.134832,
+              0.865169
+            ],
+            "secondary_worn_albedo_tint": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "secondary_wear_remap": [
+              -0.2,
+              2.1,
+              0,
+              1
+            ],
+            "secondary_worn_roughness_remap": [
+              0,
+              0.7,
+              0,
+              1
+            ],
+            "secondary_worn_material_parameters": [
+              0.685393,
+              0.16854,
+              0.505618,
+              0
+            ],
+            "primary_emissive_tint_color_and_intensity_bias": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "secondary_emissive_tint_color_and_intensity_bias": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "primary_subsurface_scattering_strength_and_emissive": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "secondary_subsurface_scattering_strength_and_emissive": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "textures": {
+            "diffuse": {
+              "name": "3104558709_comet_3_star_detail_dif",
+              "reference_id": "b9af0b71f2f98aff246b3d6e3775ea81"
+            },
+            "normal": {
+              "name": "327503503_gear_detail_suit_quilted_norm",
+              "reference_id": "52e04fb63d14acab27e3d8e61fe78d84"
+            },
+            "primary_diffuse": {
+              "name": "_FFFFFFFF_3104558709_comet_3_star_detail_dif",
+              "reference_id": "b9af0b71f2f98aff246b3d6e3775ea81"
+            },
+            "secondary_diffuse": {
+              "name": "_FFFFFFFF_3104558709_comet_3_star_detail_dif",
+              "reference_id": "b9af0b71f2f98aff246b3d6e3775ea81"
+            }
+          }
+        },
+        {
+          "slot_type_index": 1,
+          "cloth": true,
+          "material_properties": {
+            "detail_diffuse_transform": [
+              1,
+              1,
+              0,
+              0
+            ],
+            "detail_normal_transform": [
+              3,
+              3,
+              0,
+              0
+            ],
+            "primary_albedo_tint": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "primary_emissive_tint_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "primary_material_params": [
+              0,
+              1,
+              1,
+              0
+            ],
+            "primary_material_advanced_params": [
+              -1,
+              0.5,
+              0,
+              0
+            ],
+            "primary_roughness_remap": [
+              -2.139424,
+              4.278848,
+              0,
+              0.467416
+            ],
+            "primary_worn_albedo_tint": [
+              0.538605,
+              0.446797,
+              0.446797,
+              0
+            ],
+            "primary_wear_remap": [
+              0,
+              3.5,
+              0,
+              1
+            ],
+            "primary_worn_roughness_remap": [
+              0.4,
+              0.2,
+              -1,
+              2
+            ],
+            "primary_worn_material_parameters": [
+              0.393259,
+              0.2,
+              1,
+              0
+            ],
+            "secondary_albedo_tint": [
+              0.386954,
+              0.386954,
+              0.386954,
+              1
+            ],
+            "secondary_emissive_tint_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "secondary_material_params": [
+              1,
+              1,
+              1,
+              0
+            ],
+            "secondary_material_advanced_params": [
+              -1,
+              0.5,
+              0.075,
+              0
+            ],
+            "secondary_roughness_remap": [
+              -2.139424,
+              4.278848,
+              0,
+              0.467416
+            ],
+            "secondary_worn_albedo_tint": [
+              0.538605,
+              0.446797,
+              0.446797,
+              0
+            ],
+            "secondary_wear_remap": [
+              0,
+              3.5,
+              0,
+              1
+            ],
+            "secondary_worn_roughness_remap": [
+              0.4,
+              0.2,
+              -1,
+              2
+            ],
+            "secondary_worn_material_parameters": [
+              0.393259,
+              0.2,
+              1,
+              0
+            ],
+            "primary_emissive_tint_color_and_intensity_bias": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "secondary_emissive_tint_color_and_intensity_bias": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "primary_subsurface_scattering_strength_and_emissive": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "secondary_subsurface_scattering_strength_and_emissive": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "textures": {
+            "diffuse": {
+              "name": "327898660_pride_flag_detail_map_dif",
+              "reference_id": "658a9af3066ef6fd5494aa032c39671a"
+            },
+            "normal": {
+              "name": "327503503_gear_detail_fabric_knit_norm",
+              "reference_id": "01fbb7636dd39e20c9e8aa79161a5a77"
+            },
+            "primary_diffuse": {
+              "name": "_FFFFFFFF_327898660_pride_flag_detail_map_dif",
+              "reference_id": "658a9af3066ef6fd5494aa032c39671a"
+            },
+            "secondary_diffuse": {
+              "name": "_FFFFFFFF_327898660_pride_flag_detail_map_dif",
+              "reference_id": "658a9af3066ef6fd5494aa032c39671a"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "gambit-jadestone",
+      "hash": 2173837803,
+      "dyes": [
+        {
+          "slot_type_index": 0,
+          "cloth": false,
+          "material_properties": {
+            "detail_diffuse_transform": [
+              3,
+              3,
+              0,
+              0
+            ],
+            "detail_normal_transform": [
+              2.175,
+              2.175,
+              0,
+              0
+            ],
+            "primary_albedo_tint": [
+              0.03,
+              0.03,
+              0.03,
+              1
+            ],
+            "primary_emissive_tint_color": [
+              0.002,
+              1,
+              0,
+              1
+            ],
+            "primary_material_params": [
+              0.05,
+              0.1,
+              0.429,
+              0
+            ],
+            "primary_material_advanced_params": [
+              35,
+              0,
+              0,
+              0
+            ],
+            "primary_roughness_remap": [
+              0,
+              1.1,
+              0,
+              1
+            ],
+            "primary_worn_albedo_tint": [
+              0.026956,
+              0.026956,
+              0.026956,
+              1
+            ],
+            "primary_wear_remap": [
+              -0.5,
+              4.5,
+              0,
+              1
+            ],
+            "primary_worn_roughness_remap": [
+              -0.666667,
+              3,
+              0.4,
+              0.3
+            ],
+            "primary_worn_material_parameters": [
+              0.2,
+              0.2,
+              1,
+              0
+            ],
+            "secondary_albedo_tint": [
+              0.030592,
+              0.058382,
+              0.046058,
+              1
+            ],
+            "secondary_emissive_tint_color": [
+              0.002,
+              1,
+              0,
+              1
+            ],
+            "secondary_material_params": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "secondary_material_advanced_params": [
+              -1,
+              0,
+              0,
+              0
+            ],
+            "secondary_roughness_remap": [
+              -2,
+              10,
+              0.5,
+              0.25
+            ],
+            "secondary_worn_albedo_tint": [
+              0.026956,
+              0.026956,
+              0.026956,
+              1
+            ],
+            "secondary_wear_remap": [
+              -0.5,
+              4.5,
+              0,
+              1
+            ],
+            "secondary_worn_roughness_remap": [
+              -0.666667,
+              3,
+              0.4,
+              0.3
+            ],
+            "secondary_worn_material_parameters": [
+              0.2,
+              0.2,
+              1,
+              0
+            ],
+            "primary_emissive_tint_color_and_intensity_bias": [
+              0.002,
+              1,
+              0,
+              1
+            ],
+            "secondary_emissive_tint_color_and_intensity_bias": [
+              0.002,
+              1,
+              0,
+              1
+            ],
+            "primary_subsurface_scattering_strength_and_emissive": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "secondary_subsurface_scattering_strength_and_emissive": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "textures": {
+            "diffuse": {
+              "name": "3967015652_pvp_hull_fallen_metal_damage_dif",
+              "reference_id": "6eea84ec6cec4d157ffd02fdb22d1eaf"
+            },
+            "normal": {
+              "name": "4069016266_shank_surface_detail_norm",
+              "reference_id": "00214d29be587b241c4ecb03df97b566"
+            },
+            "primary_diffuse": {
+              "name": "_FFFFFFFF_3967015652_pvp_hull_fallen_metal_damage_dif",
+              "reference_id": "6eea84ec6cec4d157ffd02fdb22d1eaf"
+            },
+            "secondary_diffuse": {
+              "name": "_FFFFFFFF_3967015652_pvp_hull_fallen_metal_damage_dif",
+              "reference_id": "6eea84ec6cec4d157ffd02fdb22d1eaf"
+            }
+          }
+        },
+        {
+          "slot_type_index": 2,
+          "cloth": false,
+          "material_properties": {
+            "detail_diffuse_transform": [
+              2.5,
+              2.5,
+              0,
+              0
+            ],
+            "detail_normal_transform": [
+              2.5,
+              2.5,
+              0,
+              0
+            ],
+            "primary_albedo_tint": [
+              0.017301,
+              0.039682,
+              0.019271,
+              1
+            ],
+            "primary_emissive_tint_color": [
+              0.002,
+              1,
+              0,
+              1
+            ],
+            "primary_material_params": [
+              1,
+              1,
+              1,
+              0
+            ],
+            "primary_material_advanced_params": [
+              -1,
+              0,
+              0,
+              0
+            ],
+            "primary_roughness_remap": [
+              -1.714286,
+              3.857143,
+              0.2,
+              0.35
+            ],
+            "primary_worn_albedo_tint": [
+              0.117159,
+              0.100615,
+              0.08952,
+              1
+            ],
+            "primary_wear_remap": [
+              -1.5,
+              5,
+              0,
+              1
+            ],
+            "primary_worn_roughness_remap": [
+              -5,
+              15,
+              0,
+              0.1
+            ],
+            "primary_worn_material_parameters": [
+              0.5,
+              0.5,
+              1,
+              0
+            ],
+            "secondary_albedo_tint": [
+              0.030592,
+              0.058382,
+              0.046058,
+              1
+            ],
+            "secondary_emissive_tint_color": [
+              0.002,
+              1,
+              0,
+              1
+            ],
+            "secondary_material_params": [
+              0.5,
+              0.5,
+              0.5,
+              0
+            ],
+            "secondary_material_advanced_params": [
+              -1,
+              0,
+              0,
+              0
+            ],
+            "secondary_roughness_remap": [
+              -3.25,
+              10.000001,
+              0.3,
+              0.4
+            ],
+            "secondary_worn_albedo_tint": [
+              0.117159,
+              0.100615,
+              0.08952,
+              1
+            ],
+            "secondary_wear_remap": [
+              -1.5,
+              4.5,
+              0,
+              1
+            ],
+            "secondary_worn_roughness_remap": [
+              -5,
+              15,
+              0,
+              0.1
+            ],
+            "secondary_worn_material_parameters": [
+              0.5,
+              0.5,
+              1,
+              0
+            ],
+            "primary_emissive_tint_color_and_intensity_bias": [
+              0.002,
+              1,
+              0,
+              1
+            ],
+            "secondary_emissive_tint_color_and_intensity_bias": [
+              0.002,
+              1,
+              0,
+              1
+            ],
+            "primary_subsurface_scattering_strength_and_emissive": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "secondary_subsurface_scattering_strength_and_emissive": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "textures": {
+            "diffuse": {
+              "name": "327503503_gear_detail_leather_dif",
+              "reference_id": "ec27aa4bc898474ebe15b7f8ae86ae1c"
+            },
+            "normal": {
+              "name": "327503503_gear_detail_leather_norm",
+              "reference_id": "b63e38c33dc37f26e2b4c28e795b914a"
+            },
+            "primary_diffuse": {
+              "name": "_FFFFFFFF_327503503_gear_detail_leather_dif",
+              "reference_id": "ec27aa4bc898474ebe15b7f8ae86ae1c"
+            },
+            "secondary_diffuse": {
+              "name": "_FFFFFFFF_327503503_gear_detail_leather_dif",
+              "reference_id": "ec27aa4bc898474ebe15b7f8ae86ae1c"
+            }
+          }
+        },
+        {
+          "slot_type_index": 1,
+          "cloth": true,
+          "material_properties": {
+            "detail_diffuse_transform": [
+              5,
+              5,
+              0,
+              0
+            ],
+            "detail_normal_transform": [
+              5,
+              5,
+              0,
+              0
+            ],
+            "primary_albedo_tint": [
+              0.03,
+              0.03,
+              0.03,
+              1
+            ],
+            "primary_emissive_tint_color": [
+              0.002,
+              1,
+              0,
+              1
+            ],
+            "primary_material_params": [
+              1,
+              2,
+              0.5,
+              0
+            ],
+            "primary_material_advanced_params": [
+              35,
+              0,
+              0,
+              0
+            ],
+            "primary_roughness_remap": [
+              -2,
+              5,
+              -0.2,
+              0.4
+            ],
+            "primary_worn_albedo_tint": [
+              0.439016,
+              0.391607,
+              0.338537,
+              1
+            ],
+            "primary_wear_remap": [
+              0.5,
+              1.3,
+              0,
+              1
+            ],
+            "primary_worn_roughness_remap": [
+              0,
+              0.5,
+              -0.2,
+              0.4
+            ],
+            "primary_worn_material_parameters": [
+              0,
+              0,
+              0.5,
+              0
+            ],
+            "secondary_albedo_tint": [
+              0.03,
+              0.03,
+              0.03,
+              1
+            ],
+            "secondary_emissive_tint_color": [
+              0.002,
+              1,
+              0,
+              1
+            ],
+            "secondary_material_params": [
+              1,
+              2,
+              0.5,
+              0
+            ],
+            "secondary_material_advanced_params": [
+              -1,
+              0.15,
+              0,
+              0
+            ],
+            "secondary_roughness_remap": [
+              -2,
+              5,
+              -0.2,
+              0.4
+            ],
+            "secondary_worn_albedo_tint": [
+              0.439016,
+              0.391607,
+              0.338537,
+              1
+            ],
+            "secondary_wear_remap": [
+              0.5,
+              1.3,
+              0,
+              1
+            ],
+            "secondary_worn_roughness_remap": [
+              0,
+              0.5,
+              -0.2,
+              0.4
+            ],
+            "secondary_worn_material_parameters": [
+              0,
+              0,
+              0.5,
+              0
+            ],
+            "primary_emissive_tint_color_and_intensity_bias": [
+              0.002,
+              1,
+              0,
+              1
+            ],
+            "secondary_emissive_tint_color_and_intensity_bias": [
+              0.002,
+              1,
+              0,
+              1
+            ],
+            "primary_subsurface_scattering_strength_and_emissive": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "secondary_subsurface_scattering_strength_and_emissive": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "textures": {
+            "diffuse": {
+              "name": "327503503_gear_detail_fabric_tweed_dif",
+              "reference_id": "64e477994b704bf9ff13b04e527cda53"
+            },
+            "normal": {
+              "name": "327503503_gear_detail_fabric_tweed_norm",
+              "reference_id": "24634715767f9f1028afa1a91e942ce3"
+            },
+            "primary_diffuse": {
+              "name": "_FFFFFFFF_327503503_gear_detail_fabric_tweed_dif",
+              "reference_id": "64e477994b704bf9ff13b04e527cda53"
+            },
+            "secondary_diffuse": {
+              "name": "_FFFFFFFF_327503503_gear_detail_fabric_tweed_dif",
+              "reference_id": "64e477994b704bf9ff13b04e527cda53"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

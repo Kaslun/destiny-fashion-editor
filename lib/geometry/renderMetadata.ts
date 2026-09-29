@@ -45,7 +45,9 @@ export interface StagePart {
   lodCategory: number;
   gearDyeChangeColorIndex: number;
   flags: number;
-  /** transparent decal pass (flag 0x8): additive blend, black = transparent */
+  /** Render-stage index from stage_part_offsets, or null in legacy exports. */
+  renderStage: number | null;
+  /** Stage 1/2/6 overlay, independent of material and flag bits. */
   decal: boolean;
   /** part.shader.type — a shader-program selector. -1 when absent. Most
    * ordinary opaque parts carry a common id (e.g. 7) with no static_textures;
@@ -178,10 +180,15 @@ function parseShaderStaticTextures(shader: unknown): string[] {
 
 function parseStageParts(meshRaw: Record<string, unknown>): StagePart[] {
   const list = (meshRaw.stage_part_list as unknown[]) ?? [];
-  return list.map((p) => {
+  const offsets = meshRaw.stage_part_offsets;
+  const validOffsets = Array.isArray(offsets) && offsets.length > 1 && offsets[0] === 0 &&
+    offsets.every((v, i) => Number.isInteger(v) && v >= 0 && v <= list.length && (i === 0 || v >= offsets[i - 1]));
+  return list.map((p, index) => {
     const part = p as Record<string, unknown>;
     const flags = num(part.flags);
     const shader = part.shader as { type?: unknown } | undefined;
+    const stage = validOffsets ? offsets.findIndex((start, i) => start <= index && index < offsets[i + 1]) : -1;
+    const renderStage = stage < 0 ? null : stage;
     return {
       startIndex: num(part.start_index),
       indexCount: num(part.index_count),
@@ -189,7 +196,8 @@ function parseStageParts(meshRaw: Record<string, unknown>): StagePart[] {
       lodCategory: lodValue(part.lod_category ?? part.lod_category_value),
       gearDyeChangeColorIndex: num(part.gear_dye_change_color_index, -1),
       flags,
-      decal: (flags & FLAG_DECAL_PASS) !== 0,
+      renderStage,
+      decal: renderStage === 1 || renderStage === 2 || renderStage === 6,
       shaderType: num(shader?.type, -1),
       staticTextures: parseShaderStaticTextures(part.shader),
       raw: part,
@@ -265,45 +273,30 @@ export function parseRenderMetadata(json: string): RenderMetadata {
   return { meshes, plates: parsePlates(data), raw: data };
 }
 
-// Stage-part flag bits (empirically derived from live D2 items). Bit 0x8 marks
-// a transparent decal/glow pass — rendered additively (black = transparent),
-// not skipped.
-const FLAG_DECAL_PASS = 0x8;
+// Bungie's category names describe sets of LODs, not an ordering of parts.
+const LOD_MASKS = [0b0001, 0b0011, 0b0111, 0b1111, 0b0010, 0b0110, 0b1110, 0b0100, 0b1100, 0b1000];
+const VISIBLE_STAGES = new Set([0, 1, 2, 6, 7]);
 
-/**
- * Stage parts that belong to LOD 0 (highest detail), without overlaps.
- *
- * `lod_category` values vary per mesh (e.g. {0,4,7,9} vs {1,8}); the lowest
- * value present is the highest-detail LOD. The list repeats the same index
- * ranges in several groupings (coarse whole-mesh parts alongside fine per-dye
- * parts); drawing both z-fights. We sort by (start asc, count asc) and keep
- * parts that don't overlap an already-kept range — fine-grained parts win and
- * coarse containers drop out. Decal parts are kept (flagged) and screened
- * separately since they intentionally overlay the opaque geometry.
+/** Keep visible passes and every category covering the best available LOD.
+ * Shadow/depth copies must never compete with authored material draw calls.
+ * Repeated ranges within one pass keep the first authored record; identical
+ * ranges across different visible passes are intentional overlays.
  */
 export function lod0Parts(mesh: RenderMesh): StagePart[] {
-  const cats = mesh.stageParts.map((p) => p.lodCategory).filter((c) => c >= 0);
-  const min = cats.length > 0 ? Math.min(...cats) : -1;
-  const atLod = mesh.stageParts.filter((p) => min < 0 || p.lodCategory === min);
-
-  const pickNonOverlapping = (parts: StagePart[]): StagePart[] => {
-    const sorted = [...parts].sort(
-      (a, b) => a.startIndex - b.startIndex || a.indexCount - b.indexCount,
-    );
-    const kept: StagePart[] = [];
-    let coveredEnd = -1;
-    for (const p of sorted) {
-      if (p.startIndex < coveredEnd) continue; // overlaps a kept range
-      kept.push(p);
-      coveredEnd = p.startIndex + p.indexCount;
-    }
-    return kept;
-  };
-
-  return [
-    ...pickNonOverlapping(atLod.filter((p) => !p.decal)),
-    ...pickNonOverlapping(atLod.filter((p) => p.decal)),
-  ];
+  const visible = mesh.stageParts.filter((p) =>
+    (p.renderStage === null || VISIBLE_STAGES.has(p.renderStage)) &&
+    p.indexCount > 0 && p.startIndex >= 0 &&
+    (p.lodCategory === -1 || LOD_MASKS[p.lodCategory] !== undefined));
+  const lod = [0, 1, 2, 3].find((level) => visible.some((p) =>
+    ((LOD_MASKS[p.lodCategory] ?? 1) & (1 << level)) !== 0)) ?? 0;
+  const seen = new Set<string>();
+  return visible.filter((p) => {
+    if (((LOD_MASKS[p.lodCategory] ?? 1) & (1 << lod)) === 0) return false;
+    const key = `${p.renderStage}:${p.startIndex}:${p.indexCount}:${p.primitiveType}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 /** Compact, human-readable summary for the POC debug dump. */
@@ -319,6 +312,10 @@ export function summarize(meta: RenderMetadata) {
       ),
       stagePartCount: mesh.stageParts.length,
       lodCategories: [...new Set(mesh.stageParts.map((p) => p.lodCategory))],
+      selectedMaterialParts: lod0Parts(mesh).map((p) => ({
+        stage: p.renderStage, dyeIndex: p.gearDyeChangeColorIndex,
+        start: p.startIndex, count: p.indexCount, lodCategory: p.lodCategory,
+      })),
       hasPositionScale: !!mesh.positionScale,
       hasTexcoordScale: !!mesh.texcoordScale,
     })),

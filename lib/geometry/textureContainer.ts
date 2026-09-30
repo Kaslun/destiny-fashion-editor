@@ -40,8 +40,9 @@ export function classifyTextureRole(name: string): TexRole {
     if (suffix[1] === "2") return "gearstack";
     return "other"; // _3: auxiliary map (unhandled)
   }
-  // Non-plated names: dedicated glow/illum containers are true emissive maps.
-  if (n.includes("glow") || n.includes("illum")) return "emissive";
+  // "glow"/"illum" names also describe shared VFX lookup and noise textures.
+  // They do NOT establish an atlas/UV binding or a surface-emission channel.
+  // Keep those resources unassigned; effect programs resolve them by exact name.
   if (n.includes("gearstack")) return "gearstack";
   if (n.endsWith("_norm") || n.endsWith("_normal") || n.endsWith("_overnorm")) return "normal";
   if (n.endsWith("_dif") || n.endsWith("_overdif") || n.endsWith("_diffuse")) return "diffuse";

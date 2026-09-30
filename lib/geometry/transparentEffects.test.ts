@@ -63,6 +63,7 @@ describe("exported ray glow", () => {
     expect(mat.blending).toBe(THREE.AdditiveBlending);
     expect(mat.side).toBe(THREE.FrontSide);
     expect((mat as THREE.MeshBasicNodeMaterial).opacityNode).toBeTruthy();
+    expect((mat as THREE.MeshBasicNodeMaterial).mrtNode?.has("emissive")).toBe(true);
     const mesh = new THREE.Mesh(geometry, mat);
     expect(hasAnimatedGlow(mesh)).toBe(false);
     advancePatternTime(mesh, 0.25);

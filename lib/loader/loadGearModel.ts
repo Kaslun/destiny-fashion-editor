@@ -457,9 +457,8 @@ export async function loadGearModel(
     }
     // Authored per-pixel IDs override geometry IDs where the map is active.
     if (dyeslot) maps.dyeslot = dyeslot;
-    // Dedicated glow containers (e.g. weapons) still apply on top of plates.
-    const emissive = pickBestByRole(await imagesFor(allTextureIndices), "emissive");
-    if (emissive) maps.emissive = await bytesToTexture(emissive.bytes, true);
+    // Only plate metadata establishes atlas bindings. Shared VFX resources
+    // containing "illum"/"glow" are NOT extra whole-surface emission maps.
     return maps;
   }
 
@@ -612,11 +611,9 @@ export async function loadGearModel(
     const diffuse = pickBestByRole(images, "diffuse");
     const normal = pickBestByRole(images, "normal");
     const gearstack = pickBestByRole(images, "gearstack");
-    const emissive = pickBestByRole(images, "emissive");
     if (diffuse) maps.diffuse = await bytesToTexture(diffuse.bytes, true);
     if (normal) maps.normal = await bytesToTexture(normal.bytes, false);
     if (gearstack) maps.gearstack = await bytesToTexture(gearstack.bytes, false);
-    if (emissive) maps.emissive = await bytesToTexture(emissive.bytes, true);
     return maps;
   }
 
@@ -721,6 +718,10 @@ export async function loadGearModel(
         });
         if (materials.some((material) => material.userData.destiny?.approximateEffect)) {
           const note = "Effect shapes use the exported textures. Motion and brightness are preview approximations.";
+          if (!notes.includes(note)) notes.push(note);
+        }
+        if (materials.some((material) => material.userData.destiny?.emissionFallback)) {
+          const note = "Hologram color is estimated from a game reference because the export omits its glow color.";
           if (!notes.includes(note)) notes.push(note);
         }
         if (materials.some((material) => material.userData.destiny?.unsupportedEffect)) {

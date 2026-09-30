@@ -1,0 +1,2530 @@
+{
+  "retrieved": "2026-09-30",
+  "note": "Original stage records from live mobile geometry. Vertex data omitted; used to verify effect-family routing across items.",
+  "items": [
+    {
+      "hash": 2041120767,
+      "name": "Spacewalk Vest",
+      "metadata": {
+        "render_model": {
+          "render_meshes": [
+            {
+              "stage_part_offsets": [
+                0,
+                4,
+                4,
+                4,
+                8,
+                8,
+                8,
+                8,
+                10,
+                10,
+                10,
+                10,
+                10,
+                14,
+                14,
+                14,
+                14,
+                14,
+                14,
+                14,
+                14,
+                14,
+                14,
+                14,
+                20
+              ],
+              "stage_part_list": [
+                {
+                  "shader": {
+                    "static_textures": [
+                      "2690020957_default_monocrome_cubemap"
+                    ],
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 0,
+                  "index_count": 8882,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 0,
+                    "name": "_lod_category_0"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "static_textures": [
+                      "2690020957_default_monocrome_cubemap"
+                    ],
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 8893,
+                  "index_count": 3822,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 4,
+                    "name": "_lod_category_1"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "static_textures": [
+                      "2690020957_default_monocrome_cubemap"
+                    ],
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 12716,
+                  "index_count": 2428,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 7,
+                    "name": "_lod_category_2"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "static_textures": [
+                      "2690020957_default_monocrome_cubemap"
+                    ],
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 15155,
+                  "index_count": 1193,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 9,
+                    "name": "_lod_category_3"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 0,
+                  "index_count": 8882,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 0,
+                    "name": "_lod_category_0"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 8893,
+                  "index_count": 3822,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 4,
+                    "name": "_lod_category_1"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 12716,
+                  "index_count": 2428,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 7,
+                    "name": "_lod_category_2"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 15155,
+                  "index_count": 1193,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 9,
+                    "name": "_lod_category_3"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "static_textures": [
+                      "2846779858_taken_stain_etch_palette",
+                      "1363171116_digital_cloud_plate",
+                      "4137719177_dust_snow_mask_med01"
+                    ],
+                    "type": 8
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 8883,
+                  "index_count": 9,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16400,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 1,
+                    "name": "_lod_category_01"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "static_textures": [
+                      "2846779858_taken_stain_etch_palette",
+                      "1363171116_digital_cloud_plate",
+                      "4137719177_dust_snow_mask_med01"
+                    ],
+                    "type": 8
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 15145,
+                  "index_count": 9,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16400,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 8,
+                    "name": "_lod_category_23"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 0,
+                  "index_count": 8882,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 0,
+                    "name": "_lod_category_0"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 8893,
+                  "index_count": 3822,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 4,
+                    "name": "_lod_category_1"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 12716,
+                  "index_count": 2428,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 7,
+                    "name": "_lod_category_2"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 15155,
+                  "index_count": 1193,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 9,
+                    "name": "_lod_category_3"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 0,
+                  "index_count": 8882,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 0,
+                    "name": "_lod_category_0"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 8893,
+                  "index_count": 3822,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 4,
+                    "name": "_lod_category_1"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 12716,
+                  "index_count": 2428,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 7,
+                    "name": "_lod_category_2"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 15155,
+                  "index_count": 1193,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 9,
+                    "name": "_lod_category_3"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 8883,
+                  "index_count": 9,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16400,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 1,
+                    "name": "_lod_category_01"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 15145,
+                  "index_count": 9,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16400,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 8,
+                    "name": "_lod_category_23"
+                  },
+                  "lod_run": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "hash": 1615763427,
+      "name": "Spacewalk Plate",
+      "metadata": {
+        "render_model": {
+          "render_meshes": [
+            {
+              "stage_part_offsets": [
+                0,
+                4,
+                4,
+                4,
+                8,
+                8,
+                8,
+                8,
+                10,
+                10,
+                10,
+                10,
+                10,
+                14,
+                14,
+                14,
+                14,
+                14,
+                14,
+                14,
+                14,
+                14,
+                14,
+                14,
+                20
+              ],
+              "stage_part_list": [
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 0,
+                  "index_count": 7516,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 0,
+                    "name": "_lod_category_0"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 7573,
+                  "index_count": 3178,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 4,
+                    "name": "_lod_category_1"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 10752,
+                  "index_count": 1186,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 7,
+                    "name": "_lod_category_2"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 11972,
+                  "index_count": 573,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 9,
+                    "name": "_lod_category_3"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 0,
+                  "index_count": 7516,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 0,
+                    "name": "_lod_category_0"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 7573,
+                  "index_count": 3178,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 4,
+                    "name": "_lod_category_1"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 10752,
+                  "index_count": 1186,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 7,
+                    "name": "_lod_category_2"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 11972,
+                  "index_count": 573,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 9,
+                    "name": "_lod_category_3"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "static_textures": [
+                      "2846779858_taken_stain_etch_palette",
+                      "1363171116_digital_cloud_plate",
+                      "4137719177_dust_snow_mask_med01"
+                    ],
+                    "type": 8
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 7517,
+                  "index_count": 55,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16400,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 1,
+                    "name": "_lod_category_01"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "static_textures": [
+                      "2846779858_taken_stain_etch_palette",
+                      "1363171116_digital_cloud_plate",
+                      "4137719177_dust_snow_mask_med01"
+                    ],
+                    "type": 8
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 11939,
+                  "index_count": 32,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16400,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 8,
+                    "name": "_lod_category_23"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 0,
+                  "index_count": 7516,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 0,
+                    "name": "_lod_category_0"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 7573,
+                  "index_count": 3178,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 4,
+                    "name": "_lod_category_1"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 10752,
+                  "index_count": 1186,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 7,
+                    "name": "_lod_category_2"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 11972,
+                  "index_count": 573,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 9,
+                    "name": "_lod_category_3"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 7517,
+                  "index_count": 55,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16400,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 1,
+                    "name": "_lod_category_01"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 11939,
+                  "index_count": 32,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16400,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 8,
+                    "name": "_lod_category_23"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 0,
+                  "index_count": 7516,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 0,
+                    "name": "_lod_category_0"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 7573,
+                  "index_count": 3178,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 4,
+                    "name": "_lod_category_1"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 10752,
+                  "index_count": 1186,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 7,
+                    "name": "_lod_category_2"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 11972,
+                  "index_count": 573,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 9,
+                    "name": "_lod_category_3"
+                  },
+                  "lod_run": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "hash": 480133716,
+      "name": "Spacewalk Robes",
+      "metadata": {
+        "render_model": {
+          "render_meshes": [
+            {
+              "stage_part_offsets": [
+                0,
+                8,
+                8,
+                8,
+                16,
+                16,
+                16,
+                16,
+                20,
+                20,
+                20,
+                20,
+                20,
+                20,
+                20,
+                20,
+                20,
+                20,
+                20,
+                20,
+                20,
+                20,
+                20,
+                20,
+                32
+              ],
+              "stage_part_list": [
+                {
+                  "shader": {
+                    "static_textures": [
+                      "4137719177_smoke_soft_wispy_plate",
+                      "4137719177_dust_snow_mask_med01",
+                      "1363171116_digital_cloud_plate",
+                      "4137719177_smoke_plate_wispy"
+                    ],
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 40,
+                  "index_count": 17032,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16392,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 0,
+                    "name": "_lod_category_0"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "static_textures": [
+                      "4137719177_smoke_soft_wispy_plate",
+                      "4137719177_dust_snow_mask_med01",
+                      "1363171116_digital_cloud_plate",
+                      "4137719177_smoke_plate_wispy"
+                    ],
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 19550,
+                  "index_count": 6679,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16392,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 4,
+                    "name": "_lod_category_1"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "static_textures": [
+                      "4137719177_smoke_soft_wispy_plate",
+                      "4137719177_dust_snow_mask_med01",
+                      "1363171116_digital_cloud_plate",
+                      "4137719177_smoke_plate_wispy"
+                    ],
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 27858,
+                  "index_count": 2703,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16392,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 7,
+                    "name": "_lod_category_2"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "static_textures": [
+                      "4137719177_smoke_soft_wispy_plate",
+                      "4137719177_dust_snow_mask_med01",
+                      "1363171116_digital_cloud_plate",
+                      "4137719177_smoke_plate_wispy"
+                    ],
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 31070,
+                  "index_count": 1310,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16392,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 9,
+                    "name": "_lod_category_3"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "static_textures": [
+                      "4137719177_smoke_soft_wispy_plate",
+                      "4137719177_dust_snow_mask_med01",
+                      "1363171116_digital_cloud_plate",
+                      "4137719177_smoke_plate_wispy"
+                    ],
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 17073,
+                  "index_count": 2446,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16397,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 0,
+                    "name": "_lod_category_0"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "static_textures": [
+                      "4137719177_smoke_soft_wispy_plate",
+                      "4137719177_dust_snow_mask_med01",
+                      "1363171116_digital_cloud_plate",
+                      "4137719177_smoke_plate_wispy"
+                    ],
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 26230,
+                  "index_count": 1587,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16397,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 4,
+                    "name": "_lod_category_1"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "static_textures": [
+                      "4137719177_smoke_soft_wispy_plate",
+                      "4137719177_dust_snow_mask_med01",
+                      "1363171116_digital_cloud_plate",
+                      "4137719177_smoke_plate_wispy"
+                    ],
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 30562,
+                  "index_count": 477,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16397,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 7,
+                    "name": "_lod_category_2"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "static_textures": [
+                      "4137719177_smoke_soft_wispy_plate",
+                      "4137719177_dust_snow_mask_med01",
+                      "1363171116_digital_cloud_plate",
+                      "4137719177_smoke_plate_wispy"
+                    ],
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 32381,
+                  "index_count": 279,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16397,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 9,
+                    "name": "_lod_category_3"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 40,
+                  "index_count": 17032,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16392,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 0,
+                    "name": "_lod_category_0"
+                  },
+                  "lod_run": 2
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 17073,
+                  "index_count": 2446,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16397,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 0,
+                    "name": "_lod_category_0"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 19550,
+                  "index_count": 6679,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16392,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 4,
+                    "name": "_lod_category_1"
+                  },
+                  "lod_run": 2
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 26230,
+                  "index_count": 1587,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16397,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 4,
+                    "name": "_lod_category_1"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 27858,
+                  "index_count": 2703,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16392,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 7,
+                    "name": "_lod_category_2"
+                  },
+                  "lod_run": 2
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 30562,
+                  "index_count": 477,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16397,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 7,
+                    "name": "_lod_category_2"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 31070,
+                  "index_count": 1310,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16392,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 9,
+                    "name": "_lod_category_3"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 32381,
+                  "index_count": 279,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16397,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 9,
+                    "name": "_lod_category_3"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "static_textures": [
+                      "2846779858_taken_stain_etch_palette",
+                      "1363171116_digital_cloud_plate",
+                      "4137719177_dust_snow_mask_med01"
+                    ],
+                    "type": 8
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 0,
+                  "index_count": 39,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16400,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 0,
+                    "name": "_lod_category_0"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "static_textures": [
+                      "2846779858_taken_stain_etch_palette",
+                      "1363171116_digital_cloud_plate",
+                      "4137719177_dust_snow_mask_med01"
+                    ],
+                    "type": 8
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 19520,
+                  "index_count": 29,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16400,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 4,
+                    "name": "_lod_category_1"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "static_textures": [
+                      "2846779858_taken_stain_etch_palette",
+                      "1363171116_digital_cloud_plate",
+                      "4137719177_dust_snow_mask_med01"
+                    ],
+                    "type": 8
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 27818,
+                  "index_count": 39,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16400,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 7,
+                    "name": "_lod_category_2"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "static_textures": [
+                      "2846779858_taken_stain_etch_palette",
+                      "1363171116_digital_cloud_plate",
+                      "4137719177_dust_snow_mask_med01"
+                    ],
+                    "type": 8
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 31040,
+                  "index_count": 29,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16400,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 9,
+                    "name": "_lod_category_3"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 0,
+                  "index_count": 39,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16400,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 0,
+                    "name": "_lod_category_0"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 19520,
+                  "index_count": 29,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16400,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 4,
+                    "name": "_lod_category_1"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 27818,
+                  "index_count": 39,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16400,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 7,
+                    "name": "_lod_category_2"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 31040,
+                  "index_count": 29,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16400,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 9,
+                    "name": "_lod_category_3"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 40,
+                  "index_count": 17032,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16392,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 0,
+                    "name": "_lod_category_0"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 19550,
+                  "index_count": 6679,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16392,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 4,
+                    "name": "_lod_category_1"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 27858,
+                  "index_count": 2703,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16392,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 7,
+                    "name": "_lod_category_2"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 31070,
+                  "index_count": 1310,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16392,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 9,
+                    "name": "_lod_category_3"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 17073,
+                  "index_count": 2446,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16397,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 0,
+                    "name": "_lod_category_0"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 26230,
+                  "index_count": 1587,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16397,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 4,
+                    "name": "_lod_category_1"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 30562,
+                  "index_count": 477,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16397,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 7,
+                    "name": "_lod_category_2"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 32381,
+                  "index_count": 279,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16397,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 9,
+                    "name": "_lod_category_3"
+                  },
+                  "lod_run": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "hash": 283230886,
+      "name": "Spacewalk Cowl",
+      "metadata": {
+        "render_model": {
+          "render_meshes": [
+            {
+              "stage_part_offsets": [
+                0,
+                6,
+                6,
+                6,
+                9,
+                9,
+                9,
+                9,
+                9,
+                9,
+                9,
+                9,
+                9,
+                12,
+                12,
+                12,
+                12,
+                12,
+                12,
+                12,
+                12,
+                12,
+                12,
+                12,
+                18
+              ],
+              "stage_part_list": [
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 0,
+                  "index_count": 5326,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 0,
+                    "name": "_lod_category_0"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 5517,
+                  "index_count": 2262,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 4,
+                    "name": "_lod_category_1"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 7854,
+                  "index_count": 837,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 8,
+                    "name": "_lod_category_23"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "static_textures": [
+                      "2690020957_default_monocrome_cubemap"
+                    ],
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 5327,
+                  "index_count": 189,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 0,
+                    "name": "_lod_category_0"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "static_textures": [
+                      "2690020957_default_monocrome_cubemap"
+                    ],
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 7780,
+                  "index_count": 73,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 4,
+                    "name": "_lod_category_1"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "static_textures": [
+                      "2690020957_default_monocrome_cubemap"
+                    ],
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 8692,
+                  "index_count": 68,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 8,
+                    "name": "_lod_category_23"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 0,
+                  "index_count": 5516,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 0,
+                    "name": "_lod_category_0"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 5517,
+                  "index_count": 2336,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 4,
+                    "name": "_lod_category_1"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 7854,
+                  "index_count": 906,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 8,
+                    "name": "_lod_category_23"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 0,
+                  "index_count": 5516,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 0,
+                    "name": "_lod_category_0"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 5517,
+                  "index_count": 2336,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 4,
+                    "name": "_lod_category_1"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 7854,
+                  "index_count": 906,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 8,
+                    "name": "_lod_category_23"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 0,
+                  "index_count": 5326,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 0,
+                    "name": "_lod_category_0"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 5517,
+                  "index_count": 2262,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 4,
+                    "name": "_lod_category_1"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 7854,
+                  "index_count": 837,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 8,
+                    "name": "_lod_category_23"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 5327,
+                  "index_count": 189,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 0,
+                    "name": "_lod_category_0"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 7780,
+                  "index_count": 73,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 4,
+                    "name": "_lod_category_1"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 8692,
+                  "index_count": 68,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 8,
+                    "name": "_lod_category_23"
+                  },
+                  "lod_run": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "hash": 959073698,
+      "name": "Entheogenic Parasite Vest",
+      "metadata": {
+        "render_model": {
+          "render_meshes": [
+            {
+              "stage_part_offsets": [
+                0,
+                4,
+                4,
+                4,
+                8,
+                8,
+                8,
+                8,
+                12,
+                12,
+                12,
+                12,
+                12,
+                16,
+                16,
+                16,
+                16,
+                16,
+                16,
+                16,
+                16,
+                16,
+                16,
+                16,
+                24
+              ],
+              "stage_part_list": [
+                {
+                  "shader": {
+                    "static_textures": [
+                      "3107841013_vfx_warpmap_twirl_a",
+                      "1442532712_plasmacloud_alpha",
+                      "3107841013_vfx_warpmap_ripple_a",
+                      "2552671548_fluid_darkness_plate",
+                      "2745171413_hive_cellular_cells_a"
+                    ],
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 0,
+                  "index_count": 7060,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 0,
+                    "name": "_lod_category_0"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "static_textures": [
+                      "3107841013_vfx_warpmap_twirl_a",
+                      "1442532712_plasmacloud_alpha",
+                      "3107841013_vfx_warpmap_ripple_a",
+                      "2552671548_fluid_darkness_plate",
+                      "2745171413_hive_cellular_cells_a"
+                    ],
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 7210,
+                  "index_count": 3000,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 4,
+                    "name": "_lod_category_1"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "static_textures": [
+                      "3107841013_vfx_warpmap_twirl_a",
+                      "1442532712_plasmacloud_alpha",
+                      "3107841013_vfx_warpmap_ripple_a",
+                      "2552671548_fluid_darkness_plate",
+                      "2745171413_hive_cellular_cells_a"
+                    ],
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 10289,
+                  "index_count": 1246,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 7,
+                    "name": "_lod_category_2"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "static_textures": [
+                      "3107841013_vfx_warpmap_twirl_a",
+                      "1442532712_plasmacloud_alpha",
+                      "3107841013_vfx_warpmap_ripple_a",
+                      "2552671548_fluid_darkness_plate",
+                      "2745171413_hive_cellular_cells_a"
+                    ],
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 11661,
+                  "index_count": 584,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 9,
+                    "name": "_lod_category_3"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 0,
+                  "index_count": 7060,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 0,
+                    "name": "_lod_category_0"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 7210,
+                  "index_count": 3000,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 4,
+                    "name": "_lod_category_1"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 10289,
+                  "index_count": 1246,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 7,
+                    "name": "_lod_category_2"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 11661,
+                  "index_count": 584,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 9,
+                    "name": "_lod_category_3"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "static_textures": [
+                      "3107841013_vfx_godray_a_height",
+                      "4137719177_smoke_soft_wispy_plate"
+                    ],
+                    "type": 8
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 7061,
+                  "index_count": 148,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16400,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 0,
+                    "name": "_lod_category_0"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "static_textures": [
+                      "3107841013_vfx_godray_a_height",
+                      "4137719177_smoke_soft_wispy_plate"
+                    ],
+                    "type": 8
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 10211,
+                  "index_count": 77,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16400,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 4,
+                    "name": "_lod_category_1"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "static_textures": [
+                      "3107841013_vfx_godray_a_height",
+                      "4137719177_smoke_soft_wispy_plate"
+                    ],
+                    "type": 8
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 11536,
+                  "index_count": 124,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16400,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 7,
+                    "name": "_lod_category_2"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "static_textures": [
+                      "3107841013_vfx_godray_a_height",
+                      "4137719177_smoke_soft_wispy_plate"
+                    ],
+                    "type": 8
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 12246,
+                  "index_count": 82,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16400,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 9,
+                    "name": "_lod_category_3"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 0,
+                  "index_count": 7060,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 0,
+                    "name": "_lod_category_0"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 7210,
+                  "index_count": 3000,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 4,
+                    "name": "_lod_category_1"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 10289,
+                  "index_count": 1246,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 7,
+                    "name": "_lod_category_2"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 11661,
+                  "index_count": 584,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 9,
+                    "name": "_lod_category_3"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 0,
+                  "index_count": 7060,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 0,
+                    "name": "_lod_category_0"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 7210,
+                  "index_count": 3000,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 4,
+                    "name": "_lod_category_1"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 10289,
+                  "index_count": 1246,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 7,
+                    "name": "_lod_category_2"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 11661,
+                  "index_count": 584,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16384,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 9,
+                    "name": "_lod_category_3"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 7061,
+                  "index_count": 148,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16400,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 0,
+                    "name": "_lod_category_0"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 10211,
+                  "index_count": 77,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16400,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 4,
+                    "name": "_lod_category_1"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 11536,
+                  "index_count": 124,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16400,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 7,
+                    "name": "_lod_category_2"
+                  },
+                  "lod_run": 1
+                },
+                {
+                  "shader": {
+                    "type": 7
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 12246,
+                  "index_count": 82,
+                  "index_min": 0,
+                  "index_max": 0,
+                  "flags": 16400,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 9,
+                    "name": "_lod_category_3"
+                  },
+                  "lod_run": 1
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

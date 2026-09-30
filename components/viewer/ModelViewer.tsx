@@ -19,6 +19,7 @@ import { OrbitControls } from "@react-three/drei";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { Suspense, useEffect, useRef } from "react";
 import { DEFAULT_TONE_MAPPING, type ToneMappingKey } from "./toneMapping";
+import EmissionBloom from "./EmissionBloom";
 
 declare module "@react-three/fiber" {
   // eslint-disable-next-line @typescript-eslint/no-empty-object-type
@@ -276,6 +277,7 @@ export default function ModelViewer({
       <RendererSizeSync />
       <SceneDevAids />
       <DebugToneMapping raw={rawOutput} toneMapping={toneMapping} />
+      <EmissionBloom raw={rawOutput} />
 
       {/* Smooth IBL so metals reflect a neutral studio, not firefly speculars */}
       <StudioEnvironment intensity={rig.env} />

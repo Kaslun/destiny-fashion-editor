@@ -29,11 +29,25 @@ import {
 import { dyeSetFromGearDyes } from "./gearDye";
 import type { DyeSet } from "./gearDye";
 import type { GroupInfo } from "@/lib/geometry/buildGeometry";
+import sage from "./fixtures/sage-protector-dyes.json";
+import { parseDyes } from "../bungie/parseGearDyes";
 
 const noDyes: DyeSet = {};
 const tex = () => new THREE.Texture();
 
 describe("reference iridescence palette", () => {
+  it("keeps Sage Protector's ordinary fabric independent of its shared VFX resources", () => {
+    const dyes = dyeSetFromGearDyes(parseDyes(sage.defaultDyes));
+    expect(dyes[1].primary.metalness).toBe(0);
+    expect(dyes[1].secondary.metalness).toBe(0);
+    const [material] = createGearMaterials([{ dyeIndex: 2, decal: false, shaderType: 7,
+      patternTextures: ["1031021746_vfx_energy_fracture_illum", "2503085780_smoke_detail_warp"] }],
+    dyes, { diffuse: tex(), gearstack: tex() }, { useGearstack: true, applyDye: true });
+    expect(material.userData.destiny.iridescenceIds).toEqual([]);
+    expect(material.userData.destiny.approximateEffects).toEqual([]);
+    expect(material.userData.destiny.emissionFallback).toBeUndefined();
+    expect(material.userData.uniforms.uPatternTime).toBeUndefined();
+  });
   it.each([0, 1, 10])("connects valid palette row %i including row zero", (materialTypeId) => {
     const dyes = dyeSetFromGearDyes({ "0": { primary: { materialTypeId } } });
     const groups: GroupInfo[] = [{ dyeIndex: 0, decal: false }];

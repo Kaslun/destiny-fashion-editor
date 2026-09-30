@@ -1,6 +1,6 @@
 # Destiny 2 material implementation
 
-Updated 2026-09-28 against live mobile manifest
+Updated 2026-09-30 against live mobile manifest
 `244213.26.06.29.2000-1-bnet.65864`.
 
 This renderer consumes Bungie's **mobile gear exports**, not the game's compiled
@@ -106,8 +106,8 @@ clamped to 0–1, as coverage. Cloud, dust and palette textures only vary brightne
 inside that shape. Local per-card UVs are used for animation, never the symbol
 mask. Additive unlit shading preserves the luminous appearance. Missing animation
 textures retain static symbols; missing gearstack hides the carrier. A positive
-authored emissive dye supplies color when available; otherwise the preview uses
-neutral white. Timing, intensity and that fallback tint remain approximations.
+authored emissive dye supplies color when available; otherwise this program uses a reference-calibrated violet tint (see September 30
+below). Timing, intensity and that fallback tint remain approximations.
 No item hash selects this behavior.
 
 Both body variants are preserved in `fixtures/spacewalk-effects.json`; the raw
@@ -124,6 +124,71 @@ draws are hidden with an explicit warning and diagnostic metadata. They no
 longer fall back to solid armor. This avoids visible carrier polygons but does
 **not** mean those unknown effects have been reconstructed. Opaque and decal
 passes retain their existing material handling.
+
+## Shared emission and bloom — 2026-09-30
+
+The user supplied an in-game Spacewalk Vest image showing near-white symbol
+centers with violet/blue halos, plus lit shell indicators on the torso and belt.
+The earlier white silhouettes lacked both a color constant and bloom. A fresh
+inspection found **all** Spacewalk dye emission fields zero (legacy, shared and
+primary/secondary forms, including `emissive_pbr_params`); reinterpreting a zero
+bias cannot recover the missing color. No emission parser semantics were changed.
+
+`EmissionBloom` now renders a half-float emissive attachment in the shared viewer
+used by both `/poc` and the editor. It blurs emitted light only, combining it with
+the beauty render before tone mapping. White paint, metal reflections and the
+reference grid do not become bloom sources. Unlit symbol and ray materials
+explicitly write their light to that attachment. Its blend mode inherits each
+material's mode: otherwise transparent carriers incorrectly bloom as rectangles.
+Depth testing and alpha coverage are retained. Raw material debug views bypass
+blur/compositing while retaining the same render attachments; resizing is handled by the render pass, and its targets and
+materials are disposed on unmount.
+
+The approach follows Three's [emissive bloom example for r185](https://github.com/mrdoob/three.js/blob/r185/examples/webgpu_postprocessing_bloom_emissive.html)
+and the installed `BloomNode`, `MRTNode` and `RenderPipeline` implementation.
+Bloom strength/radius and the effect's missing color are preview calibration,
+not extracted Tiger shader constants. The canvas retains transparent coverage
+outside the model while allowing the halo to extend beyond its silhouette.
+
+`effectEmissionFallback` supplies linear RGB (0.3, 0.2, 1), intensity 4, only to
+meshes containing the complete stage-7/shader-8 digital-hologram texture signature.
+This estimate is informed by the supplied game reference and marked in Rendering
+notes. An explicit nonzero dye emission takes precedence. Gearstack B still
+provides all coverage, including small lights on the opaque shell; diffuse color
+and metalness never infer where something emits. Unrelated zero-emission surfaces
+retain zero emission. Matching is by program evidence, not item hash or name.
+The fallback is not proof that all shaders or all uses of these textures have
+identical in-game color, and can be superseded when richer export data is found.
+
+Live geometry confirmed this same program on Spacewalk Plate (`1615763427`) and
+Robes (`480133716`), as well as Vest (`2041120767`). Spacewalk Cowl (`283230886`)
+has no such draw. Entheogenic Parasite Vest (`959073698`) retains its authored
+cyan ray tint and benefits from shared bloom without the violet estimate.
+`lib/materials/fixtures/emission-programs.json` preserves their original stage
+records for program recognition and isolation tests.
+
+## Surface binding versus VFX textures — 2026-09-30
+
+Sage Protector Vest (`1867581826`) exposed an older loader error. Its six authored
+material indices are all -1 (no iridescence), and its fabric metalness is zero.
+The shader references `1031021746_vfx_energy_fracture_illum` together with
+`2503085780_smoke_detail_warp`. The loader classified any name containing `illum`
+or `glow` as a standalone emission map, chose the largest such image from pooled
+containers, and sampled it over the entire garment. This created a false colored
+finish; adding bloom made the erroneous emission even more visible.
+
+Both plated and direct-texture loading now stop assigning emission from these
+name guesses. Texture names do not establish surface UV bindings. These shared
+resources remain available to effect programs by exact name; their presence
+never adds light to ordinary cloth. Numeric plate roles still take precedence,
+including actual glow geometry's diffuse plate cells. Gearstack-B emission,
+authored dye colors, bound glow plates and the supported transparent programs
+remain active. The material API still accepts an explicitly supplied emission
+map, but the loader cannot invent its binding from filenames or pooled images.
+
+This change contains no item-specific exclusion and does not disable valid
+iridescence palettes. Tests retain Sage Protector's raw dye records and reject
+unbound illumination/palette/noise resources while preserving plate-map roles.
 
 ## Parameter semantics
 
@@ -404,3 +469,14 @@ warnings above remain). The browser showed distinct luminous chest and hip
 symbols on Spacewalk, no warnings for its successful resource loads, and no
 rendering errors. Entheogenic Parasite Vest also loaded without rendering errors.
 These are preview checks, not a comparison against current in-game screenshots.
+
+Emission and surface-binding validation on 2026-09-30: all 189 tests passed,
+including real effect-program records, Sage Protector's authored dyes, unbound
+VFX texture isolation and the live Gjallarhorn pipeline. TypeScript, changed-file
+lint and production build passed (the pre-existing warnings above remain).
+Browser checks showed Sage Protector's tan/cream fabric and dark leather without
+the false rainbow emission, preserved Spacewalk's chest/hip symbols and small
+lights, and retained Entheogenic's cyan glow. Spacewalk Plate also exercised the
+shared hologram fallback. Raw debug views and normal rendering were checked.
+The reference-based hologram tint and bloom remain preview approximations;
+these checks do not establish pixel-for-pixel parity with the game.

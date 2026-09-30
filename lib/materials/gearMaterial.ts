@@ -24,6 +24,7 @@ import {
   floor,
   select,
   output,
+  mrt,
   luminance,
   normalMap,
   sin,
@@ -42,6 +43,7 @@ import {
   type DyeTint,
 } from "./gearDye";
 import { authoredRemap, GEARSTACK } from "./destinyMaterialModel";
+import { effectEmissionFallback, type EffectEmission } from "./effectEmission";
 import type { GroupInfo } from "@/lib/geometry/buildGeometry";
 import { isRayGlowGroup, matchRayTextureNames, matchCloudTextureNames, transparentEffect, prepareEffectUVs } from "../geometry/transparentEffects";
 
@@ -366,6 +368,7 @@ function makeRayGlow(group: GroupInfo, dyes: DyeSet, maps: GearTextureMaps, hasU
   const across = pow(max(float(1).sub(local.x.sub(0.5).abs().mul(2)), 0), 3);
   const along = pow(clamp(local.y.oneMinus(), 0, 1), 2);
   mat.colorNode = vec3(tint.emissive.r, tint.emissive.g, tint.emissive.b).mul(tint.emissiveIntensity);
+  mat.mrtNode = mrt({ emissive: vec4(mat.colorNode, output.a) });
   mat.opacityNode = across.mul(along).mul(rays).mul(wisps).mul(0.85);
   return mat;
 }
@@ -400,10 +403,15 @@ function makeCloudEffect(group: GroupInfo, dyes: DyeSet, maps: GearTextureMaps, 
   const { slot, useSecondary } = decodeChangeColorIndex(group.dyeIndex);
   const dye = dyeForSlot(dyes, slot), tint = useSecondary ? dye.secondary : dye.primary;
   // Effect emission is independent of armor dye emission (Spacewalk's is zero).
-  // White is the neutral preview tint when the export supplies no effect color.
+  // The reference-calibrated program tint is shared by all matching exports.
+  const fallback = effectEmissionFallback([group])!;
   const color = tint.emissiveIntensity > 0 && tint.emissive.r + tint.emissive.g + tint.emissive.b > 0
-    ? vec3(tint.emissive.r, tint.emissive.g, tint.emissive.b).mul(tint.emissiveIntensity) : vec3(1);
+    ? vec3(tint.emissive.r, tint.emissive.g, tint.emissive.b).mul(tint.emissiveIntensity)
+    : vec3(...fallback.color).mul(fallback.intensity);
+  mat.userData.destiny.emissionFallback = tint.emissiveIntensity > 0 && tint.emissive.r + tint.emissive.g + tint.emissive.b > 0
+    ? null : fallback.source;
   mat.colorNode = color.mul(vec3(1).add(paletteValue)).mul(mix(1.25, 1.75, density).add(dust.mul(0.25)));
+  mat.mrtNode = mrt({ emissive: vec4(mat.colorNode, output.a) });
   mat.opacityNode = symbols;
   return mat;
 }
@@ -508,6 +516,7 @@ function makeOpaque(
   pattern = false,
   accent = false,
   renderStage?: number | null,
+  emissionFallback?: EffectEmission,
 ): THREE.Material {
   const { slot, useSecondary } = decodeChangeColorIndex(dyeIndex);
   const validSlot = slot >= 0 && slot <= 2;
@@ -932,7 +941,15 @@ function makeOpaque(
 
     // Emission is independent of the iridescence index and tint repetition.
     const em = matRow(5);
-    let emissive = em.xyz.mul(em.w).mul(emissiveMask).mul(slotAvailable);
+    let emissionColor = em.xyz.mul(em.w);
+    if (emissionFallback) {
+      // Some programs drive BOTH projected symbols and tiny shell lamps with
+      // an unexported constant. B remains the sole coverage; no albedo guessing.
+      const fallback = vec3(...emissionFallback.color).mul(emissionFallback.intensity);
+      emissionColor = select(dot(emissionColor, vec3(1)).greaterThan(0), emissionColor, fallback);
+      mat.userData.destiny.emissionFallback = emissionFallback.source;
+    }
+    let emissive = emissionColor.mul(emissiveMask).mul(slotAvailable);
     if (maps.emissive) {
       emissive = emissive.add(texture(maps.emissive, uvN).rgb);
     }
@@ -1046,6 +1063,7 @@ export function createGearMaterials(
   const hasRadialGradient =
     hasVfxGroups && !!opts.sourceGeometry && ensureVfxRadialAttribute(opts.sourceGeometry, groups);
   const hasEffectUV = !!opts.sourceGeometry && prepareEffectUVs(opts.sourceGeometry, groups);
+  const emissionFallback = effectEmissionFallback(groups);
   return groups.map((g) => {
     if (isRayGlowGroup(g)) return makeRayGlow(g, dyes, maps, hasEffectUV);
     if (transparentEffect(g)?.kind === "digital-cloud") return makeCloudEffect(g, dyes, maps, hasEffectUV);
@@ -1066,6 +1084,7 @@ export function createGearMaterials(
       isPatternGroup(g),
       isAccentGroup(g),
       g.renderStage,
+      emissionFallback,
     );
     material.userData.destiny = {
       ...material.userData.destiny,

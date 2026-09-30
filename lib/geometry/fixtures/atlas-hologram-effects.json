@@ -1,0 +1,425 @@
+{
+  "itemHash": 1657654553,
+  "retrieved": "2026-09-30",
+  "note": "Real stage-7 LOD0 draws for both body variants. Original vertex bytes; unused vertices removed and indices remapped.",
+  "variants": [
+    {
+      "file": "07597bab3955572cad5c5de261118474.tgxm",
+      "metadata": {
+        "render_model": {
+          "render_meshes": [
+            {
+              "shader_tags": [
+                "default",
+                "default_shadow_generate",
+                "depth_prepass",
+                "compute_skinning",
+                "light_shaft_occlusion"
+              ],
+              "position_offset": [
+                0.029298,
+                0.006511,
+                1.354629
+              ],
+              "position_scale": [
+                0.318112,
+                0.318112,
+                0.318112
+              ],
+              "texcoord0_scale_offset": [
+                0.493104,
+                0.493104,
+                0.49862,
+                0.997916
+              ],
+              "texcoord_offset": [
+                0.49862,
+                0.997916
+              ],
+              "texcoord_scale": [
+                0.493104,
+                0.493104
+              ],
+              "stage_part_offsets": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1
+              ],
+              "index_buffer": {
+                "file_name": "0.indexbuffer.tgx",
+                "byte_size": 414,
+                "value_byte_size": 2
+              },
+              "vertex_buffers": [
+                {
+                  "file_name": "0.0.vertexbuffer.tgx",
+                  "byte_size": 3200,
+                  "stride_byte_size": 32
+                },
+                {
+                  "file_name": "0.1.vertexbuffer.tgx",
+                  "byte_size": 400,
+                  "stride_byte_size": 4
+                }
+              ],
+              "data_driven_vertex_buffer": {
+                "file_name": "",
+                "byte_size": 0,
+                "stride_byte_size": 0
+              },
+              "single_pass_skin_vertex_buffer": {
+                "file_name": "0.0.singlepassskinbuffer.tgx",
+                "byte_size": 46192,
+                "stride_byte_size": 4
+              },
+              "stage_part_list": [
+                {
+                  "shader": {
+                    "static_textures": [
+                      "1363171116_digital_cloud_plate",
+                      "4137719177_dust_snow_mask_med01"
+                    ],
+                    "type": 8
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 0,
+                  "index_count": 207,
+                  "index_min": 0,
+                  "index_max": 99,
+                  "flags": 16400,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 0,
+                    "name": "_lod_category_0"
+                  },
+                  "lod_run": 1
+                }
+              ],
+              "stage_part_vertex_stream_layout_definitions": [
+                {
+                  "type": "k_first_dynamic_vertex_stream_layout",
+                  "formats": [
+                    {
+                      "stride": 32,
+                      "elements": [
+                        {
+                          "type": "_vertex_format_attribute_float4",
+                          "semantic": "_tfx_vb_semantic_position",
+                          "normalized": false,
+                          "size": 16,
+                          "offset": 0,
+                          "semantic_index": 0
+                        },
+                        {
+                          "type": "_vertex_format_attribute_short4",
+                          "semantic": "_tfx_vb_semantic_normal",
+                          "normalized": true,
+                          "size": 8,
+                          "offset": 8,
+                          "semantic_index": 0
+                        },
+                        {
+                          "type": "_vertex_format_attribute_short4",
+                          "semantic": "_tfx_vb_semantic_tangent",
+                          "normalized": true,
+                          "size": 8,
+                          "offset": 16,
+                          "semantic_index": 0
+                        }
+                      ]
+                    },
+                    {
+                      "stride": 4,
+                      "elements": [
+                        {
+                          "type": "_vertex_format_attribute_short2",
+                          "semantic": "_tfx_vb_semantic_texcoord",
+                          "normalized": true,
+                          "size": 4,
+                          "offset": 0,
+                          "semantic_index": 0
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "stage_part_vertex_stream_layout_lookup": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15,
+                16,
+                17,
+                18,
+                19,
+                20,
+                21,
+                22,
+                23
+              ],
+              "bounding_volume": {
+                "min_x": -0.1625478,
+                "max_x": 0.221143782,
+                "min_y": -0.198198274,
+                "max_y": 0.211220279,
+                "min_z": 1.036517,
+                "max_z": 1.672741
+              }
+            }
+          ]
+        }
+      },
+      "buffers": {
+        "0.indexbuffer.tgx": "AAABAAIAAwAEAAUABgAHAAYACAAJAP//AQAKAAMACwAFAAsABwAMAAgADAANAA4ADwAQAP//AQARAAoAEgAKABMACwAOAAwA//8RABQAEgAVABIAFgATABcADgAQAP//FQAUABgA//8ZABoAGwAcAB0AHgAfACAAHwAhACIA//8aACMAHAAjAB4AJAAgACUAIQAlACYAJwAoACkA//8aACoAIwArACMALAAkACcAJQD//yoALQArAC4AKwAvACwAMAAnACkA//8uAC0AMQD//zIAMwA0ADUANAA2ADcAOAA5ADoAOwD//zMAPAA1AD0ANQA+ADYAPwA4AEAAOgD//zwAQQA9AEIAPgBDAD4ARAA/AEUAQAD//0EARgBCAEYAQwBHAEQASABEAEkARQD//0oARgBBAP//SwBMAE0ATgBNAE8AUABRAFIAUwBUAP//TABVAE4AVgBPAFcATwBYAFEAWQBTAP//VQBaAFYAWwBXAFwAVwBdAFgAXgBZAP//WgBfAFsAXwBcAGAAXQBhAF0AYgBeAP//YwBfAFoA",
+        "0.0.vertexbuffer.tgx": "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",
+        "0.1.vertexbuffer.tgx": "/3/s/v9/ffS1b+z+tW999Lxi7P68Yn30HFfs/hxXffTASn30wErs/rVvI+q8YiPqHFcj6sBKI+ocV2HfwEph38BKPtT/fyPqtW9h37xiYd//f2HftW8+1LxiPtQcVz7U/38+1P9/7P7/f330tW/s/rVvffS8Yuz+vGJ99BxX7P4cV330wEp99MBK7P61byPqvGIj6hxXI+rASiPqHFdh38BKYd/ASj7U/38j6rVvYd+8YmHf/39h37VvPtS8Yj7UHFc+1P9/PtT/f+z+tW/s/v9/ffS1b330tW8j6v9/I+q1b2Hf/39h37VvPtT/fz7UvGLs/rxiffS8YiPqvGJh37xiPtQcV+z+HFd99BxXI+ocV2HfHFc+1MBKffTASiPqwEph38BKPtTASuz+/3/s/rVv7P7/f330tW999LVvI+r/fyPqtW9h3/9/Yd+1bz7U/38+1Lxi7P68Yn30vGIj6rxiYd+8Yj7UHFfs/hxXffQcVyPqHFdh3xxXPtTASn30wEoj6sBKYd/ASj7UwErs/g=="
+      }
+    },
+    {
+      "file": "891fd3e66d76fca05f009b1c2e4582d2.tgxm",
+      "metadata": {
+        "render_model": {
+          "render_meshes": [
+            {
+              "shader_tags": [
+                "default",
+                "default_shadow_generate",
+                "depth_prepass",
+                "compute_skinning",
+                "light_shaft_occlusion"
+              ],
+              "position_offset": [
+                0.051328,
+                0.007141,
+                1.353281
+              ],
+              "position_scale": [
+                0.288743,
+                0.288743,
+                0.288743
+              ],
+              "texcoord0_scale_offset": [
+                0.493104,
+                0.493104,
+                0.49862,
+                0.997916
+              ],
+              "texcoord_offset": [
+                0.49862,
+                0.997916
+              ],
+              "texcoord_scale": [
+                0.493104,
+                0.493104
+              ],
+              "stage_part_offsets": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1
+              ],
+              "index_buffer": {
+                "file_name": "0.indexbuffer.tgx",
+                "byte_size": 414,
+                "value_byte_size": 2
+              },
+              "vertex_buffers": [
+                {
+                  "file_name": "0.0.vertexbuffer.tgx",
+                  "byte_size": 3200,
+                  "stride_byte_size": 32
+                },
+                {
+                  "file_name": "0.1.vertexbuffer.tgx",
+                  "byte_size": 400,
+                  "stride_byte_size": 4
+                }
+              ],
+              "data_driven_vertex_buffer": {
+                "file_name": "",
+                "byte_size": 0,
+                "stride_byte_size": 0
+              },
+              "single_pass_skin_vertex_buffer": {
+                "file_name": "0.0.singlepassskinbuffer.tgx",
+                "byte_size": 46320,
+                "stride_byte_size": 4
+              },
+              "stage_part_list": [
+                {
+                  "shader": {
+                    "static_textures": [
+                      "1363171116_digital_cloud_plate",
+                      "4137719177_dust_snow_mask_med01"
+                    ],
+                    "type": 8
+                  },
+                  "variant_shader_index": -1,
+                  "start_index": 0,
+                  "index_count": 207,
+                  "index_min": 0,
+                  "index_max": 99,
+                  "flags": 16400,
+                  "gear_dye_change_color_index": 0,
+                  "external_identifier": 0,
+                  "primitive_type": 5,
+                  "lod_category": {
+                    "value": 0,
+                    "name": "_lod_category_0"
+                  },
+                  "lod_run": 1
+                }
+              ],
+              "stage_part_vertex_stream_layout_definitions": [
+                {
+                  "type": "k_first_dynamic_vertex_stream_layout",
+                  "formats": [
+                    {
+                      "stride": 32,
+                      "elements": [
+                        {
+                          "type": "_vertex_format_attribute_float4",
+                          "semantic": "_tfx_vb_semantic_position",
+                          "normalized": false,
+                          "size": 16,
+                          "offset": 0,
+                          "semantic_index": 0
+                        },
+                        {
+                          "type": "_vertex_format_attribute_short4",
+                          "semantic": "_tfx_vb_semantic_normal",
+                          "normalized": true,
+                          "size": 8,
+                          "offset": 8,
+                          "semantic_index": 0
+                        },
+                        {
+                          "type": "_vertex_format_attribute_short4",
+                          "semantic": "_tfx_vb_semantic_tangent",
+                          "normalized": true,
+                          "size": 8,
+                          "offset": 16,
+                          "semantic_index": 0
+                        }
+                      ]
+                    },
+                    {
+                      "stride": 4,
+                      "elements": [
+                        {
+                          "type": "_vertex_format_attribute_short2",
+                          "semantic": "_tfx_vb_semantic_texcoord",
+                          "normalized": true,
+                          "size": 4,
+                          "offset": 0,
+                          "semantic_index": 0
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "stage_part_vertex_stream_layout_lookup": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15,
+                16,
+                17,
+                18,
+                19,
+                20,
+                21,
+                22,
+                23
+              ],
+              "bounding_volume": {
+                "min_x": -0.118488163,
+                "max_x": 0.22114417,
+                "min_y": -0.19693625,
+                "max_y": 0.211218238,
+                "min_z": 1.064538,
+                "max_z": 1.642024
+              }
+            }
+          ]
+        }
+      },
+      "buffers": {
+        "0.indexbuffer.tgx": "AAABAAIAAwAEAAUABgAHAAYACAAJAP//AQAKAAMACwAFAAsABwAMAAgADAANAA4ADwAQAP//AQARAAoAEgAKABMACwAOAAwA//8RABQAEgAVABIAFgATABcADgAQAP//FQAUABgA//8ZABoAGwAcAB0AHgAfACAAHwAhACIA//8aACMAHAAjAB4AJAAgACUAIQAlACYAJwAoACkA//8aACoAIwArACMALAAkACcAJQD//yoALQArAC4AKwAvACwAMAAnACkA//8uAC0AMQD//zIAMwA0ADUANAA2ADcAOAA5ADoAOwD//zMAPAA1AD0ANQA+ADYAPwA4AEAAOgD//zwAQQA9AEIAPgBDAD4ARAA/AEUAQAD//0EARgBCAEYAQwBHAEQASABEAEkARQD//0oARgBBAP//SwBMAE0ATgBNAE8AUABRAFIAUwBUAP//TABVAE4AVgBPAFcATwBYAFEAWQBTAP//VQBaAFYAWwBXAFwAVwBdAFgAXgBZAP//WgBfAFsAXwBcAGAAXQBhAF0AYgBeAP//YwBfAFoA",
+        "0.0.vertexbuffer.tgx": "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AAAwQbmez7L84AAAj7BcZGL//38QH1k+rUGhPRO8oj8AADBBFYND5scKAAAt5l19GAD/f1QMXj6tQaE9COGpPwAAMEGxgnTmSwUAAG7ma30KAP9/TO5dPq1BoT3X6rA/AAAwQeqCkeaE9gAAgeZufef//3/sTVU+Dj2hPZ81uD8AADBBG4ZC58zhAACb5nR9uv//fxe7QD5wOKE9mYW/PwAAMEGMiSbnW9YAANflS32j//9/bTxdPuwmhjzJu6I/AAAwQYqAAfz/CgAA/fvvf/7//38CLGI+7CaGPAjhqT8AADBBLoAB/GkFAAAA/O9/////f6oLYj7sJoY81+qwPwAAMEFwgAT8R/YAAAH8738CAP9/SmtZPnIUhjzpNbg/AAAwQd2DIPwK4QAAAPzvfwYA/3922EQ+chSGPC2Gvz8AADBBTocz/JDVAAD2++9/BwD/fwIsYj7urEy9COGpPwAAMEEegP//awUAAP///38AAP9/qgtiPu6sTL3X6rA/AAAwQWCA//9C9gAA////fwAA/39Ka1k+7qxMvek1uD8AADBB04P///jgAAD///9/AAD/f8XaRD7urEy9LYa/PwAAMEFAh///i9UAAP///38AAP9/vT5dPu6sTL3Ju6I/AAAwQXqA//8BCwAA////fwAA/38=",
+        "0.1.vertexbuffer.tgx": "/3/s/v9/ffS1b+z+tW999Lxi7P68Yn30HFfs/hxXffTASn30wErs/rVvI+q8YiPqHFcj6sBKI+ocV2HfwEph38BKPtT/fyPqtW9h37xiYd//f2HftW8+1LxiPtQcVz7U/38+1P9/7P7/f330tW/s/rVvffS8Yuz+vGJ99BxX7P4cV330wEp99MBK7P61byPqvGIj6hxXI+rASiPqHFdh38BKYd/ASj7U/38j6rVvYd+8YmHf/39h37VvPtS8Yj7UHFc+1P9/PtT/f+z+tW/s/v9/ffS1b330tW8j6v9/I+q1b2Hf/39h37VvPtT/fz7UvGLs/rxiffS8YiPqvGJh37xiPtQcV+z+HFd99BxXI+ocV2HfHFc+1MBKffTASiPqwEph38BKPtTASuz+/3/s/rVv7P7/f330tW999LVvI+r/fyPqtW9h3/9/Yd+1bz7U/38+1Lxi7P68Yn30vGIj6rxiYd+8Yj7UHFfs/hxXffQcVyPqHFdh3xxXPtTASn30wEoj6sBKYd/ASj7UwErs/g=="
+      }
+    }
+  ]
+}

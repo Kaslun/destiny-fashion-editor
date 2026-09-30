@@ -21,7 +21,7 @@ export function matchCloudTextureNames(names: string[] = []): { palette?: string
   };
 }
 
-export type TransparentEffect = { kind: "ray-glow" | "digital-cloud"; textures: string[] };
+export type TransparentEffect = { kind: "ray-glow" | "digital-cloud" | "atlas-hologram"; textures: string[] };
 
 /** Stage establishes transparency; complete texture signatures select a preview.
  * A shader number or one shared texture alone never determines the effect.
@@ -34,6 +34,11 @@ export function transparentEffect(group: GroupInfo): TransparentEffect | undefin
   }
   const { palette, cloud, mask } = matchCloudTextureNames(group.patternTextures);
   if (palette && cloud && mask) return { kind: "digital-cloud", textures: [palette, cloud, mask] };
+  // The two-input variant stores its colored emblem in the diffuse atlas.
+  // Require the exact pair; an unknown third input may select another program.
+  if (cloud && mask && group.patternTextures?.length === 2) {
+    return { kind: "atlas-hologram", textures: [cloud, mask] };
+  }
 }
 
 /** Mobile exports pack effect UV islands into armor-atlas regions.

@@ -480,3 +480,20 @@ lights, and retained Entheogenic's cyan glow. Spacewalk Plate also exercised the
 shared hologram fallback. Raw debug views and normal rendering were checked.
 The reference-based hologram tint and bloom remain preview approximations;
 these checks do not establish pixel-for-pixel parity with the game.
+## Atlas-colored hologram variant - 2026-09-30
+
+Legacy's Oath Vest (1657654553) exports a stage-7 shader-8 draw with precisely
+`digital_cloud_plate` and `dust_snow_mask_med01` inputs, without Spacewalk's
+`taken_stain_etch_palette`. Both body variants contain the emblem geometry.
+This distinct signature now selects an atlas-colored hologram. Its blue/purple
+color gradient comes from the diffuse atlas, and gearstack B supplies the
+emissive silhouette, both sampled at the original armor-atlas coordinates.
+Normalized per-island UVs are used only for cloud/dust modulation. Armor dye
+emission must not replace the emblem's spatially varying authored colors.
+
+The shader signature, not an item hash, selects this path. Unknown extra inputs,
+partial signatures and opaque stages do not match it. Both atlas maps are
+required; missing optional motion textures retain the static emblem. This path
+does not enable Spacewalk's estimated tint on the armor. HDR brightness and
+motion remain approximations because the export omits the full game program.
+Regression fixtures preserve both original effect draws and their packed mask.

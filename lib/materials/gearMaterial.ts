@@ -374,6 +374,7 @@ function makeRayGlow(group: GroupInfo, dyes: DyeSet, maps: GearTextureMaps, hasU
 }
 
 function makeCloudEffect(group: GroupInfo, dyes: DyeSet, maps: GearTextureMaps, hasUV: boolean): THREE.Material {
+  const atlasColor = transparentEffect(group)?.kind === "atlas-hologram";
   const names = matchCloudTextureNames(group.patternTextures);
   const palette = maps.effectTextures?.get(names.palette!);
   const cloud = maps.effectTextures?.get(names.cloud!);
@@ -383,16 +384,17 @@ function makeCloudEffect(group: GroupInfo, dyes: DyeSet, maps: GearTextureMaps, 
   mat.depthWrite = false;
   mat.side = THREE.DoubleSide;
   mat.blending = THREE.AdditiveBlending;
-  mat.userData.destiny = { effect: "digital-cloud", approximateEffect: true,
-    coverageSource: "gearstack-blue", missingTextures: !maps.gearstack,
-    missingAnimationTextures: !palette || !cloud || !mask };
-  if (!maps.gearstack) { mat.visible = false; return mat; }
+  mat.userData.destiny = { effect: atlasColor ? "atlas-hologram" : "digital-cloud", approximateEffect: true,
+    colorSource: atlasColor ? "diffuse-atlas" : "program-tint",
+    coverageSource: "gearstack-blue", missingTextures: !maps.gearstack || (atlasColor && !maps.diffuse),
+    missingAnimationTextures: (!atlasColor && !palette) || !cloud || !mask };
+  if (mat.userData.destiny.missingTextures) { mat.visible = false; return mat; }
   const clock = uniform(0);
   mat.userData.uniforms = { uPatternTime: clock };
-  // The TWO distinct symbol silhouettes are authored in atlas-space gearstack B.
+  // Symbol silhouettes are authored in atlas-space gearstack B.
   // Generic cloud/dust textures are modulation inputs, never their coverage.
-  maps.gearstack.colorSpace = THREE.NoColorSpace;
-  const symbols = clamp(texture(maps.gearstack, uv()).b.sub(GEARSTACK.emissiveStart).div(1 - GEARSTACK.emissiveStart), 0, 1);
+  maps.gearstack!.colorSpace = THREE.NoColorSpace;
+  const symbols = clamp(texture(maps.gearstack!, uv()).b.sub(GEARSTACK.emissiveStart).div(1 - GEARSTACK.emissiveStart), 0, 1);
   const local = hasUV ? attribute<"vec2">("effectUv", "vec2") : uv();
   const density = cloud ? texture(cloud, local.add(vec2(clock.mul(0.025), clock.mul(-0.015)))).r : float(0.5);
   const dust = mask ? texture(mask, local).r : float(0);
@@ -404,12 +406,15 @@ function makeCloudEffect(group: GroupInfo, dyes: DyeSet, maps: GearTextureMaps, 
   const dye = dyeForSlot(dyes, slot), tint = useSecondary ? dye.secondary : dye.primary;
   // Effect emission is independent of armor dye emission (Spacewalk's is zero).
   // The reference-calibrated program tint is shared by all matching exports.
-  const fallback = effectEmissionFallback([group])!;
-  const color = tint.emissiveIntensity > 0 && tint.emissive.r + tint.emissive.g + tint.emissive.b > 0
+  const fallback = effectEmissionFallback([group]);
+  const authoredEmission = tint.emissiveIntensity > 0 && tint.emissive.r + tint.emissive.g + tint.emissive.b > 0;
+  // Atlas holograms carry spatially varying color independent of the armor's
+  // emission tint. Preserve those colors and their original UVs; gain is an
+  // HDR preview approximation, not a recovered game shader constant.
+  const color = atlasColor ? texture(maps.diffuse!, uv()).rgb.mul(1.5) : authoredEmission
     ? vec3(tint.emissive.r, tint.emissive.g, tint.emissive.b).mul(tint.emissiveIntensity)
-    : vec3(...fallback.color).mul(fallback.intensity);
-  mat.userData.destiny.emissionFallback = tint.emissiveIntensity > 0 && tint.emissive.r + tint.emissive.g + tint.emissive.b > 0
-    ? null : fallback.source;
+    : vec3(...fallback!.color).mul(fallback!.intensity);
+  mat.userData.destiny.emissionFallback = atlasColor || authoredEmission ? null : fallback!.source;
   mat.colorNode = color.mul(vec3(1).add(paletteValue)).mul(mix(1.25, 1.75, density).add(dust.mul(0.25)));
   mat.mrtNode = mrt({ emissive: vec4(mat.colorNode, output.a) });
   mat.opacityNode = symbols;
@@ -1066,7 +1071,8 @@ export function createGearMaterials(
   const emissionFallback = effectEmissionFallback(groups);
   return groups.map((g) => {
     if (isRayGlowGroup(g)) return makeRayGlow(g, dyes, maps, hasEffectUV);
-    if (transparentEffect(g)?.kind === "digital-cloud") return makeCloudEffect(g, dyes, maps, hasEffectUV);
+    const effect = transparentEffect(g);
+    if (effect?.kind === "digital-cloud" || effect?.kind === "atlas-hologram") return makeCloudEffect(g, dyes, maps, hasEffectUV);
     if (g.glow) return makeGlow(maps);
     if (opts.animatedGlow && isAbilityVfxGroup(g)) {
       return makeAbilityVfxGeometry(g.dyeIndex, dyes, hasRadialGradient);

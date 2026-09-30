@@ -5,6 +5,8 @@ import { isRayGlowGroup, prepareEffectUVs, transparentEffect } from "./transpare
 import { createGearMaterials, advancePatternTime, hasAnimatedGlow } from "../materials/gearMaterial";
 import fixture from "./fixtures/entheogenic-rays.json";
 import spacewalk from "./fixtures/spacewalk-effects.json";
+import hologram from "./fixtures/atlas-hologram-effects.json";
+import { effectEmissionFallback } from "../materials/effectEmission";
 import { readFileSync } from "node:fs";
 import { decodeDataPng } from "./dataTexture";
 import { decodeGearstack } from "../materials/destinyMaterialModel";
@@ -145,7 +147,7 @@ describe("shared transparent-effect routing", () => {
   it("requires the whole cloud signature and never matches an opaque draw", () => {
     const { groups } = build(spacewalk.variants[0]);
     expect(transparentEffect({ ...groups[0], renderStage: 0 })).toBeUndefined();
-    expect(transparentEffect({ ...groups[0], patternTextures: groups[0].patternTextures!.slice(1) })).toBeUndefined();
+    expect(transparentEffect({ ...groups[0], patternTextures: groups[0].patternTextures!.slice(0, 1) })).toBeUndefined();
     const [opaque] = createGearMaterials([{ ...groups[0], renderStage: 0 }], {});
     expect(opaque.visible).toBe(true);
     expect(opaque.transparent).toBe(false);
@@ -159,6 +161,69 @@ describe("shared transparent-effect routing", () => {
       expect(mat.depthWrite).toBe(false);
       expect(mat.userData.destiny.unsupportedEffect).toBe(true);
       expect(mat.userData.destiny.textures).toEqual(["unrecognized_effect"]);
+    }
+  });
+});
+
+describe("atlas-colored holograms", () => {
+  it("finds emissive strokes and transparent gaps inside the original emblem UV region", () => {
+    const atlas = decodeDataPng(readFileSync(new URL("./fixtures/atlas-hologram-gearstack.png", import.meta.url)));
+    const { geometry } = build(hologram.variants[0]);
+    const uv = geometry.getAttribute("uv");
+    const xs = Array.from({ length: uv.count }, (_, i) => uv.getX(i) * 512);
+    const ys = Array.from({ length: uv.count }, (_, i) => uv.getY(i) * 512 - 256);
+    let strokes = 0, gaps = 0;
+    for (let y = Math.ceil(Math.min(...ys)); y < Math.floor(Math.max(...ys)); y++) {
+      for (let x = Math.ceil(Math.min(...xs)); x < Math.floor(Math.max(...xs)); x++) {
+        expect(x >= 0 && x < atlas.width && y >= 0 && y < atlas.height).toBe(true);
+        const blue = atlas.data[(y * atlas.width + x) * 4 + 2];
+        if (blue > 40) strokes++; else gaps++;
+      }
+    }
+    expect(strokes).toBeGreaterThan(500);
+    expect(gaps).toBeGreaterThan(strokes);
+  });
+
+  it.each(hologram.variants)("restores the exported emblem in $file", (variant) => {
+    const { geometry, groups } = build(variant);
+    expect(groups).toHaveLength(1);
+    expect(transparentEffect(groups[0])).toMatchObject({ kind: "atlas-hologram" });
+    const originalUV = [...geometry.getAttribute("uv").array];
+    expect(prepareEffectUVs(geometry, groups)).toBe(true);
+    expect([...geometry.getAttribute("uv").array]).toEqual(originalUV);
+    expect(geometry.getIndex()!.count).toBeGreaterThan(12);
+    const effectTextures = new Map(groups[0].patternTextures!.map((n) => [n, new THREE.Texture()]));
+    const [mat] = createGearMaterials(groups, {}, {
+      effectTextures, diffuse: new THREE.Texture(), gearstack: new THREE.Texture(),
+    }, { sourceGeometry: geometry });
+    expect(mat.visible).toBe(true);
+    expect(mat.depthWrite).toBe(false);
+    expect(mat.blending).toBe(THREE.AdditiveBlending);
+    expect(mat.userData.destiny).toMatchObject({ effect: "atlas-hologram", colorSource: "diffuse-atlas",
+      coverageSource: "gearstack-blue", missingAnimationTextures: false, emissionFallback: null });
+    expect((mat as THREE.MeshBasicNodeMaterial).mrtNode?.has("emissive")).toBe(true);
+    // Its color must not trigger Spacewalk's estimated tint on the armor shell.
+    expect(effectEmissionFallback(groups)).toBeUndefined();
+  });
+
+  it("requires both atlas maps, but retains the emblem when modulation textures are missing", () => {
+    const { geometry, groups } = build(hologram.variants[0]);
+    for (const maps of [{}, { diffuse: new THREE.Texture() }, { gearstack: new THREE.Texture() }]) {
+      const [mat] = createGearMaterials(groups, {}, maps, { sourceGeometry: geometry });
+      expect(mat.visible).toBe(false);
+      expect(mat.userData.destiny.missingTextures).toBe(true);
+    }
+    const [mat] = createGearMaterials(groups, {}, { diffuse: new THREE.Texture(), gearstack: new THREE.Texture() });
+    expect(mat.visible).toBe(true);
+    expect(mat.userData.destiny.missingAnimationTextures).toBe(true);
+  });
+
+  it("rejects partial, opaque and unknown extended signatures", () => {
+    const { groups } = build(hologram.variants[0]);
+    for (const change of [{ renderStage: 0 }, { shaderType: 7 },
+      { patternTextures: groups[0].patternTextures!.slice(0, 1) },
+      { patternTextures: [...groups[0].patternTextures!, "unknown_program_input"] }]) {
+      expect(transparentEffect({ ...groups[0], ...change })).toBeUndefined();
     }
   });
 });

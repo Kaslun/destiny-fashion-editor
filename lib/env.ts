@@ -23,4 +23,12 @@ export const env = {
   redirectUrl: () =>
     process.env.BUNGIE_REDIRECT_URL ?? "http://localhost:3000/api/auth/callback",
   sessionSecret: () => required("SESSION_SECRET"),
+  sessionStore: () => {
+    const redisUrl = process.env.SESSION_REDIS_REST_URL;
+    const redisToken = process.env.SESSION_REDIS_REST_TOKEN;
+    if (!!redisUrl !== !!redisToken || (process.env.NODE_ENV === "production" && !redisUrl)) {
+      throw new Error("Configure SESSION_REDIS_REST_URL and SESSION_REDIS_REST_TOKEN for production sign-in");
+    }
+    return { redisUrl, redisToken };
+  },
 };

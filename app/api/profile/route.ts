@@ -6,17 +6,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getActiveSession } from "@/lib/auth/currentSession";
 import { getCharacterLoadouts } from "@/lib/bungie/profile";
+import { SessionUnavailable } from "@/lib/auth/refreshSession";
 import { apiError } from "@/lib/http";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-  const active = await getActiveSession(req);
-  if (!active) {
-    return NextResponse.json({ error: "Not signed in" }, { status: 401 });
-  }
   try {
+    const active = await getActiveSession(req);
+    if (!active) {
+      return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+    }
     const characters = await getCharacterLoadouts(active.accessToken);
     const res = NextResponse.json({
       characters: characters.map((c) => ({
@@ -31,14 +33,16 @@ export async function GET(req: NextRequest) {
           renderHash: it.ornamentHash ?? it.itemHash,
           itemHash: it.itemHash,
           ornamentHash: it.ornamentHash,
-          shaderHash: null as number | null, // resolved in a later pass
+          shaderHash: it.shaderHash,
           plugHashes: it.plugHashes,
         })),
       })),
     });
-    active.applyCookie(res);
     return res;
   } catch (err) {
+    if (err instanceof SessionUnavailable) {
+      return NextResponse.json({ error: err.message }, { status: 503, headers: { "Retry-After": "5" } });
+    }
     return apiError(err, 500, "profile");
   }
 }

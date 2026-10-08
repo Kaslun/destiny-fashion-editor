@@ -332,8 +332,11 @@ dyeslot canvas dimensions by four while leaving placement coordinates/sizes
 unchanged. Its `template.shader` tests source RGB and A against 0.5. These are
 two separate details; neither RGB blend weights nor vertex IDs alone decode it.
 
-The loader now assembles that quarter-resolution canvas and decodes RGB flags
-to change-color IDs before uploading a nearest-sampled, non-mipmapped data map:
+The loader assembles that quarter-resolution canvas and uploads the original
+RGB flags with linear filtering and no mipmaps. The fragment shader classifies
+the sampled flags, matching the reference's sampling order. Numeric IDs and
+material rows are never interpolated. The center-texel decoder remains for
+diagnostics and compatibility with explicit nearest-sampled ID maps:
 red/magenta = 1, green = 2, yellow = 3, blue/cyan = 4, white = 5.
 Black and alpha <= 0.5 retain the geometry's ID, including its parity. Blank
 atlas space also falls back. Dye eligibility and wear still come from gearstack
@@ -497,3 +500,38 @@ required; missing optional motion textures retain the static emblem. This path
 does not enable Spacewalk's estimated tint on the armor. HDR brightness and
 motion remain approximations because the export omits the full game program.
 Regression fixtures preserve both original effect draws and their packed mask.
+## Prismatic surface and wisps - 2026-10-06
+
+The stage-zero noise/ripple pair is a distinct surface program (types 2/7),
+not a generic emission surface. The preview now interprets its broad gearstack
+B coverage as coating coverage and suppresses the ordinary dye emission there.
+This is an inference from the exported masks and supplied in-game reference:
+red/white emission defaults otherwise turn pale panels pink and wash out the
+lower cloth. Explicit emissive maps remain supported. No item hash or repeated
+emission-color test selects this path. Other glow programs keep their emission.
+
+The moving coating preserves underlying luminance, uses subdued interference
+on pale dyes and richer color on dark dyes, and remains confined to the exported
+mask. It is an empirical preview, not a recovered Tiger shader. Both noise and
+ripple maps are required for animation; missing maps preserve the base surface.
+
+Stage-seven type-eight draws with the exact twirl/blob/darkness trio now use
+an additive transparent wisp preview. Its diffuse-atlas silhouette and original
+geometry/UVs are retained; local island coordinates drive approximate moving
+modulation and edge fading. These draws participate in emissive bloom, never
+write depth, and stay hidden if required inputs are missing. Color, speed and
+strength are estimates; the game's full runtime constants are not exported.
+
+Fixtures prismatic-program.json and prismatic-wisps.json retain the real program
+records, dyes and both body variants' effect geometry. Tests cover signature
+rejection, missing inputs, unchanged atlas UVs/indices, independent animation,
+and separation from ordinary armor emission. Existing Iron Companion texel
+classifications are unchanged by the shared flag decoder.
+
+Live comparison still shows a fidelity gap on Relativism's raised trim and oval
+inserts. Gray values near the low-resolution dye map's half-range cutoff switch
+between geometry fallback and a texture override; filtering before decoding
+does not resolve this ambiguity. The trim is still too pale and uneven, and the
+inserts lack the game's dark chromatic reflection. No arbitrary material ID or
+item-specific bronze tint has been substituted. This work must not be described
+as a complete match to the supplied game screenshot.

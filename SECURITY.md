@@ -27,9 +27,9 @@ route, touching auth, or changing the asset proxy.
 - Outbound calls to Bungie go through `lib/bungie/client.ts`
   (`bungieFetch` / `bungieFetchRaw`), which attaches `X-API-Key` server-side.
 - **Asset proxy (`/api/asset`)** is a *scoped* proxy, not an open one: it only
-  forwards `bungie.net` hosts and `/common/` or `/Platform/` paths. Do not relax
+  forwards supported HTTPS `bungie.net` `/common/` static asset paths after URL normalization. Platform endpoints are not proxied. Do not relax
   this allowlist — an open proxy is an SSRF and abuse vector. Responses are
-  cached `immutable` because asset filenames are content-hashed.
+  cached `immutable` only when the filename contains a content hash and there is no query or redirect. Other assets have a short cache lifetime. Redirect targets are revalidated, active content is rejected, and gear `.js` is served as JSON with `nosniff`.
 
 ## Untrusted input
 - Validate/parse every request param. Numeric hashes: `Number()` + `isFinite`.
@@ -63,7 +63,19 @@ route, touching auth, or changing the asset proxy.
   verify it on callback (CSRF defense).
 - Store the session in an **httpOnly, Secure, SameSite=Lax** cookie. Never put
   tokens in `localStorage` or expose them to client JS.
-- Encrypt the refresh token at rest (key from `SESSION_SECRET`); store server-side.
+- Browser cookies contain only a random 256-bit session identifier. Legacy signed
+  token-bearing cookies are rejected; users must sign in again after migration.
+- Access and refresh tokens are encrypted server-side with AES-256-GCM using
+  a key derived from `SESSION_SECRET` (at least 32 random characters). The session
+  ID is authenticated as associated data, so records cannot be swapped between IDs.
+- Local development uses encrypted files in ignored `data/sessions`. Production
+  sign-in requires `SESSION_REDIS_REST_URL` and `SESSION_REDIS_REST_TOKEN` for a
+  shared Redis HTTPS REST store. Do not use ephemeral per-instance session files
+  in production. Redis TTLs expire records; application expiry is checked too.
+- Logout deletes the server record. Conditional updates cannot recreate a deleted
+  session or overwrite newer credentials. Session lifetime never extends past the
+  original 90-day ceiling or the refresh token expiry.
+- Store adapter protocol: https://upstash.com/docs/redis/features/restapi
 - Exchange/refresh tokens only server-side, through `lib/bungie/client.ts`.
 
 ## Deployment checklist (before going public)
@@ -72,3 +84,10 @@ route, touching auth, or changing the asset proxy.
 - [ ] Add rate limiting to `/api/*` (proxy + search are abusable) — e.g. per-IP.
 - [ ] Confirm `NODE_ENV=production` so debug routes 404 and errors are generic.
 - [ ] Restrict CORS/origin on the Bungie app registration to the deployed origin.
+
+### Refresh coordination
+Refresh claims and new credentials are persisted in the shared encrypted record
+using compare-and-set. Simultaneous requests share the refresh; profile errors
+do not discard successful rotation. Explicit temporary OAuth errors are retryable.
+An uncertain transport outcome retains its claim: after 60 seconds the user must
+sign in again rather than replay a refresh token which may already have rotated.

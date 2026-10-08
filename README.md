@@ -57,3 +57,12 @@ via `/api/asset` → `lib/geometry/tgxm.ts` (container) → `renderMetadata.ts`
 npm test                                              # unit (offline)
 npx vitest run lib/loader/pipeline.integration.test.ts  # needs dev server up
 ```
+
+## Account session storage
+Local sign-in stores encrypted sessions in ignored `data/sessions`; the browser
+receives only a random session ID. Set a random `SESSION_SECRET` of at least 32
+characters. Production sign-in additionally requires `SESSION_REDIS_REST_URL`
+and `SESSION_REDIS_REST_TOKEN` (Upstash-compatible HTTPS Redis REST). The shared
+store keeps login state consistent across server instances. Existing users must
+sign in again when upgrading from the previous signed-token cookie format.
+No credentials or store are provisioned automatically.

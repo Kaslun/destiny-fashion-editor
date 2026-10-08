@@ -8,6 +8,7 @@
  * incremental and cached per slot: swapping one slot only reloads that piece,
  * and the body re-frames as pieces come and go.
  */
+import { disposeModel } from "@/lib/loader/resources";
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
@@ -40,19 +41,6 @@ function keyOf(p: EquippedPiece): string {
   return `${p.itemHash}:${p.shaderHash ?? 0}:${p.hideHood ? 1 : 0}`;
 }
 
-/** Dispose a piece's geometry, materials, and all textures it owns. */
-function disposeGroup(group: THREE.Group): void {
-  group.traverse((o) => {
-    const mesh = o as THREE.Mesh;
-    if (!mesh.isMesh) return;
-    mesh.geometry?.dispose();
-    const maps = (mesh.userData.maps ?? {}) as Record<string, THREE.Texture>;
-    for (const t of Object.values(maps)) t?.dispose?.();
-    const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-    for (const m of mats) m?.dispose?.();
-  });
-}
-
 export default function CharacterModel({ pieces, onPieceStatus, onModel }: Props) {
   // Persistent scene graph: wrapper (framed) -> body (holds native pieces).
   const wrapperRef = useRef<THREE.Group | null>(null);
@@ -76,6 +64,7 @@ export default function CharacterModel({ pieces, onPieceStatus, onModel }: Props
 
   useEffect(() => {
     const token = ++tokenRef.current;
+    const controller = new AbortController();
     const body = bodyRef.current!;
     const wrapper = wrapperRef.current!;
     const loaded = loadedRef.current;
@@ -87,7 +76,7 @@ export default function CharacterModel({ pieces, onPieceStatus, onModel }: Props
     for (const [slot, entry] of [...loaded]) {
       if (!pieces[slot]) {
         body.remove(entry.group);
-        disposeGroup(entry.group);
+        disposeModel(entry.group);
         loaded.delete(slot);
       }
     }
@@ -103,26 +92,26 @@ export default function CharacterModel({ pieces, onPieceStatus, onModel }: Props
 
         onPieceStatus?.(slot, "loading");
         try {
-          const { group } = await loadPiece(p.itemHash, p.shaderHash, p.hideHood);
+          const { group } = await loadPiece(p.itemHash, p.shaderHash, p.hideHood, controller.signal);
           // Tag the piece so consumers of the exposed wrapper can find one
           // slot's geometry — e.g. framing the camera on the piece being edited.
           group.userData.slot = slot;
-          if (token !== tokenRef.current) {
-            disposeGroup(group);
+          if (controller.signal.aborted || token !== tokenRef.current) {
+            disposeModel(group);
             return; // a newer request superseded this run
           }
           // Replace any stale group for this slot (item may have changed again).
           const prev = loaded.get(slot);
           if (prev) {
             body.remove(prev.group);
-            disposeGroup(prev.group);
+            disposeModel(prev.group);
           }
           body.add(group);
           loaded.set(slot, { key, group });
           frameCharacter(body, wrapper);
           onPieceStatus?.(slot, "ready");
         } catch (err) {
-          if (token !== tokenRef.current) return;
+          if (controller.signal.aborted || token !== tokenRef.current) return;
           onPieceStatus?.(
             slot,
             "error",
@@ -131,6 +120,7 @@ export default function CharacterModel({ pieces, onPieceStatus, onModel }: Props
         }
       }
     })();
+    return () => controller.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sig]);
 
@@ -141,6 +131,14 @@ export default function CharacterModel({ pieces, onPieceStatus, onModel }: Props
   useEffect(() => {
     (window as unknown as Record<string, unknown>).__character = wrapperRef.current;
     onModel?.(wrapperRef.current!);
+    const loaded = loadedRef.current;
+    const wrapper = wrapperRef.current;
+    return () => {
+      for (const entry of loaded.values()) disposeModel(entry.group);
+      loaded.clear();
+      const debug = window as unknown as Record<string, unknown>;
+      if (debug.__character === wrapper) delete debug.__character;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

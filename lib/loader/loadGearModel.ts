@@ -16,6 +16,7 @@
  * Returns a THREE.Group plus a debug payload for the POC.
  */
 import * as THREE from "three";
+import { ModelResources, ownModel } from "./resources";
 import { parseTgxm } from "@/lib/geometry/tgxm";
 import { buildGeometryFromContainer } from "@/lib/geometry/buildGeometry";
 import { summarize, type TexturePlate, type TexturePlateSet } from "@/lib/geometry/renderMetadata";
@@ -91,9 +92,9 @@ interface FetchedDyes {
   locked: DyeSet;
 }
 
-async function fetchDyeSet(hash: number, targetHash?: number): Promise<FetchedDyes> {
+async function fetchDyeSet(hash: number, targetHash?: number, signal?: AbortSignal): Promise<FetchedDyes> {
   try {
-    const response = await fetch(`/api/dyes/${hash}${targetHash ? `?target=${targetHash}` : ""}`);
+    const response = await fetch(`/api/dyes/${hash}${targetHash ? `?target=${targetHash}` : ""}`, { signal });
     if (!response.ok) throw new Error(`dye lookup failed (${response.status})`);
     const res = await response.json();
     return {
@@ -124,12 +125,12 @@ function buildGeomTextureMap(
   return map;
 }
 
-async function bytesToTexture(
+async function decodeTexture(
   bytes: Uint8Array,
   srgb: boolean,
 ): Promise<THREE.Texture> {
   if (!srgb && bytes[0] === 137 && bytes[1] === 80) {
-    return dataTexture(decodeDataPng(bytes), false, true);
+    return createDataTexture(decodeDataPng(bytes), false, true);
   }
   // Copy into a fresh ArrayBuffer (bytes is a subarray view of the container).
   const blob = new Blob([bytes.slice()]);
@@ -143,7 +144,7 @@ async function bytesToTexture(
   return tex;
 }
 
-function dataTexture(image: RgbaImage, nearest = false, repeat = false): THREE.DataTexture {
+function createDataTexture(image: RgbaImage, nearest = false, repeat = false): THREE.DataTexture {
   const tex = new THREE.DataTexture(image.data, image.width, image.height, THREE.RGBAFormat);
   tex.colorSpace = THREE.NoColorSpace;
   tex.flipY = false;
@@ -156,6 +157,7 @@ function dataTexture(image: RgbaImage, nearest = false, repeat = false): THREE.D
 }
 
 export interface LoadOptions {
+  signal?: AbortSignal;
   /** Apply this shader's dye colours to the model. */
   shaderHash?: number | null;
   /**
@@ -179,6 +181,36 @@ export async function loadGearModel(
   itemHash: number,
   opts: LoadOptions = {},
 ): Promise<LoadedGearModel> {
+  const resources = new ModelResources();
+  const abort = () => resources.dispose();
+  opts.signal?.throwIfAborted();
+  opts.signal?.addEventListener("abort", abort, { once: true });
+  try {
+    const result = await buildGearModel(itemHash, opts, resources);
+    opts.signal?.throwIfAborted();
+    ownModel(result.group, resources);
+    return result;
+  } catch (error) {
+    resources.dispose();
+    throw error;
+  } finally {
+    opts.signal?.removeEventListener("abort", abort);
+  }
+}
+
+async function buildGearModel(itemHash: number, opts: LoadOptions, resources: ModelResources): Promise<LoadedGearModel> {
+  const fetch = (input: RequestInfo | URL) => {
+    opts.signal?.throwIfAborted();
+    return globalThis.fetch(input, { signal: opts.signal });
+  };
+  const bytesToTexture = async (bytes: Uint8Array, srgb: boolean) => {
+    opts.signal?.throwIfAborted();
+    const texture = resources.own(await decodeTexture(bytes, srgb));
+    opts.signal?.throwIfAborted();
+    return texture;
+  };
+  const dataTexture = (image: RgbaImage, nearest = false, repeat = false) =>
+    resources.own(createDataTexture(image, nearest, repeat));
   const warnings: string[] = [];
   const notes: string[] = [];
 
@@ -201,8 +233,8 @@ export async function loadGearModel(
   // slots the item's own gear file marks as locked_dyes, which always win
   // regardless of the applied shader (Bungie's documented resolution order:
   // defaultDyes -> customDyes -> lockedDyes, locked last = highest priority).
-  const itemDyes = await fetchDyeSet(itemHash);
-  const shaderDyes = opts.shaderHash ? await fetchDyeSet(opts.shaderHash, itemHash) : null;
+  const itemDyes = await fetchDyeSet(itemHash, undefined, opts.signal);
+  const shaderDyes = opts.shaderHash ? await fetchDyeSet(opts.shaderHash, itemHash, opts.signal) : null;
   if (itemDyes.warning) warnings.push(itemDyes.warning);
   if (shaderDyes?.warning) warnings.push(shaderDyes.warning);
   const dyeSet: DyeSet = resolveDyeSet(
@@ -344,8 +376,11 @@ export async function loadGearModel(
       const bitmap = await createImageBitmap(new Blob([entry.bytes.slice()]), {
         imageOrientation: "none",
       });
-      ctx.drawImage(bitmap, pl.x, pl.y, pl.w, pl.h);
-      drawn++;
+      try {
+        opts.signal?.throwIfAborted();
+        ctx.drawImage(bitmap, pl.x, pl.y, pl.w, pl.h);
+        drawn++;
+      } finally { bitmap.close(); }
     }
     if (drawn === 0) return null;
 
@@ -408,7 +443,7 @@ export async function loadGearModel(
       ctx.putImageData(img, 0, 0);
     }
 
-    const tex = new THREE.CanvasTexture(canvas);
+    const tex = resources.own(new THREE.CanvasTexture(canvas));
     tex.flipY = false; // Destiny UVs are v-down, matching image rows directly
     tex.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;
     tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping; // atlas — don't bleed
@@ -435,15 +470,18 @@ export async function loadGearModel(
         const raw = await assemblePlate(dyeSlotPlate(plates.dyeslot), false, true);
         if (raw) {
           const decoded = decodeDyeSlotMap(raw.image as RgbaImage);
-          dyeslot = dataTexture(decoded, true);
-          dyeslot.userData.encoding = "change-color-index-plus-one";
+          // Filter the source RGB flags BEFORE decoding, as the reference
+          // shader does. Never filter numeric IDs: that invents other slots.
+          dyeslot = raw;
+          dyeslot.minFilter = THREE.LinearFilter;
+          dyeslot.magFilter = THREE.LinearFilter;
+          dyeslot.userData.encoding = "rgb-flags";
           const overrideTexelsById = [0, 0, 0, 0, 0, 0];
           for (let p = 0; p < decoded.data.length; p += 4) {
             const id = decoded.data[p] - 1;
             if (id >= 0) overrideTexelsById[id]++;
           }
           dyeslot.userData.dyeMap = { width: decoded.width, height: decoded.height, overrideTexelsById };
-          raw.dispose();
         }
       } catch (error) {
         warnings.push(`Dye map unavailable: ${error instanceof Error ? error.message : String(error)}`);
@@ -634,6 +672,7 @@ export async function loadGearModel(
   let totalTriangles = 0;
 
   for (let gi = 0; gi < content.geometry.length; gi++) {
+    opts.signal?.throwIfAborted();
     if (renderSet && !renderSet.has(gi)) continue; // skip overlapping overrides
     if (opts.hideHood && gi === 0) continue; // skip the hood geometry file
     const geom = content.geometry[gi];
@@ -644,6 +683,7 @@ export async function loadGearModel(
       });
       const container = parseTgxm(buf);
       const built = buildGeometryFromContainer(container);
+      for (const mesh of built.meshes) resources.own(mesh.geometry);
       // Dev aid: expose raw metadata + container file names for skeleton R&D.
       if (typeof window !== "undefined") {
         const w = window as unknown as Record<string, unknown>;
@@ -716,6 +756,7 @@ export async function loadGearModel(
           animatedGlow: itemHasAnimatedGlow(itemHash),
           sourceGeometry: m.geometry,
         });
+        materials.forEach((material) => resources.own(material));
         if (materials.some((material) => material.userData.destiny?.approximateEffect)) {
           const note = "Effect shapes use the exported textures. Motion and brightness are preview approximations.";
           if (!notes.includes(note)) notes.push(note);

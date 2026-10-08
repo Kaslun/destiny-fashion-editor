@@ -31,6 +31,7 @@ import type { DyeSet } from "./gearDye";
 import type { GroupInfo } from "@/lib/geometry/buildGeometry";
 import sage from "./fixtures/sage-protector-dyes.json";
 import { parseDyes } from "../bungie/parseGearDyes";
+import { GearNodeMaterial } from "./gearNodeMaterial";
 
 const noDyes: DyeSet = {};
 const tex = () => new THREE.Texture();
@@ -56,7 +57,8 @@ describe("reference iridescence palette", () => {
     const [material] = createGearMaterials(groups, dyes, { diffuse: tex(), gearstack: tex(), iridescenceLookup: tex() }, { useGearstack: true, applyDye: true });
     expect(material.userData.destiny.missingIridescenceLookup).toBe(false);
     expect(material.userData.destiny.iridescenceIds).toContain(materialTypeId);
-    expect((material as THREE.MeshPhysicalNodeMaterial).specularColorNode).toBeTruthy();
+    expect((material as GearNodeMaterial).paletteSpecularNode).toBeTruthy();
+    expect((material as GearNodeMaterial).paletteSpecularAmountNode).toBeTruthy();
     expect((material as THREE.MeshPhysicalNodeMaterial).metalnessNode).toBeTruthy();
   });
   it("does not classify ordinary materials as iridescent", () => {

@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { exchangeCode } from "@/lib/auth/oauth";
 import {
-  encodeSession,
+  sessions,
   sessionCookieOptions,
   OAUTH_STATE_COOKIE,
   SESSION_COOKIE,
@@ -30,7 +30,9 @@ export async function GET(req: NextRequest) {
   try {
     const session = await exchangeCode(code);
     const res = NextResponse.redirect(new URL("/editor?auth=ok", req.url));
-    res.cookies.set(SESSION_COOKIE, encodeSession(session), sessionCookieOptions());
+    const id = await sessions().create(session);
+    await sessions().revoke(req.cookies.get(SESSION_COOKIE)?.value);
+    res.cookies.set(SESSION_COOKIE, id, sessionCookieOptions());
     res.cookies.delete(OAUTH_STATE_COOKIE);
     return res;
   } catch {

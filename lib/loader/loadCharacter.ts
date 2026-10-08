@@ -24,11 +24,13 @@ export async function loadPiece(
   itemHash: number,
   shaderHash?: number | null,
   hideHood?: boolean,
+  signal?: AbortSignal,
 ): Promise<LoadedPiece> {
   const { group, debug } = await loadGearModel(itemHash, {
     shaderHash,
     frame: false,
     hideHood,
+    signal,
   });
   return { group, debug };
 }

@@ -6,6 +6,7 @@ import { createGearMaterials, advancePatternTime, hasAnimatedGlow } from "../mat
 import fixture from "./fixtures/entheogenic-rays.json";
 import spacewalk from "./fixtures/spacewalk-effects.json";
 import hologram from "./fixtures/atlas-hologram-effects.json";
+import wisps from "./fixtures/prismatic-wisps.json";
 import { effectEmissionFallback } from "../materials/effectEmission";
 import { readFileSync } from "node:fs";
 import { decodeDataPng } from "./dataTexture";
@@ -21,6 +22,50 @@ function build(variant = fixture.variants[0]) {
   return buildGeometryFromContainer({ version: 1, identifier: variant.file,
     files, byName: new Map(files.map((f) => [f.name, f])) }).meshes[0];
 }
+
+describe("exported prismatic wisps", () => {
+  it.each(wisps.variants)("preserves both transparent draws and atlas coverage in $file", (variant) => {
+    const { geometry, groups } = build(variant);
+    const originalUV = [...geometry.getAttribute("uv").array];
+    const originalIndices = [...geometry.getIndex()!.array];
+    expect(groups).toHaveLength(2);
+    expect(groups.every((g) => transparentEffect(g)?.kind === "prismatic-wisp")).toBe(true);
+    const effectTextures = new Map(groups[0].patternTextures!.map((name) => [name, new THREE.Texture()]));
+    const materials = createGearMaterials(groups, {}, {
+      diffuse: new THREE.Texture(), effectTextures,
+    }, { sourceGeometry: geometry });
+    expect([...geometry.getAttribute("uv").array]).toEqual(originalUV);
+    expect([...geometry.getIndex()!.array]).toEqual(originalIndices);
+    expect([...geometry.getAttribute("effectUv").array].every((v) => v >= 0 && v <= 1)).toBe(true);
+    for (const mat of materials) {
+      expect(mat.visible).toBe(true);
+      expect(mat.transparent).toBe(true);
+      expect(mat.depthWrite).toBe(false);
+      expect(mat.blending).toBe(THREE.AdditiveBlending);
+      expect(mat.userData.destiny.coverageSource).toBe("diffuse-atlas");
+      expect((mat as THREE.MeshBasicNodeMaterial).mrtNode?.has("emissive")).toBe(true);
+    }
+    advancePatternTime(new THREE.Mesh(geometry, materials), 0.5);
+    expect(materials.every((m) => m.userData.uniforms.uPatternTime.value === 0.5)).toBe(true);
+  });
+
+  it("rejects unrelated programs and hides incomplete effects instead of showing their carrier mesh", () => {
+    const { geometry, groups } = build(wisps.variants[0]);
+    const group = groups[0];
+    for (const change of [{ renderStage: 0 }, { shaderType: 7 },
+      { patternTextures: group.patternTextures!.slice(0, 2) },
+      { patternTextures: [...group.patternTextures!, "unknown_input"] }]) {
+      expect(transparentEffect({ ...group, ...change })).toBeUndefined();
+    }
+    const effectTextures = new Map(group.patternTextures!.map((name) => [name, new THREE.Texture()]));
+    for (const maps of [{}, { effectTextures }, { diffuse: new THREE.Texture() }]) {
+      const [mat] = createGearMaterials([group], {}, maps, { sourceGeometry: geometry });
+      expect(mat.visible).toBe(false);
+    }
+    const [missingUV] = createGearMaterials([group], {}, { diffuse: new THREE.Texture(), effectTextures });
+    expect(missingUV.visible).toBe(false);
+  });
+});
 
 describe("exported ray glow", () => {
   it.each(fixture.variants)("recovers local ribbon coordinates in $file without changing armor coordinates", (variant) => {

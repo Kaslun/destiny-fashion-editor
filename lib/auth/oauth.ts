@@ -5,6 +5,7 @@
  * token endpoint is authenticated with HTTP Basic (client_id:client_secret).
  * Docs: https://github.com/Bungie-net/api/wiki/OAuth-Documentation
  */
+import { TokenRequestError } from "./refreshSession";
 import { env } from "@/lib/env";
 import { BUNGIE_PLATFORM } from "@/lib/bungie/client";
 import type { SessionData } from "./session";
@@ -34,18 +35,17 @@ async function tokenRequest(body: URLSearchParams): Promise<SessionData> {
       "X-API-Key": env.bungieApiKey(),
     },
     body,
+    cache: "no-store", redirect: "error", signal: AbortSignal.timeout(10_000),
   });
   const text = await res.text();
-  let tok: Partial<TokenResponse>;
+  let tok: Partial<TokenResponse> & { error?: string };
   try {
     tok = JSON.parse(text);
   } catch {
-    throw new Error(`Token endpoint returned non-JSON (${res.status}): ${text.slice(0, 160)}`);
+    throw new TokenRequestError(false, res.status === 429 || res.status >= 500);
   }
   if (!res.ok || !tok.access_token) {
-    throw new Error(
-      `Token exchange failed (${res.status}): ${(tok as { error_description?: string }).error_description ?? text.slice(0, 160)}`,
-    );
+    throw new TokenRequestError(tok.error === "invalid_grant", res.status === 429 || res.status >= 500);
   }
   const now = Date.now();
   return {

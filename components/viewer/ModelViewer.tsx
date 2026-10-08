@@ -190,13 +190,16 @@ function StudioEnvironment({ intensity = 1 }: { intensity?: number }) {
     // The renderer is initialized before R3F hands it over (see getRenderer),
     // so the synchronous fromScene path is safe here.
     const pmrem = new THREE.PMREMGenerator(gl as unknown as THREE.WebGPURenderer);
-    const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    const room = new RoomEnvironment();
+    const target = pmrem.fromScene(room, 0.04);
+    const envTex = target.texture;
+    room.dispose();
     scene.environment = envTex;
     scene.environmentIntensity = intensity;
     pmrem.dispose();
     return () => {
       scene.environment = null;
-      envTex.dispose();
+      target.dispose();
     };
   }, [gl, scene, intensity]);
   return null;

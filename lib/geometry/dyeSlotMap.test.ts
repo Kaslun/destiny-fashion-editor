@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { decodeDyeSlotMap, dyeSlotPlate } from "./dyeSlotMap";
+import { decodeDyeSlotMap, dyeSlotPlate, dyeIdFromFlags, type DyeFlagOps } from "./dyeSlotMap";
 import { decodeDataPng, placeDataTile, type RgbaImage } from "./dataTexture";
 import { parseRenderMetadata } from "./renderMetadata";
 import iron from "./fixtures/iron-dye-map.json";
@@ -7,6 +7,18 @@ import iron from "./fixtures/iron-dye-map.json";
 const pixel = (rgba: number[]) => decodeDyeSlotMap({ width: 1, height: 1, data: new Uint8Array(rgba) }).data;
 
 describe("mobile categorical dye maps", () => {
+  it("classifies filtered RGB flags without interpolating numeric material IDs", () => {
+    const ops: DyeFlagOps<number, boolean> = {
+      aboveHalf: (v) => v > 0.5, and: (a, b) => a && b, not: (v) => !v,
+      select: (c, yes, no) => c ? yes : no, value: (v) => v,
+    };
+    // Red (ID 1) to cyan (ID 4): averaging their IDs would invent ID 2/3.
+    // Decode the filtered color instead, retaining geometry at the midpoint.
+    expect(dyeIdFromFlags(0.75, 0.25, 0.25, ops)).toBe(1);
+    expect(dyeIdFromFlags(0.5, 0.5, 0.5, ops)).toBe(-1);
+    expect(dyeIdFromFlags(0.25, 0.75, 0.75, ops)).toBe(4);
+  });
+
   it.each([
     ["black", [0, 0, 0], 0], ["red", [255, 0, 0], 2],
     ["green", [0, 255, 0], 3], ["yellow", [255, 255, 0], 4],

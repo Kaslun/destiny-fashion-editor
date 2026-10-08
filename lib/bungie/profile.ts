@@ -6,6 +6,8 @@
  * transmogged appearance, not just the base items).
  */
 import { bungieFetch } from "./client";
+import { getItemIndex } from "./itemDefs";
+import { equippedShader } from "./shaderPlugs";
 
 /** DestinyInventoryBucket hashes → our editor slot keys. */
 const BUCKET_SLOT: Record<number, string> = {
@@ -27,6 +29,7 @@ export interface EquippedItem {
   itemHash: number;
   /** applied ornament (transmog appearance), if any — render THIS geometry. */
   ornamentHash: number | null;
+  shaderHash: number | null;
   instanceId: string | null;
   /** socket plug hashes (used to resolve the applied shader). */
   plugHashes: number[];
@@ -110,6 +113,7 @@ export async function getCharacterLoadouts(token: string): Promise<CharacterLoad
   const equip = profile.characterEquipment?.data ?? {};
   const socketData = profile.itemComponents?.sockets?.data ?? {};
 
+  const { shaderPlugs } = await getItemIndex();
   const loadouts: CharacterLoadout[] = [];
   for (const [characterId, char] of Object.entries(chars)) {
     const items: EquippedItem[] = [];
@@ -129,6 +133,7 @@ export async function getCharacterLoadouts(token: string): Promise<CharacterLoad
         ornamentHash: it.overrideStyleItemHash ?? null,
         instanceId: it.itemInstanceId ?? null,
         plugHashes,
+        shaderHash: equippedShader(plugHashes, shaderPlugs),
       });
     }
     loadouts.push({

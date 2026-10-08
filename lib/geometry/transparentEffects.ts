@@ -21,7 +21,15 @@ export function matchCloudTextureNames(names: string[] = []): { palette?: string
   };
 }
 
-export type TransparentEffect = { kind: "ray-glow" | "digital-cloud" | "atlas-hologram"; textures: string[] };
+export function matchDarknessTextureNames(names: string[] = []): { twirl?: string; blob?: string; darkness?: string } {
+  return {
+    twirl: names.find((n) => n.toLowerCase().endsWith("_vfx_warpmap_twirl_a")),
+    blob: names.find((n) => n.toLowerCase().endsWith("_blob01_dif")),
+    darkness: names.find((n) => n.toLowerCase().endsWith("_darkness_plate")),
+  };
+}
+
+export type TransparentEffect = { kind: "ray-glow" | "digital-cloud" | "atlas-hologram" | "prismatic-wisp"; textures: string[] };
 
 /** Stage establishes transparency; complete texture signatures select a preview.
  * A shader number or one shared texture alone never determines the effect.
@@ -31,6 +39,10 @@ export function transparentEffect(group: GroupInfo): TransparentEffect | undefin
   if (isRayGlowGroup(group)) {
     const { height, smoke } = matchRayTextureNames(group.patternTextures);
     return { kind: "ray-glow", textures: [height!, smoke!] };
+  }
+  const { twirl, blob, darkness } = matchDarknessTextureNames(group.patternTextures);
+  if (twirl && blob && darkness && group.patternTextures?.length === 3) {
+    return { kind: "prismatic-wisp", textures: [twirl, blob, darkness] };
   }
   const { palette, cloud, mask } = matchCloudTextureNames(group.patternTextures);
   if (palette && cloud && mask) return { kind: "digital-cloud", textures: [palette, cloud, mask] };

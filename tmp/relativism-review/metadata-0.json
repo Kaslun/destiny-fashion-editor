@@ -1,0 +1,2658 @@
+{
+  "render_model": {
+    "render_meshes": [
+      {
+        "shader_tags": [
+          "default",
+          "default_shadow_generate",
+          "depth_prepass",
+          "compute_skinning",
+          "light_shaft_occlusion",
+          "default_skin_prepass"
+        ],
+        "position_offset": [
+          -0.013307,
+          0.000001,
+          0.996472
+        ],
+        "position_scale": [
+          0.947201,
+          0.947201,
+          0.947201
+        ],
+        "texcoord0_scale_offset": [
+          0.49667,
+          0.49667,
+          0.499123,
+          0.497591
+        ],
+        "texcoord_offset": [
+          0.499123,
+          0.497591
+        ],
+        "texcoord_scale": [
+          0.49667,
+          0.49667
+        ],
+        "stage_part_offsets": [
+          0,
+          16,
+          16,
+          16,
+          32,
+          32,
+          32,
+          32,
+          40,
+          40,
+          40,
+          40,
+          40,
+          40,
+          40,
+          40,
+          40,
+          40,
+          40,
+          40,
+          40,
+          40,
+          40,
+          40,
+          64
+        ],
+        "index_buffer": {
+          "file_name": "0.indexbuffer.tgx",
+          "byte_size": 32970,
+          "value_byte_size": 2
+        },
+        "vertex_buffers": [
+          {
+            "file_name": "0.0.vertexbuffer.tgx",
+            "byte_size": 163904,
+            "stride_byte_size": 32
+          },
+          {
+            "file_name": "0.1.vertexbuffer.tgx",
+            "byte_size": 20488,
+            "stride_byte_size": 4
+          }
+        ],
+        "data_driven_vertex_buffer": {
+          "file_name": "0.0.datadrivenvertexbuffer.tgx",
+          "byte_size": 196,
+          "stride_byte_size": 4
+        },
+        "single_pass_skin_vertex_buffer": {
+          "file_name": "0.0.singlepassskinbuffer.tgx",
+          "byte_size": 19784,
+          "stride_byte_size": 4
+        },
+        "stage_part_list": [
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 59,
+            "index_count": 3351,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 3
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 3411,
+            "index_count": 860,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 2,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 4272,
+            "index_count": 4057,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 9175,
+            "index_count": 1409,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 3
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 10585,
+            "index_count": 380,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 2,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 10966,
+            "index_count": 1683,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 13059,
+            "index_count": 867,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 3
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 13927,
+            "index_count": 202,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 2,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 14130,
+            "index_count": 961,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 15342,
+            "index_count": 401,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 3
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 15744,
+            "index_count": 114,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 2,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 15859,
+            "index_count": 520,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 8330,
+            "index_count": 790,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 24584,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 12650,
+            "index_count": 350,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 24584,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 15092,
+            "index_count": 202,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 24584,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 16380,
+            "index_count": 105,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 24584,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 59,
+            "index_count": 3351,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 4
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 3411,
+            "index_count": 860,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 2,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 3
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 4272,
+            "index_count": 4057,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 8330,
+            "index_count": 790,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 24584,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 9175,
+            "index_count": 1409,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 4
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 10585,
+            "index_count": 380,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 2,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 3
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 10966,
+            "index_count": 1683,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 12650,
+            "index_count": 350,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 24584,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 13059,
+            "index_count": 867,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 4
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 13927,
+            "index_count": 202,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 2,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 3
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 14130,
+            "index_count": 961,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 15092,
+            "index_count": 202,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 24584,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 15342,
+            "index_count": 401,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 3
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 15744,
+            "index_count": 114,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 2,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 15859,
+            "index_count": 520,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 16380,
+            "index_count": 105,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 24584,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_twirl_a",
+                "2503085780_blob01_dif",
+                "1442532712_darkness_plate"
+              ],
+              "type": 8
+            },
+            "variant_shader_index": -1,
+            "start_index": 0,
+            "index_count": 37,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_twirl_a",
+                "2503085780_blob01_dif",
+                "1442532712_darkness_plate"
+              ],
+              "type": 8
+            },
+            "variant_shader_index": -1,
+            "start_index": 38,
+            "index_count": 20,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_twirl_a",
+                "2503085780_blob01_dif",
+                "1442532712_darkness_plate"
+              ],
+              "type": 8
+            },
+            "variant_shader_index": -1,
+            "start_index": 9121,
+            "index_count": 33,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_twirl_a",
+                "2503085780_blob01_dif",
+                "1442532712_darkness_plate"
+              ],
+              "type": 8
+            },
+            "variant_shader_index": -1,
+            "start_index": 9155,
+            "index_count": 19,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_twirl_a",
+                "2503085780_blob01_dif",
+                "1442532712_darkness_plate"
+              ],
+              "type": 8
+            },
+            "variant_shader_index": -1,
+            "start_index": 13001,
+            "index_count": 37,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_twirl_a",
+                "2503085780_blob01_dif",
+                "1442532712_darkness_plate"
+              ],
+              "type": 8
+            },
+            "variant_shader_index": -1,
+            "start_index": 13039,
+            "index_count": 19,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_twirl_a",
+                "2503085780_blob01_dif",
+                "1442532712_darkness_plate"
+              ],
+              "type": 8
+            },
+            "variant_shader_index": -1,
+            "start_index": 15295,
+            "index_count": 25,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_twirl_a",
+                "2503085780_blob01_dif",
+                "1442532712_darkness_plate"
+              ],
+              "type": 8
+            },
+            "variant_shader_index": -1,
+            "start_index": 15321,
+            "index_count": 20,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 0,
+            "index_count": 37,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 38,
+            "index_count": 20,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 9121,
+            "index_count": 33,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 9155,
+            "index_count": 19,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 13001,
+            "index_count": 37,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 13039,
+            "index_count": 19,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 15295,
+            "index_count": 25,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 15321,
+            "index_count": 20,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 59,
+            "index_count": 3351,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 3
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 3411,
+            "index_count": 860,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 2,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 4272,
+            "index_count": 4057,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 9175,
+            "index_count": 1409,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 3
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 10585,
+            "index_count": 380,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 2,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 10966,
+            "index_count": 1683,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 13059,
+            "index_count": 867,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 3
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 13927,
+            "index_count": 202,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 2,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 14130,
+            "index_count": 961,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 15342,
+            "index_count": 401,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 3
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 15744,
+            "index_count": 114,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 2,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 15859,
+            "index_count": 520,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 8330,
+            "index_count": 790,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 24584,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 12650,
+            "index_count": 350,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 24584,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 15092,
+            "index_count": 202,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 24584,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 16380,
+            "index_count": 105,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 24584,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 1
+          }
+        ],
+        "stage_part_vertex_stream_layout_definitions": [
+          {
+            "type": "k_first_dynamic_vertex_stream_layout",
+            "formats": [
+              {
+                "stride": 32,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_float4",
+                    "semantic": "_tfx_vb_semantic_position",
+                    "normalized": false,
+                    "size": 16,
+                    "offset": 0,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_normal",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 8,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_tangent",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 16,
+                    "semantic_index": 0
+                  }
+                ]
+              },
+              {
+                "stride": 4,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_short2",
+                    "semantic": "_tfx_vb_semantic_texcoord",
+                    "normalized": true,
+                    "size": 4,
+                    "offset": 0,
+                    "semantic_index": 0
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "k_first_dynamic_vertex_stream_layout",
+            "formats": [
+              {
+                "stride": 32,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_float4",
+                    "semantic": "_tfx_vb_semantic_position",
+                    "normalized": false,
+                    "size": 16,
+                    "offset": 0,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_normal",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 8,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_tangent",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 16,
+                    "semantic_index": 0
+                  }
+                ]
+              },
+              {
+                "stride": 4,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_short2",
+                    "semantic": "_tfx_vb_semantic_texcoord",
+                    "normalized": true,
+                    "size": 4,
+                    "offset": 0,
+                    "semantic_index": 0
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "k_first_dynamic_vertex_stream_layout",
+            "formats": [
+              {
+                "stride": 32,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_float4",
+                    "semantic": "_tfx_vb_semantic_position",
+                    "normalized": false,
+                    "size": 16,
+                    "offset": 0,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_normal",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 8,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_tangent",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 16,
+                    "semantic_index": 0
+                  }
+                ]
+              },
+              {
+                "stride": 4,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_short2",
+                    "semantic": "_tfx_vb_semantic_texcoord",
+                    "normalized": true,
+                    "size": 4,
+                    "offset": 0,
+                    "semantic_index": 0
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "k_first_dynamic_vertex_stream_layout",
+            "formats": [
+              {
+                "stride": 32,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_float4",
+                    "semantic": "_tfx_vb_semantic_position",
+                    "normalized": false,
+                    "size": 16,
+                    "offset": 0,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_normal",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 8,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_tangent",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 16,
+                    "semantic_index": 0
+                  }
+                ]
+              },
+              {
+                "stride": 4,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_short2",
+                    "semantic": "_tfx_vb_semantic_texcoord",
+                    "normalized": true,
+                    "size": 4,
+                    "offset": 0,
+                    "semantic_index": 0
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "k_first_dynamic_vertex_stream_layout",
+            "formats": [
+              {
+                "stride": 32,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_float4",
+                    "semantic": "_tfx_vb_semantic_position",
+                    "normalized": false,
+                    "size": 16,
+                    "offset": 0,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_normal",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 8,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_tangent",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 16,
+                    "semantic_index": 0
+                  }
+                ]
+              },
+              {
+                "stride": 4,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_short2",
+                    "semantic": "_tfx_vb_semantic_texcoord",
+                    "normalized": true,
+                    "size": 4,
+                    "offset": 0,
+                    "semantic_index": 0
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "k_first_dynamic_vertex_stream_layout",
+            "formats": [
+              {
+                "stride": 32,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_float4",
+                    "semantic": "_tfx_vb_semantic_position",
+                    "normalized": false,
+                    "size": 16,
+                    "offset": 0,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_normal",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 8,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_tangent",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 16,
+                    "semantic_index": 0
+                  }
+                ]
+              },
+              {
+                "stride": 4,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_short2",
+                    "semantic": "_tfx_vb_semantic_texcoord",
+                    "normalized": true,
+                    "size": 4,
+                    "offset": 0,
+                    "semantic_index": 0
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "k_first_dynamic_vertex_stream_layout",
+            "formats": [
+              {
+                "stride": 32,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_float4",
+                    "semantic": "_tfx_vb_semantic_position",
+                    "normalized": false,
+                    "size": 16,
+                    "offset": 0,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_normal",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 8,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_tangent",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 16,
+                    "semantic_index": 0
+                  }
+                ]
+              },
+              {
+                "stride": 4,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_short2",
+                    "semantic": "_tfx_vb_semantic_texcoord",
+                    "normalized": true,
+                    "size": 4,
+                    "offset": 0,
+                    "semantic_index": 0
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "k_first_dynamic_vertex_stream_layout",
+            "formats": [
+              {
+                "stride": 32,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_float4",
+                    "semantic": "_tfx_vb_semantic_position",
+                    "normalized": false,
+                    "size": 16,
+                    "offset": 0,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_normal",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 8,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_tangent",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 16,
+                    "semantic_index": 0
+                  }
+                ]
+              },
+              {
+                "stride": 4,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_short2",
+                    "semantic": "_tfx_vb_semantic_texcoord",
+                    "normalized": true,
+                    "size": 4,
+                    "offset": 0,
+                    "semantic_index": 0
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "k_first_dynamic_vertex_stream_layout",
+            "formats": [
+              {
+                "stride": 32,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_float4",
+                    "semantic": "_tfx_vb_semantic_position",
+                    "normalized": false,
+                    "size": 16,
+                    "offset": 0,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_normal",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 8,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_tangent",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 16,
+                    "semantic_index": 0
+                  }
+                ]
+              },
+              {
+                "stride": 4,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_short2",
+                    "semantic": "_tfx_vb_semantic_texcoord",
+                    "normalized": true,
+                    "size": 4,
+                    "offset": 0,
+                    "semantic_index": 0
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "k_first_dynamic_vertex_stream_layout",
+            "formats": [
+              {
+                "stride": 32,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_float4",
+                    "semantic": "_tfx_vb_semantic_position",
+                    "normalized": false,
+                    "size": 16,
+                    "offset": 0,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_normal",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 8,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_tangent",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 16,
+                    "semantic_index": 0
+                  }
+                ]
+              },
+              {
+                "stride": 4,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_short2",
+                    "semantic": "_tfx_vb_semantic_texcoord",
+                    "normalized": true,
+                    "size": 4,
+                    "offset": 0,
+                    "semantic_index": 0
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "k_first_dynamic_vertex_stream_layout",
+            "formats": [
+              {
+                "stride": 32,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_float4",
+                    "semantic": "_tfx_vb_semantic_position",
+                    "normalized": false,
+                    "size": 16,
+                    "offset": 0,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_normal",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 8,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_tangent",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 16,
+                    "semantic_index": 0
+                  }
+                ]
+              },
+              {
+                "stride": 4,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_short2",
+                    "semantic": "_tfx_vb_semantic_texcoord",
+                    "normalized": true,
+                    "size": 4,
+                    "offset": 0,
+                    "semantic_index": 0
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "k_first_dynamic_vertex_stream_layout",
+            "formats": [
+              {
+                "stride": 32,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_float4",
+                    "semantic": "_tfx_vb_semantic_position",
+                    "normalized": false,
+                    "size": 16,
+                    "offset": 0,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_normal",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 8,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_tangent",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 16,
+                    "semantic_index": 0
+                  }
+                ]
+              },
+              {
+                "stride": 4,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_short2",
+                    "semantic": "_tfx_vb_semantic_texcoord",
+                    "normalized": true,
+                    "size": 4,
+                    "offset": 0,
+                    "semantic_index": 0
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "k_first_dynamic_vertex_stream_layout",
+            "formats": [
+              {
+                "stride": 32,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_float4",
+                    "semantic": "_tfx_vb_semantic_position",
+                    "normalized": false,
+                    "size": 16,
+                    "offset": 0,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_normal",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 8,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_tangent",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 16,
+                    "semantic_index": 0
+                  }
+                ]
+              },
+              {
+                "stride": 4,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_short2",
+                    "semantic": "_tfx_vb_semantic_texcoord",
+                    "normalized": true,
+                    "size": 4,
+                    "offset": 0,
+                    "semantic_index": 0
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "k_first_dynamic_vertex_stream_layout",
+            "formats": [
+              {
+                "stride": 32,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_float4",
+                    "semantic": "_tfx_vb_semantic_position",
+                    "normalized": false,
+                    "size": 16,
+                    "offset": 0,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_normal",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 8,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_tangent",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 16,
+                    "semantic_index": 0
+                  }
+                ]
+              },
+              {
+                "stride": 4,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_short2",
+                    "semantic": "_tfx_vb_semantic_texcoord",
+                    "normalized": true,
+                    "size": 4,
+                    "offset": 0,
+                    "semantic_index": 0
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "k_first_dynamic_vertex_stream_layout",
+            "formats": [
+              {
+                "stride": 32,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_float4",
+                    "semantic": "_tfx_vb_semantic_position",
+                    "normalized": false,
+                    "size": 16,
+                    "offset": 0,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_normal",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 8,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_tangent",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 16,
+                    "semantic_index": 0
+                  }
+                ]
+              },
+              {
+                "stride": 4,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_short2",
+                    "semantic": "_tfx_vb_semantic_texcoord",
+                    "normalized": true,
+                    "size": 4,
+                    "offset": 0,
+                    "semantic_index": 0
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "k_first_dynamic_vertex_stream_layout",
+            "formats": [
+              {
+                "stride": 32,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_float4",
+                    "semantic": "_tfx_vb_semantic_position",
+                    "normalized": false,
+                    "size": 16,
+                    "offset": 0,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_normal",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 8,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_tangent",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 16,
+                    "semantic_index": 0
+                  }
+                ]
+              },
+              {
+                "stride": 4,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_short2",
+                    "semantic": "_tfx_vb_semantic_texcoord",
+                    "normalized": true,
+                    "size": 4,
+                    "offset": 0,
+                    "semantic_index": 0
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "k_first_dynamic_vertex_stream_layout",
+            "formats": [
+              {
+                "stride": 32,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_float4",
+                    "semantic": "_tfx_vb_semantic_position",
+                    "normalized": false,
+                    "size": 16,
+                    "offset": 0,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_normal",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 8,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_tangent",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 16,
+                    "semantic_index": 0
+                  }
+                ]
+              },
+              {
+                "stride": 4,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_short2",
+                    "semantic": "_tfx_vb_semantic_texcoord",
+                    "normalized": true,
+                    "size": 4,
+                    "offset": 0,
+                    "semantic_index": 0
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "k_first_dynamic_vertex_stream_layout",
+            "formats": [
+              {
+                "stride": 32,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_float4",
+                    "semantic": "_tfx_vb_semantic_position",
+                    "normalized": false,
+                    "size": 16,
+                    "offset": 0,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_normal",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 8,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_tangent",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 16,
+                    "semantic_index": 0
+                  }
+                ]
+              },
+              {
+                "stride": 4,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_short2",
+                    "semantic": "_tfx_vb_semantic_texcoord",
+                    "normalized": true,
+                    "size": 4,
+                    "offset": 0,
+                    "semantic_index": 0
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "k_first_dynamic_vertex_stream_layout",
+            "formats": [
+              {
+                "stride": 32,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_float4",
+                    "semantic": "_tfx_vb_semantic_position",
+                    "normalized": false,
+                    "size": 16,
+                    "offset": 0,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_normal",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 8,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_tangent",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 16,
+                    "semantic_index": 0
+                  }
+                ]
+              },
+              {
+                "stride": 4,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_short2",
+                    "semantic": "_tfx_vb_semantic_texcoord",
+                    "normalized": true,
+                    "size": 4,
+                    "offset": 0,
+                    "semantic_index": 0
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "k_first_dynamic_vertex_stream_layout",
+            "formats": [
+              {
+                "stride": 32,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_float4",
+                    "semantic": "_tfx_vb_semantic_position",
+                    "normalized": false,
+                    "size": 16,
+                    "offset": 0,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_normal",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 8,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_tangent",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 16,
+                    "semantic_index": 0
+                  }
+                ]
+              },
+              {
+                "stride": 4,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_short2",
+                    "semantic": "_tfx_vb_semantic_texcoord",
+                    "normalized": true,
+                    "size": 4,
+                    "offset": 0,
+                    "semantic_index": 0
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "k_first_dynamic_vertex_stream_layout",
+            "formats": [
+              {
+                "stride": 32,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_float4",
+                    "semantic": "_tfx_vb_semantic_position",
+                    "normalized": false,
+                    "size": 16,
+                    "offset": 0,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_normal",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 8,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_tangent",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 16,
+                    "semantic_index": 0
+                  }
+                ]
+              },
+              {
+                "stride": 4,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_short2",
+                    "semantic": "_tfx_vb_semantic_texcoord",
+                    "normalized": true,
+                    "size": 4,
+                    "offset": 0,
+                    "semantic_index": 0
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "k_first_dynamic_vertex_stream_layout",
+            "formats": [
+              {
+                "stride": 32,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_float4",
+                    "semantic": "_tfx_vb_semantic_position",
+                    "normalized": false,
+                    "size": 16,
+                    "offset": 0,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_normal",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 8,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_tangent",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 16,
+                    "semantic_index": 0
+                  }
+                ]
+              },
+              {
+                "stride": 4,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_short2",
+                    "semantic": "_tfx_vb_semantic_texcoord",
+                    "normalized": true,
+                    "size": 4,
+                    "offset": 0,
+                    "semantic_index": 0
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "k_first_dynamic_vertex_stream_layout",
+            "formats": [
+              {
+                "stride": 32,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_float4",
+                    "semantic": "_tfx_vb_semantic_position",
+                    "normalized": false,
+                    "size": 16,
+                    "offset": 0,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_normal",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 8,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_tangent",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 16,
+                    "semantic_index": 0
+                  }
+                ]
+              },
+              {
+                "stride": 4,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_short2",
+                    "semantic": "_tfx_vb_semantic_texcoord",
+                    "normalized": true,
+                    "size": 4,
+                    "offset": 0,
+                    "semantic_index": 0
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "k_first_dynamic_vertex_stream_layout",
+            "formats": [
+              {
+                "stride": 32,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_float4",
+                    "semantic": "_tfx_vb_semantic_position",
+                    "normalized": false,
+                    "size": 16,
+                    "offset": 0,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_normal",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 8,
+                    "semantic_index": 0
+                  },
+                  {
+                    "type": "_vertex_format_attribute_short4",
+                    "semantic": "_tfx_vb_semantic_tangent",
+                    "normalized": true,
+                    "size": 8,
+                    "offset": 16,
+                    "semantic_index": 0
+                  }
+                ]
+              },
+              {
+                "stride": 4,
+                "elements": [
+                  {
+                    "type": "_vertex_format_attribute_short2",
+                    "semantic": "_tfx_vb_semantic_texcoord",
+                    "normalized": true,
+                    "size": 4,
+                    "offset": 0,
+                    "semantic_index": 0
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "stage_part_vertex_stream_layout_lookup": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23
+        ],
+        "bounding_volume": {
+          "min_x": -0.290700138,
+          "max_x": 0.264086127,
+          "min_y": -0.460201025,
+          "max_y": 0.460203052,
+          "min_z": 1.10331285,
+          "max_z": 1.943673
+        }
+      }
+    ]
+  },
+  "texture_plates": [
+    {
+      "gear_decal_dye_index": -1,
+      "number_of_plateable_gear_slots": 0,
+      "number_of_gear_slots": 0,
+      "plate_set": {
+        "diffuse": {
+          "reference_id": "ad97f85ad3f42321569a0418df18ac16",
+          "plate_index": 1,
+          "plate_size": [
+            1024,
+            1024
+          ],
+          "texture_placements": [
+            {
+              "texture_size_x": 1024,
+              "texture_size_y": 512,
+              "position_x": 0,
+              "position_y": 0,
+              "texture_tag_name": "2827297288_hun_exotic_prism_class_gbit_1024_512_0"
+            }
+          ]
+        },
+        "normal": {
+          "reference_id": "9f1e845b9df274c8566fe8a9f810abb3",
+          "plate_index": 1,
+          "plate_size": [
+            512,
+            512
+          ],
+          "texture_placements": [
+            {
+              "texture_size_x": 512,
+              "texture_size_y": 256,
+              "position_x": 0,
+              "position_y": 0,
+              "texture_tag_name": "2827297288_hun_exotic_prism_class_gbit_512_256_1"
+            }
+          ]
+        },
+        "gearstack": {
+          "reference_id": "812f9a71248e10718a49046baa494529",
+          "plate_index": 1,
+          "plate_size": [
+            512,
+            512
+          ],
+          "texture_placements": [
+            {
+              "texture_size_x": 512,
+              "texture_size_y": 256,
+              "position_x": 0,
+              "position_y": 0,
+              "texture_tag_name": "2827297288_hun_exotic_prism_class_gbit_512_256_2"
+            }
+          ]
+        },
+        "dyeslot": {
+          "reference_id": "6ecc957520ebcdb424b882e0cda4462c",
+          "plate_index": 1,
+          "plate_size": [
+            512,
+            512
+          ],
+          "texture_placements": [
+            {
+              "texture_size_x": 128,
+              "texture_size_y": 64,
+              "position_x": 0,
+              "position_y": 0,
+              "texture_tag_name": "2827297288_hun_exotic_prism_class_gbit_128_64_3"
+            }
+          ]
+        }
+      },
+      "gear_slot_requires_plating": true
+    }
+  ]
+}

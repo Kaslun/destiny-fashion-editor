@@ -85,7 +85,7 @@ export async function bungieFetch<T>(
  * Fetch a raw (non-Platform) asset/CDN file from bungie.net as bytes.
  * Used server-side to proxy geometry/texture files around browser CORS (#250).
  */
-export async function bungieFetchRaw(path: string): Promise<Response> {
+export async function bungieFetchRaw(path: string, init: RequestInit = {}): Promise<Response> {
   const url = path.startsWith("http") ? path : `${BUNGIE_ROOT}${path}`;
-  return fetch(url, { headers: { "X-API-Key": apiKey() } });
+  return fetch(url, { ...init, headers: { "X-API-Key": apiKey() } });
 }

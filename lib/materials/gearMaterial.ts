@@ -43,9 +43,11 @@ import {
   type DyeTint,
 } from "./gearDye";
 import { authoredRemap, GEARSTACK } from "./destinyMaterialModel";
+import { dyeIdFromFlags } from "../geometry/dyeSlotMap";
+import { GearNodeMaterial } from "./gearNodeMaterial";
 import { effectEmissionFallback, type EffectEmission } from "./effectEmission";
 import type { GroupInfo } from "@/lib/geometry/buildGeometry";
-import { isRayGlowGroup, matchRayTextureNames, matchCloudTextureNames, transparentEffect, prepareEffectUVs } from "../geometry/transparentEffects";
+import { isRayGlowGroup, matchRayTextureNames, matchCloudTextureNames, matchDarknessTextureNames, transparentEffect, prepareEffectUVs } from "../geometry/transparentEffects";
 
 export const GEARSTACK_CHANNELS = [
   "off",
@@ -95,13 +97,14 @@ export function matchPatternTextureNames(
 
 export function isPatternGroup(g: GroupInfo): boolean {
   const { noise, ripple } = matchPatternTextureNames(g.patternTextures);
-  return !!noise && !!ripple;
+  return !!noise && !!ripple && g.patternTextures?.length === 2 &&
+    (g.renderStage == null || g.renderStage === 0) &&
+    (g.shaderType === undefined || g.shaderType === 2 || g.shaderType === 7);
 }
 
 const PATTERN_TILE_SCALE = 3.0;
 const PATTERN_WARP_STRENGTH = 0.35;
 const PATTERN_FLOW_SPEED = 0.06;
-const PATTERN_SHEEN = 0.38;
 
 const ACCENT_TWIRL_SUFFIX = "_vfx_warpmap_twirl_a";
 const ACCENT_BLOB_SUFFIX = "blob01_dif";
@@ -431,6 +434,38 @@ function unsupportedTransparentEffect(group: GroupInfo): THREE.Material {
   return mat;
 }
 
+/** Reference-calibrated preview of the twirl/blob/darkness program. Coverage
+ * stays in the authored atlas; local UVs only drive the moving interference. */
+function makePrismaticWisp(group: GroupInfo, maps: GearTextureMaps, hasUV: boolean): THREE.Material {
+  const names = matchDarknessTextureNames(group.patternTextures);
+  const twirl = maps.effectTextures?.get(names.twirl!);
+  const blob = maps.effectTextures?.get(names.blob!);
+  const darkness = maps.effectTextures?.get(names.darkness!);
+  const mat = new THREE.MeshBasicNodeMaterial();
+  mat.transparent = true;
+  mat.depthWrite = false;
+  mat.side = THREE.DoubleSide;
+  mat.blending = THREE.AdditiveBlending;
+  mat.userData.destiny = { effect: "prismatic-wisp", approximateEffect: true,
+    coverageSource: "diffuse-atlas", missingTextures: !maps.diffuse || !twirl || !blob || !darkness,
+    missingUV: !hasUV };
+  if (!maps.diffuse || !twirl || !blob || !darkness || !hasUV) { mat.visible = false; return mat; }
+  const clock = uniform(0);
+  mat.userData.uniforms = { uPatternTime: clock };
+  const local = attribute<"vec2">("effectUv", "vec2");
+  const warp = texture(twirl, local.add(vec2(clock.mul(0.04), 0))).rg.sub(0.5);
+  const flow = local.add(warp.mul(0.3)).sub(vec2(0, clock.mul(0.07)));
+  const cells = texture(blob, flow).r;
+  const smoke = texture(darkness, flow).r;
+  const coverage = luminance(texture(maps.diffuse, uv()).rgb);
+  const edge = smoothstep(0, 0.12, local.x).mul(smoothstep(0, 0.12, local.x.oneMinus()))
+    .mul(smoothstep(0, 0.12, local.y)).mul(smoothstep(0, 0.12, local.y.oneMinus()));
+  mat.opacityNode = coverage.mul(edge).mul(smoothstep(0.22, 0.75, cells.mul(smoke))).mul(0.65);
+  mat.colorNode = mix(vec3(0.18, 0.04, 0.65), vec3(0.8, 0.32, 0.07), cells).mul(1.4);
+  mat.mrtNode = mrt({ emissive: vec4(mat.colorNode, output.a) });
+  return mat;
+}
+
 const ABILITY_VFX_FLAG = 0x2000;
 
 function isAbilityVfxGroup(g: GroupInfo): boolean {
@@ -531,7 +566,7 @@ function makeOpaque(
   const prims: DyeTint[] = [0, 1, 2].map((s) => dyeForSlot(dyes, s).primary);
   const secs: DyeTint[] = [0, 1, 2].map((s) => dyeForSlot(dyes, s).secondary);
 
-  const mat = new THREE.MeshSSSNodeMaterial();
+  const mat = new GearNodeMaterial();
   mat.side = THREE.DoubleSide;
   mat.metalness = ownTint.metalness;
   mat.roughness = 0.6;
@@ -704,13 +739,18 @@ function makeOpaque(
   slotF = select(uBandMode.greaterThan(2.5), float(validSlot ? slot : -1), slotF);
   parityF = select(uBandMode.greaterThan(2.5), partParity, parityF);
   if (maps.dyeslot && validSlot) {
-    // Loader decodes categorical RGB to ID+1 in R. Never blend IDs or use RGB
-    // as material weights. Alpha marks coverage; black source pixels inherit.
+    // Sample the original flags before classifying, preserving authored soft
+    // boundaries without ever interpolating material IDs or parameter rows.
     const image = maps.dyeslot.image as { width?: number; height?: number } | undefined;
     const size = vec2(image?.width ?? 1, image?.height ?? 1);
-    const dye = textureLoad(maps.dyeslot,
+    const rawFlags = maps.dyeslot.userData.encoding === "rgb-flags";
+    const dye = rawFlags ? texture(maps.dyeslot, uvN) : textureLoad(maps.dyeslot,
       ivec2(clamp(floor(uvN.mul(size)), vec2(0), size.sub(1))), int(0));
-    const id = floor(dye.r.mul(255).add(0.5)).sub(1);
+    const id = rawFlags ? dyeIdFromFlags<TSLNode, TSLNode>(dye.r, dye.g, dye.b, {
+      aboveHalf: (v) => v.greaterThan(0.5), and: (a, b) => a.and(b), not: (v) => v.not(),
+      select: (c, a, b) => select(c, a, b), value: (v) => float(v),
+    })
+      : floor(dye.r.mul(255).add(0.5)).sub(1);
     const active = dye.a.greaterThan(0.5).and(id.greaterThanEqual(0)).and(id.lessThan(6));
     const mapSlot = floor(id.mul(0.5));
     slotF = select(active, mapSlot, slotF);
@@ -818,6 +858,7 @@ function makeOpaque(
     model: "d2-mobile-mastife", iridescenceIds,
     missingIridescenceLookup: iridescenceIds.length > 0 && !maps.iridescenceLookup,
     approximateEffects: [pattern ? "pattern shimmer" : null, accent ? "darkness" : null].filter(Boolean),
+    emissionSource: pattern ? "prismatic-surface-mask" : "gearstack-blue",
     slotSource: "stage-part",
     boundaryReconstruction: maps.materialBoundaries?.userData.materialBoundaries ?? null,
   };
@@ -834,7 +875,8 @@ function makeOpaque(
     // Reference even IDs use a metallic color palette; odd IDs tint dielectric
     // specular. Palette alpha attenuates the coating independently of RGB.
     dyedColor = mix(dyedColor.mul(mix(1, palette.a, active)), palette.rgb, iridescentMetalAmount);
-    mat.specularColorNode = mix(vec3(1.0), palette.rgb, select(metallicPalette, float(0), amount));
+    mat.paletteSpecularNode = palette.rgb;
+    mat.paletteSpecularAmountNode = select(metallicPalette, float(0), amount);
   }
 
   const wantsPattern = pattern && !!maps.patternNoise && !!maps.patternRipple;
@@ -860,23 +902,23 @@ function makeOpaque(
       .sub(vec2(uPatternTime.mul(PATTERN_FLOW_SPEED * 0.5), 0.0));
     const noiseSample = texture(maps.patternNoise, noiseUv).r;
 
-    const fresnel = pow(
-      clamp(dot(normalView, positionViewDirection), 0.0, 1.0).oneMinus(),
-      3.0,
-    );
-    const colorMix = clamp(fresnel.mul(0.85).add(noiseSample.mul(0.35)), 0.0, 1.0);
-    const iridescentWhite = vec3(0.9, 0.93, 1.0);
-    const iridescentBlue = vec3(0.3, 0.46, 1.0);
-    const iridescentPurple = vec3(0.5, 0.28, 0.98);
-    const iridescentMagenta = vec3(0.88, 0.36, 0.9);
-    const lowMix = mix(iridescentWhite, iridescentBlue, smoothstep(0.0, 0.4, colorMix));
-    const midMix = mix(lowMix, iridescentPurple, smoothstep(0.4, 0.72, colorMix));
-    const iridescentTint = mix(midMix, iridescentMagenta, smoothstep(0.72, 1.0, colorMix));
     const baseLum = luminance(dyedColor);
-    const shimmerDesat = smoothstep(0.45, 0.8, baseLum).mul(0.82);
-    const shimmerTint = mix(iridescentTint, vec3(1.0, 1.0, 1.0), shimmerDesat);
-    const shimmered = dyedColor.mul(shimmerTint).mul(1.25);
-    dyedColor = mix(dyedColor, shimmered, PATTERN_SHEEN);
+    const facing = clamp(dot(normalView, positionViewDirection), 0, 1);
+    const phase = noiseSample.mul(8).add(facing.mul(3));
+    const spectrum = vec3(sin(phase).mul(0.5).add(0.5),
+      sin(phase.add(2.1)).mul(0.5).add(0.5), sin(phase.add(4.2)).mul(0.5).add(0.5));
+    // Preserve a pale pearl finish on bright dyes, with richer interference on
+    // dark fabric. The exported B mask confines the coating to its own panels.
+    const darkCoat = mix(vec3(0.08, 0.3, 0.62), vec3(0.5, 0.08, 0.42), spectrum.r);
+    const pearl = mix(vec3(0.78, 0.96, 1), vec3(1, 0.75, 0.93), spectrum.g);
+    // Classify the finish from its dye, before atlas shading/detail darkens it.
+    // Otherwise shaded pearl panels receive the saturated dark-cloth effect.
+    const bright = smoothstep(0.15, 0.4, luminance(wearTint));
+    const interference = mix(darkCoat, pearl, bright);
+    const normalizedTint = interference.div(max(luminance(interference), 0.08));
+    const coating = normalizedTint.mul(baseLum);
+    const strength = emissiveMask.mul(mix(0.65, 0.15, bright));
+    dyedColor = mix(dyedColor, coating, strength);
   }
 
   if (
@@ -954,7 +996,10 @@ function makeOpaque(
       emissionColor = select(dot(emissionColor, vec3(1)).greaterThan(0), emissionColor, fallback);
       mat.userData.destiny.emissionFallback = emissionFallback.source;
     }
-    let emissive = emissionColor.mul(emissiveMask).mul(slotAvailable);
+    // Inferred preview interpretation for the exact noise/ripple program:
+    // use B for coating coverage. Ordinary red/white emission defaults wash
+    // out whole panels here; this is not a universal gearstack rule.
+    let emissive = pattern ? vec3(0) : emissionColor.mul(emissiveMask).mul(slotAvailable);
     if (maps.emissive) {
       emissive = emissive.add(texture(maps.emissive, uvN).rgb);
     }
@@ -1072,6 +1117,7 @@ export function createGearMaterials(
   return groups.map((g) => {
     if (isRayGlowGroup(g)) return makeRayGlow(g, dyes, maps, hasEffectUV);
     const effect = transparentEffect(g);
+    if (effect?.kind === "prismatic-wisp") return makePrismaticWisp(g, maps, hasEffectUV);
     if (effect?.kind === "digital-cloud" || effect?.kind === "atlas-hologram") return makeCloudEffect(g, dyes, maps, hasEffectUV);
     if (g.glow) return makeGlow(maps);
     if (opts.animatedGlow && isAbilityVfxGroup(g)) {

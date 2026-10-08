@@ -8,6 +8,7 @@
  * fallback) and reports the error upward so the POC can state which path we're
  * on.
  */
+import { disposeModel } from "@/lib/loader/resources";
 import { useEffect, useState } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
@@ -35,14 +36,17 @@ export default function GearModel({ itemHash, shaderHash, onStatus, onModel }: P
 
   useEffect(() => {
     let disposed = false;
+    let owned: THREE.Group | null = null;
+    const controller = new AbortController();
     setGroup(null);
     setFailed(false);
     onStatus?.({ path: "loading" });
     onModel?.(null);
 
-    loadGearModel(itemHash, { shaderHash })
+    loadGearModel(itemHash, { shaderHash, signal: controller.signal })
       .then(({ group, debug }) => {
-        if (disposed) return;
+        if (disposed) { disposeModel(group); return; }
+        owned = group;
         // Dev aid: expose the loaded model for console/scene inspection.
         (window as unknown as Record<string, unknown>).__gear = group;
         setGroup(group);
@@ -60,6 +64,10 @@ export default function GearModel({ itemHash, shaderHash, onStatus, onModel }: P
 
     return () => {
       disposed = true;
+      controller.abort();
+      if (owned) disposeModel(owned);
+      const debug = window as unknown as Record<string, unknown>;
+      if (debug.__gear === owned) delete debug.__gear;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [itemHash, shaderHash]);

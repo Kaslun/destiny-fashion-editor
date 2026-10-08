@@ -5,7 +5,27 @@ import type { TexturePlate } from "./renderMetadata";
 // RGB are categorical flags, not blend weights. Black retains the geometry ID.
 // Red/magenta -> secondary 0, green -> primary 1, yellow -> secondary 1,
 // blue/cyan -> primary 2, white -> secondary 2.
-const COLOR_IDS = [-1, 1, 2, 3, 4, 1, 4, 5] as const;
+export interface DyeFlagOps<N, B> {
+  aboveHalf: (v: N) => B;
+  and: (a: B, b: B) => B;
+  not: (v: B) => B;
+  select: (condition: B, yes: N, no: N) => N;
+  value: (v: number) => N;
+}
+
+/** Decode sampled RGB flags, not interpolated numeric material IDs. */
+export function dyeIdFromFlags<N, B>(r: N, g: N, b: N, ops: DyeFlagOps<N, B>): N {
+  const red = ops.aboveHalf(r), green = ops.aboveHalf(g), blue = ops.aboveHalf(b);
+  const { and, not, select, value } = ops;
+  return select(and(and(red, green), blue), value(5),
+    select(and(not(red), blue), value(4), select(and(red, green), value(3),
+      select(and(green, not(blue)), value(2), select(red, value(1), value(-1))))));
+}
+
+const scalarFlags: DyeFlagOps<number, boolean> = {
+  aboveHalf: (v) => v > 0.5, and: (a, b) => a && b, not: (v) => !v,
+  select: (c, a, b) => c ? a : b, value: (v) => v,
+};
 
 /** D2 mobile reports the gearstack-sized canvas for dyeslot, while its
  * placement coordinates and sizes are already at quarter resolution.
@@ -22,7 +42,9 @@ export function dyeSlotPlate(plate: TexturePlate): TexturePlate {
   return { ...plate, size: [w / 4, h / 4] };
 }
 
-/** Decode once before GPU upload. R stores ID+1 (1..6), A marks an override.
+/** Decode texel centers for diagnostics or explicit nearest-sampled ID maps.
+ * The live renderer filters RGB flags first and calls dyeIdFromFlags per pixel.
+ * R stores ID+1 (1..6), A marks an override.
  * Zero/transparent texels preserve the geometry's slot AND primary/secondary.
  * The resulting texture must use nearest sampling without mipmaps.
  */
@@ -30,9 +52,7 @@ export function decodeDyeSlotMap(source: RgbaImage): RgbaImage {
   const data = new Uint8Array(source.data.length);
   for (let p = 0; p < data.length; p += 4) {
     if (source.data[p + 3] < 128) continue;
-    const bits = (source.data[p] >= 128 ? 1 : 0) |
-      (source.data[p + 1] >= 128 ? 2 : 0) | (source.data[p + 2] >= 128 ? 4 : 0);
-    const id = COLOR_IDS[bits];
+    const id = dyeIdFromFlags(source.data[p] / 255, source.data[p + 1] / 255, source.data[p + 2] / 255, scalarFlags);
     if (id < 0) continue;
     data[p] = id + 1;
     data[p + 3] = 255;

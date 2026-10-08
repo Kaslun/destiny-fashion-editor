@@ -1,0 +1,3970 @@
+{
+  "itemHash": 2809120022,
+  "retrieved": "2026-10-01",
+  "default_dyes": [
+    {
+      "hash": 2145792071,
+      "investment_hash": 3271617095,
+      "slot_type_index": 0,
+      "cloth": false,
+      "material_properties": {
+        "detail_diffuse_transform": [
+          1.5,
+          1.5,
+          0,
+          0
+        ],
+        "detail_normal_transform": [
+          1.5,
+          1.5,
+          0,
+          0
+        ],
+        "spec_aa_xform": [
+          2.988281,
+          -1.5,
+          0.339703,
+          0
+        ],
+        "primary_albedo_tint": [
+          0.847,
+          0.898106,
+          1.1,
+          1
+        ],
+        "primary_emissive_tint_color": [
+          1,
+          0,
+          0,
+          1
+        ],
+        "primary_material_params": [
+          0.25,
+          1,
+          0.5,
+          0
+        ],
+        "primary_material_advanced_params": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "primary_roughness_remap": [
+          -40,
+          80,
+          0,
+          0.25
+        ],
+        "primary_worn_albedo_tint": [
+          1.15,
+          1.15,
+          1.15,
+          1
+        ],
+        "primary_wear_remap": [
+          -2,
+          12,
+          0,
+          1
+        ],
+        "primary_worn_roughness_remap": [
+          0.909091,
+          0.606061,
+          0,
+          0.66
+        ],
+        "primary_worn_material_parameters": [
+          0,
+          0,
+          0.900901,
+          1
+        ],
+        "secondary_albedo_tint": [
+          0,
+          0.113,
+          0.710284,
+          1
+        ],
+        "secondary_emissive_tint_color": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "secondary_material_params": [
+          0.179775,
+          0.082089,
+          0.25,
+          0
+        ],
+        "secondary_material_advanced_params": [
+          4,
+          0,
+          0,
+          0
+        ],
+        "secondary_roughness_remap": [
+          0.025074,
+          1.174926,
+          0,
+          1
+        ],
+        "secondary_worn_albedo_tint": [
+          0.676768,
+          0.676768,
+          0.676768,
+          1
+        ],
+        "secondary_wear_remap": [
+          -0.5,
+          4,
+          0,
+          1
+        ],
+        "secondary_worn_roughness_remap": [
+          -0.25,
+          2.75,
+          0.5,
+          0.4
+        ],
+        "secondary_worn_material_parameters": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "worn_albedo_tint": [
+          1.15,
+          1.15,
+          1.15,
+          1
+        ],
+        "wear_remap": [
+          -2,
+          12,
+          0,
+          1
+        ],
+        "worn_roughness_remap": [
+          0.909091,
+          0.606061,
+          0,
+          0.66
+        ],
+        "worn_material_parameters": [
+          0,
+          0,
+          0.900901,
+          1
+        ],
+        "emissive_tint_color_and_intensity_bias": [
+          1,
+          0,
+          0,
+          1
+        ],
+        "primary_emissive_tint_color_and_intensity_bias": [
+          1,
+          0,
+          0,
+          1
+        ],
+        "secondary_emissive_tint_color_and_intensity_bias": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "specular_properties": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "lobe_pbr_params": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "tint_pbr_params": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "emissive_pbr_params": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "subsurface_scattering_strength_and_emissive": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "primary_subsurface_scattering_strength_and_emissive": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "secondary_subsurface_scattering_strength_and_emissive": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "diffuse": {
+          "name": "327503503_gear_detail_metal_dif",
+          "reference_id": "eb7fe6e3dc78173b8c541396f833f534"
+        },
+        "normal": {
+          "name": "327503503_gear_detail_metal_norm",
+          "reference_id": "13621895091c36553dc1e66b04c7af43"
+        },
+        "primary_diffuse": {
+          "name": "_FFFFFFFF_327503503_gear_detail_metal_dif",
+          "reference_id": "eb7fe6e3dc78173b8c541396f833f534"
+        },
+        "secondary_diffuse": {
+          "name": "_FFFFFFFF_327503503_gear_detail_metal_dif",
+          "reference_id": "eb7fe6e3dc78173b8c541396f833f534"
+        }
+      }
+    },
+    {
+      "hash": 133848106,
+      "investment_hash": 1259673130,
+      "slot_type_index": 1,
+      "cloth": true,
+      "material_properties": {
+        "detail_diffuse_transform": [
+          1.25,
+          1.25,
+          0,
+          0
+        ],
+        "detail_normal_transform": [
+          1.25,
+          1.25,
+          0,
+          0
+        ],
+        "spec_aa_xform": [
+          -2.789063,
+          1.4,
+          0.349952,
+          0
+        ],
+        "primary_albedo_tint": [
+          0.640273,
+          0.692659,
+          0.880375,
+          1
+        ],
+        "primary_emissive_tint_color": [
+          1,
+          0,
+          0,
+          1
+        ],
+        "primary_material_params": [
+          0.786517,
+          0.921348,
+          0.561799,
+          0.202247
+        ],
+        "primary_material_advanced_params": [
+          -1,
+          0.5,
+          0,
+          0
+        ],
+        "primary_roughness_remap": [
+          -0.5,
+          1.375,
+          -1,
+          2
+        ],
+        "primary_worn_albedo_tint": [
+          0.54147,
+          0.539527,
+          0.573467,
+          1
+        ],
+        "primary_wear_remap": [
+          -3,
+          6.5,
+          0,
+          1
+        ],
+        "primary_worn_roughness_remap": [
+          0,
+          0,
+          1,
+          0
+        ],
+        "primary_worn_material_parameters": [
+          0.263877,
+          0.169114,
+          1,
+          0
+        ],
+        "secondary_albedo_tint": [
+          0.216153,
+          0.314621,
+          0.504994,
+          1
+        ],
+        "secondary_emissive_tint_color": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "secondary_material_params": [
+          0.966292,
+          0.932584,
+          0.842696,
+          0.404495
+        ],
+        "secondary_material_advanced_params": [
+          -1,
+          0.5,
+          0,
+          0
+        ],
+        "secondary_roughness_remap": [
+          -0.5,
+          2,
+          -1,
+          2
+        ],
+        "secondary_worn_albedo_tint": [
+          0.253059,
+          0.546377,
+          0.86763,
+          1
+        ],
+        "secondary_wear_remap": [
+          -1,
+          4,
+          0,
+          1
+        ],
+        "secondary_worn_roughness_remap": [
+          -3,
+          4,
+          0.75,
+          0.25
+        ],
+        "secondary_worn_material_parameters": [
+          0,
+          0.720721,
+          0,
+          0.33
+        ],
+        "worn_albedo_tint": [
+          0.54147,
+          0.539527,
+          0.573467,
+          1
+        ],
+        "wear_remap": [
+          -3,
+          6.5,
+          0,
+          1
+        ],
+        "worn_roughness_remap": [
+          0,
+          0,
+          1,
+          0
+        ],
+        "worn_material_parameters": [
+          0.263877,
+          0.169114,
+          1,
+          0
+        ],
+        "emissive_tint_color_and_intensity_bias": [
+          1,
+          0,
+          0,
+          1
+        ],
+        "primary_emissive_tint_color_and_intensity_bias": [
+          1,
+          0,
+          0,
+          1
+        ],
+        "secondary_emissive_tint_color_and_intensity_bias": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "specular_properties": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "lobe_pbr_params": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "tint_pbr_params": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "emissive_pbr_params": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "subsurface_scattering_strength_and_emissive": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "primary_subsurface_scattering_strength_and_emissive": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "secondary_subsurface_scattering_strength_and_emissive": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "diffuse": {
+          "name": "401755037_detail_cloth_weave_dif",
+          "reference_id": "3d9bc5caa3a1ce01fb5bf5cab8dee76a"
+        },
+        "normal": {
+          "name": "401755037_detail_cloth_weave_norm",
+          "reference_id": "e0d264c956fe3084854a6fcb1b5513b6"
+        },
+        "primary_diffuse": {
+          "name": "_FFFFFFFF_401755037_detail_cloth_weave_dif",
+          "reference_id": "3d9bc5caa3a1ce01fb5bf5cab8dee76a"
+        },
+        "secondary_diffuse": {
+          "name": "_FFFFFFFF_401755037_detail_cloth_weave_dif",
+          "reference_id": "3d9bc5caa3a1ce01fb5bf5cab8dee76a"
+        }
+      }
+    },
+    {
+      "hash": 1838247841,
+      "investment_hash": 2150108577,
+      "slot_type_index": 2,
+      "cloth": false,
+      "material_properties": {
+        "detail_diffuse_transform": [
+          3,
+          3,
+          0,
+          0
+        ],
+        "detail_normal_transform": [
+          3,
+          3,
+          0,
+          0
+        ],
+        "spec_aa_xform": [
+          1.992188,
+          -1,
+          0.4,
+          0
+        ],
+        "primary_albedo_tint": [
+          0.424306,
+          0.435697,
+          0.469869,
+          1
+        ],
+        "primary_emissive_tint_color": [
+          1,
+          0,
+          0,
+          1
+        ],
+        "primary_material_params": [
+          0.5,
+          1,
+          0.468468,
+          0
+        ],
+        "primary_material_advanced_params": [
+          3,
+          0.25,
+          0,
+          0
+        ],
+        "primary_roughness_remap": [
+          -1.75,
+          3.5,
+          0,
+          4
+        ],
+        "primary_worn_albedo_tint": [
+          0.0855,
+          0.131037,
+          0.15,
+          1
+        ],
+        "primary_wear_remap": [
+          -1.8,
+          5.15,
+          0,
+          1
+        ],
+        "primary_worn_roughness_remap": [
+          -5,
+          11,
+          0,
+          1
+        ],
+        "primary_worn_material_parameters": [
+          0,
+          1,
+          0,
+          0
+        ],
+        "secondary_albedo_tint": [
+          0.0804,
+          0.083172,
+          0.12,
+          1
+        ],
+        "secondary_emissive_tint_color": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "secondary_material_params": [
+          0.5,
+          1,
+          0.468468,
+          0
+        ],
+        "secondary_material_advanced_params": [
+          3,
+          0,
+          0,
+          0
+        ],
+        "secondary_roughness_remap": [
+          -0.657875,
+          1.845375,
+          0.144144,
+          0.720721
+        ],
+        "secondary_worn_albedo_tint": [
+          0.344637,
+          0.526344,
+          0.602544,
+          1
+        ],
+        "secondary_wear_remap": [
+          -16.9999962,
+          32.9999924,
+          0.9,
+          0.1
+        ],
+        "secondary_worn_roughness_remap": [
+          0,
+          1.71875,
+          0,
+          0.288288
+        ],
+        "secondary_worn_material_parameters": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "worn_albedo_tint": [
+          0.0855,
+          0.131037,
+          0.15,
+          1
+        ],
+        "wear_remap": [
+          -1.8,
+          5.15,
+          0,
+          1
+        ],
+        "worn_roughness_remap": [
+          -5,
+          11,
+          0,
+          1
+        ],
+        "worn_material_parameters": [
+          0,
+          1,
+          0,
+          0
+        ],
+        "emissive_tint_color_and_intensity_bias": [
+          1,
+          0,
+          0,
+          1
+        ],
+        "primary_emissive_tint_color_and_intensity_bias": [
+          1,
+          0,
+          0,
+          1
+        ],
+        "secondary_emissive_tint_color_and_intensity_bias": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "specular_properties": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "lobe_pbr_params": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "tint_pbr_params": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "emissive_pbr_params": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "subsurface_scattering_strength_and_emissive": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "primary_subsurface_scattering_strength_and_emissive": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "secondary_subsurface_scattering_strength_and_emissive": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "textures": {
+        "diffuse": {
+          "name": "327503503_gear_detail_leather_dif",
+          "reference_id": "ec27aa4bc898474ebe15b7f8ae86ae1c"
+        },
+        "normal": {
+          "name": "3079566084_gear_detail_leather_norm",
+          "reference_id": "b63e38c33dc37f26e2b4c28e795b914a"
+        },
+        "primary_diffuse": {
+          "name": "_FFFFFFFF_327503503_gear_detail_leather_dif",
+          "reference_id": "ec27aa4bc898474ebe15b7f8ae86ae1c"
+        },
+        "secondary_diffuse": {
+          "name": "_FFFFFFFF_327503503_gear_detail_leather_dif",
+          "reference_id": "ec27aa4bc898474ebe15b7f8ae86ae1c"
+        }
+      }
+    }
+  ],
+  "render_model": {
+    "render_meshes": [
+      {
+        "stage_part_list": [
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 59,
+            "index_count": 3351,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 3
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 3411,
+            "index_count": 860,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 2,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 4272,
+            "index_count": 4057,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 9175,
+            "index_count": 1409,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 3
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 10585,
+            "index_count": 380,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 2,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 10966,
+            "index_count": 1683,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 13059,
+            "index_count": 867,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 3
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 13927,
+            "index_count": 202,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 2,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 14130,
+            "index_count": 961,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 15342,
+            "index_count": 401,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 3
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 15744,
+            "index_count": 114,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 2,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 15859,
+            "index_count": 520,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 8330,
+            "index_count": 790,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 24584,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 12650,
+            "index_count": 350,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 24584,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 15092,
+            "index_count": 202,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 24584,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 16380,
+            "index_count": 105,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 24584,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 59,
+            "index_count": 3351,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 4
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 3411,
+            "index_count": 860,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 2,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 3
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 4272,
+            "index_count": 4057,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 8330,
+            "index_count": 790,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 24584,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 9175,
+            "index_count": 1409,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 4
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 10585,
+            "index_count": 380,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 2,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 3
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 10966,
+            "index_count": 1683,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 12650,
+            "index_count": 350,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 24584,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 13059,
+            "index_count": 867,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 4
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 13927,
+            "index_count": 202,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 2,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 3
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 14130,
+            "index_count": 961,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 15092,
+            "index_count": 202,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 24584,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 15342,
+            "index_count": 401,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 3
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 15744,
+            "index_count": 114,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 2,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 15859,
+            "index_count": 520,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 16380,
+            "index_count": 105,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 24584,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_twirl_a",
+                "2503085780_blob01_dif",
+                "1442532712_darkness_plate"
+              ],
+              "type": 8
+            },
+            "variant_shader_index": -1,
+            "start_index": 0,
+            "index_count": 37,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_twirl_a",
+                "2503085780_blob01_dif",
+                "1442532712_darkness_plate"
+              ],
+              "type": 8
+            },
+            "variant_shader_index": -1,
+            "start_index": 38,
+            "index_count": 20,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_twirl_a",
+                "2503085780_blob01_dif",
+                "1442532712_darkness_plate"
+              ],
+              "type": 8
+            },
+            "variant_shader_index": -1,
+            "start_index": 9121,
+            "index_count": 33,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_twirl_a",
+                "2503085780_blob01_dif",
+                "1442532712_darkness_plate"
+              ],
+              "type": 8
+            },
+            "variant_shader_index": -1,
+            "start_index": 9155,
+            "index_count": 19,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_twirl_a",
+                "2503085780_blob01_dif",
+                "1442532712_darkness_plate"
+              ],
+              "type": 8
+            },
+            "variant_shader_index": -1,
+            "start_index": 13001,
+            "index_count": 37,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_twirl_a",
+                "2503085780_blob01_dif",
+                "1442532712_darkness_plate"
+              ],
+              "type": 8
+            },
+            "variant_shader_index": -1,
+            "start_index": 13039,
+            "index_count": 19,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_twirl_a",
+                "2503085780_blob01_dif",
+                "1442532712_darkness_plate"
+              ],
+              "type": 8
+            },
+            "variant_shader_index": -1,
+            "start_index": 15295,
+            "index_count": 25,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_twirl_a",
+                "2503085780_blob01_dif",
+                "1442532712_darkness_plate"
+              ],
+              "type": 8
+            },
+            "variant_shader_index": -1,
+            "start_index": 15321,
+            "index_count": 20,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 0,
+            "index_count": 37,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 38,
+            "index_count": 20,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 9121,
+            "index_count": 33,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 9155,
+            "index_count": 19,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 13001,
+            "index_count": 37,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 13039,
+            "index_count": 19,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 15295,
+            "index_count": 25,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 15321,
+            "index_count": 20,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 59,
+            "index_count": 3351,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 3
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 3411,
+            "index_count": 860,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 2,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 4272,
+            "index_count": 4057,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 9175,
+            "index_count": 1409,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 3
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 10585,
+            "index_count": 380,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 2,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 10966,
+            "index_count": 1683,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 13059,
+            "index_count": 867,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 3
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 13927,
+            "index_count": 202,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 2,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 14130,
+            "index_count": 961,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 15342,
+            "index_count": 401,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 3
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 15744,
+            "index_count": 114,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 2,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 15859,
+            "index_count": 520,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 8330,
+            "index_count": 790,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 24584,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 12650,
+            "index_count": 350,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 24584,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 15092,
+            "index_count": 202,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 24584,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 16380,
+            "index_count": 105,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 24584,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 1
+          }
+        ],
+        "stage_part_offsets": [
+          0,
+          16,
+          16,
+          16,
+          32,
+          32,
+          32,
+          32,
+          40,
+          40,
+          40,
+          40,
+          40,
+          40,
+          40,
+          40,
+          40,
+          40,
+          40,
+          40,
+          40,
+          40,
+          40,
+          40,
+          64
+        ]
+      },
+      {
+        "stage_part_list": [
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 2
+            },
+            "variant_shader_index": -1,
+            "start_index": 0,
+            "index_count": 486,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 2,
+            "external_identifier": 0,
+            "primitive_type": 3,
+            "lod_category": {
+              "value": 3,
+              "name": "_lod_category_0123"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 2
+            },
+            "variant_shader_index": -1,
+            "start_index": 486,
+            "index_count": 348,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 2,
+            "external_identifier": 0,
+            "primitive_type": 3,
+            "lod_category": {
+              "value": 3,
+              "name": "_lod_category_0123"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 2
+            },
+            "variant_shader_index": -1,
+            "start_index": 0,
+            "index_count": 486,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 0,
+            "gear_dye_change_color_index": 2,
+            "external_identifier": 0,
+            "primitive_type": 3,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 2
+            },
+            "variant_shader_index": -1,
+            "start_index": 486,
+            "index_count": 348,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 0,
+            "gear_dye_change_color_index": 2,
+            "external_identifier": 0,
+            "primitive_type": 3,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 2
+            },
+            "variant_shader_index": -1,
+            "start_index": 0,
+            "index_count": 486,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 2,
+            "external_identifier": 0,
+            "primitive_type": 3,
+            "lod_category": {
+              "value": 3,
+              "name": "_lod_category_0123"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 2
+            },
+            "variant_shader_index": -1,
+            "start_index": 486,
+            "index_count": 348,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 2,
+            "external_identifier": 0,
+            "primitive_type": 3,
+            "lod_category": {
+              "value": 3,
+              "name": "_lod_category_0123"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 2
+            },
+            "variant_shader_index": -1,
+            "start_index": 0,
+            "index_count": 486,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 0,
+            "gear_dye_change_color_index": 2,
+            "external_identifier": 0,
+            "primitive_type": 3,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 2
+            },
+            "variant_shader_index": -1,
+            "start_index": 486,
+            "index_count": 348,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 0,
+            "gear_dye_change_color_index": 2,
+            "external_identifier": 0,
+            "primitive_type": 3,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 2
+            },
+            "variant_shader_index": -1,
+            "start_index": 0,
+            "index_count": 486,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 2,
+            "external_identifier": 0,
+            "primitive_type": 3,
+            "lod_category": {
+              "value": 3,
+              "name": "_lod_category_0123"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 2
+            },
+            "variant_shader_index": -1,
+            "start_index": 486,
+            "index_count": 348,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 2,
+            "external_identifier": 0,
+            "primitive_type": 3,
+            "lod_category": {
+              "value": 3,
+              "name": "_lod_category_0123"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 2
+            },
+            "variant_shader_index": -1,
+            "start_index": 0,
+            "index_count": 486,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 0,
+            "gear_dye_change_color_index": 2,
+            "external_identifier": 0,
+            "primitive_type": 3,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 2
+            },
+            "variant_shader_index": -1,
+            "start_index": 486,
+            "index_count": 348,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 0,
+            "gear_dye_change_color_index": 2,
+            "external_identifier": 0,
+            "primitive_type": 3,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 1
+          }
+        ],
+        "stage_part_offsets": [
+          0,
+          4,
+          4,
+          4,
+          8,
+          8,
+          8,
+          8,
+          8,
+          8,
+          8,
+          8,
+          8,
+          8,
+          8,
+          8,
+          8,
+          8,
+          8,
+          8,
+          8,
+          8,
+          8,
+          8,
+          12
+        ]
+      },
+      {
+        "stage_part_list": [
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 78,
+            "index_count": 3341,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 3
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 3420,
+            "index_count": 868,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 2,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 4289,
+            "index_count": 4060,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 9226,
+            "index_count": 1437,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 3
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 10664,
+            "index_count": 374,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 2,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 11039,
+            "index_count": 1709,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 13172,
+            "index_count": 888,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 3
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 14061,
+            "index_count": 234,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 2,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 14296,
+            "index_count": 982,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 15543,
+            "index_count": 421,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 3
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 15965,
+            "index_count": 128,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 2,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 16094,
+            "index_count": 514,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 8350,
+            "index_count": 796,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 24584,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 12749,
+            "index_count": 343,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 24584,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 15279,
+            "index_count": 206,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 24584,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 16609,
+            "index_count": 101,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 24584,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 78,
+            "index_count": 3341,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 4
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 3420,
+            "index_count": 868,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 2,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 3
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 4289,
+            "index_count": 4060,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 8350,
+            "index_count": 796,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 24584,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 9226,
+            "index_count": 1437,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 4
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 10664,
+            "index_count": 374,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 2,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 3
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 11039,
+            "index_count": 1709,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 12749,
+            "index_count": 343,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 24584,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 13172,
+            "index_count": 888,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 4
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 14061,
+            "index_count": 234,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 2,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 3
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 14296,
+            "index_count": 982,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 15279,
+            "index_count": 206,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 24584,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 15543,
+            "index_count": 421,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 3
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 15965,
+            "index_count": 128,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 2,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 16094,
+            "index_count": 514,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 16609,
+            "index_count": 101,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 24584,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_twirl_a",
+                "2503085780_blob01_dif",
+                "1442532712_darkness_plate"
+              ],
+              "type": 8
+            },
+            "variant_shader_index": -1,
+            "start_index": 0,
+            "index_count": 56,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_twirl_a",
+                "2503085780_blob01_dif",
+                "1442532712_darkness_plate"
+              ],
+              "type": 8
+            },
+            "variant_shader_index": -1,
+            "start_index": 57,
+            "index_count": 20,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_twirl_a",
+                "2503085780_blob01_dif",
+                "1442532712_darkness_plate"
+              ],
+              "type": 8
+            },
+            "variant_shader_index": -1,
+            "start_index": 9147,
+            "index_count": 58,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_twirl_a",
+                "2503085780_blob01_dif",
+                "1442532712_darkness_plate"
+              ],
+              "type": 8
+            },
+            "variant_shader_index": -1,
+            "start_index": 9206,
+            "index_count": 19,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_twirl_a",
+                "2503085780_blob01_dif",
+                "1442532712_darkness_plate"
+              ],
+              "type": 8
+            },
+            "variant_shader_index": -1,
+            "start_index": 13093,
+            "index_count": 58,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_twirl_a",
+                "2503085780_blob01_dif",
+                "1442532712_darkness_plate"
+              ],
+              "type": 8
+            },
+            "variant_shader_index": -1,
+            "start_index": 13152,
+            "index_count": 19,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_twirl_a",
+                "2503085780_blob01_dif",
+                "1442532712_darkness_plate"
+              ],
+              "type": 8
+            },
+            "variant_shader_index": -1,
+            "start_index": 15486,
+            "index_count": 35,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_twirl_a",
+                "2503085780_blob01_dif",
+                "1442532712_darkness_plate"
+              ],
+              "type": 8
+            },
+            "variant_shader_index": -1,
+            "start_index": 15522,
+            "index_count": 20,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 0,
+            "index_count": 56,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 57,
+            "index_count": 20,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 9147,
+            "index_count": 58,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 9206,
+            "index_count": 19,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 13093,
+            "index_count": 58,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 13152,
+            "index_count": 19,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 15486,
+            "index_count": 35,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 15522,
+            "index_count": 20,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16400,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 78,
+            "index_count": 3341,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 3
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 3420,
+            "index_count": 868,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 2,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 4289,
+            "index_count": 4060,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 9226,
+            "index_count": 1437,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 3
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 10664,
+            "index_count": 374,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 2,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 11039,
+            "index_count": 1709,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 13172,
+            "index_count": 888,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 3
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 14061,
+            "index_count": 234,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 2,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 14296,
+            "index_count": 982,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 15543,
+            "index_count": 421,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 0,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 3
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 15965,
+            "index_count": 128,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 2,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 2
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 16094,
+            "index_count": 514,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 8350,
+            "index_count": 796,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 24584,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 12749,
+            "index_count": 343,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 24584,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 4,
+              "name": "_lod_category_1"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 15279,
+            "index_count": 206,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 24584,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 7,
+              "name": "_lod_category_2"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 7
+            },
+            "variant_shader_index": -1,
+            "start_index": 16609,
+            "index_count": 101,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 24584,
+            "gear_dye_change_color_index": 0,
+            "external_identifier": 1,
+            "primitive_type": 5,
+            "lod_category": {
+              "value": 9,
+              "name": "_lod_category_3"
+            },
+            "lod_run": 1
+          }
+        ],
+        "stage_part_offsets": [
+          0,
+          16,
+          16,
+          16,
+          32,
+          32,
+          32,
+          32,
+          40,
+          40,
+          40,
+          40,
+          40,
+          40,
+          40,
+          40,
+          40,
+          40,
+          40,
+          40,
+          40,
+          40,
+          40,
+          40,
+          64
+        ]
+      },
+      {
+        "stage_part_list": [
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 2
+            },
+            "variant_shader_index": -1,
+            "start_index": 0,
+            "index_count": 348,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 2,
+            "external_identifier": 0,
+            "primitive_type": 3,
+            "lod_category": {
+              "value": 3,
+              "name": "_lod_category_0123"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 2
+            },
+            "variant_shader_index": -1,
+            "start_index": 348,
+            "index_count": 486,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 2,
+            "external_identifier": 0,
+            "primitive_type": 3,
+            "lod_category": {
+              "value": 3,
+              "name": "_lod_category_0123"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 2
+            },
+            "variant_shader_index": -1,
+            "start_index": 348,
+            "index_count": 486,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 0,
+            "gear_dye_change_color_index": 2,
+            "external_identifier": 0,
+            "primitive_type": 3,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "static_textures": [
+                "3107841013_vfx_warpmap_noise_a",
+                "3107841013_vfx_warpmap_ripple_a"
+              ],
+              "type": 2
+            },
+            "variant_shader_index": -1,
+            "start_index": 0,
+            "index_count": 348,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 0,
+            "gear_dye_change_color_index": 2,
+            "external_identifier": 0,
+            "primitive_type": 3,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 2
+            },
+            "variant_shader_index": -1,
+            "start_index": 0,
+            "index_count": 348,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 2,
+            "external_identifier": 0,
+            "primitive_type": 3,
+            "lod_category": {
+              "value": 3,
+              "name": "_lod_category_0123"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 2
+            },
+            "variant_shader_index": -1,
+            "start_index": 348,
+            "index_count": 486,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 2,
+            "external_identifier": 0,
+            "primitive_type": 3,
+            "lod_category": {
+              "value": 3,
+              "name": "_lod_category_0123"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 2
+            },
+            "variant_shader_index": -1,
+            "start_index": 348,
+            "index_count": 486,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 0,
+            "gear_dye_change_color_index": 2,
+            "external_identifier": 0,
+            "primitive_type": 3,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 2
+            },
+            "variant_shader_index": -1,
+            "start_index": 0,
+            "index_count": 348,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 0,
+            "gear_dye_change_color_index": 2,
+            "external_identifier": 0,
+            "primitive_type": 3,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 2
+            },
+            "variant_shader_index": -1,
+            "start_index": 0,
+            "index_count": 348,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 2,
+            "external_identifier": 0,
+            "primitive_type": 3,
+            "lod_category": {
+              "value": 3,
+              "name": "_lod_category_0123"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 2
+            },
+            "variant_shader_index": -1,
+            "start_index": 348,
+            "index_count": 486,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 16392,
+            "gear_dye_change_color_index": 2,
+            "external_identifier": 0,
+            "primitive_type": 3,
+            "lod_category": {
+              "value": 3,
+              "name": "_lod_category_0123"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 2
+            },
+            "variant_shader_index": -1,
+            "start_index": 348,
+            "index_count": 486,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 0,
+            "gear_dye_change_color_index": 2,
+            "external_identifier": 0,
+            "primitive_type": 3,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 1
+          },
+          {
+            "shader": {
+              "type": 2
+            },
+            "variant_shader_index": -1,
+            "start_index": 0,
+            "index_count": 348,
+            "index_min": 0,
+            "index_max": 0,
+            "flags": 0,
+            "gear_dye_change_color_index": 2,
+            "external_identifier": 0,
+            "primitive_type": 3,
+            "lod_category": {
+              "value": 0,
+              "name": "_lod_category_0"
+            },
+            "lod_run": 1
+          }
+        ],
+        "stage_part_offsets": [
+          0,
+          4,
+          4,
+          4,
+          8,
+          8,
+          8,
+          8,
+          8,
+          8,
+          8,
+          8,
+          8,
+          8,
+          8,
+          8,
+          8,
+          8,
+          8,
+          8,
+          8,
+          8,
+          8,
+          8,
+          12
+        ]
+      }
+    ]
+  }
+}

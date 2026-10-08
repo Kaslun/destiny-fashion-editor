@@ -10,6 +10,7 @@
  * camera at that piece. Armor is class-specific, so switching class resets the
  * set.
  */
+import { LoadIntent } from "@/lib/editor/loadIntent";
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -116,9 +117,9 @@ interface ProfileChar {
 }
 
 /** Look one item up by hash for its display name/icon (the index the browser uses). */
-async function fetchItem(hash: number): Promise<ItemEntry | null> {
+async function fetchItem(hash: number, signal?: AbortSignal): Promise<ItemEntry | null> {
   try {
-    const res = await fetch(`/api/items?hash=${hash}`);
+    const res = await fetch(`/api/items?hash=${hash}`, { signal });
     const data = await res.json();
     return (data.item as ItemEntry | null) ?? null;
   } catch {
@@ -134,6 +135,8 @@ export default function EditorPage() {
   // be built outside a setState updater (no double-push under StrictMode).
   const [look, setLook] = useState<Look>(EMPTY_LOOK);
   const lookRef = useRef(look);
+  const loadIntent = useRef(new LoadIntent());
+  useEffect(() => () => loadIntent.current.invalidate(), []);
   const past = useRef<Look[]>([]);
   const future = useRef<Look[]>([]);
   /** The look Revert returns to: the pulled loadout, or the opening set. */
@@ -141,6 +144,7 @@ export default function EditorPage() {
   const [, bumpHistory] = useReducer((n: number) => n + 1, 0);
 
   const apply = useCallback((next: Look) => {
+    loadIntent.current.invalidate();
     lookRef.current = next;
     setLook(next);
   }, []);
@@ -387,12 +391,13 @@ export default function EditorPage() {
   // already-equipped piece (e.g. a real loadout or a user pick).
   const loadDefaultSet = useCallback(
     async (cls: number) => {
+      const request = loadIntent.current.begin();
       const results = await Promise.all(
         ARMOR_SLOTS.map(async ({ key }) => {
           const params = new URLSearchParams({ slot: key, kind: "armor", limit: "1" });
           if (cls !== 3) params.set("classType", String(cls));
           try {
-            const res = await fetch(`/api/items?${params.toString()}`);
+            const res = await fetch(`/api/items?${params.toString()}`, { signal: request.signal });
             const data = await res.json();
             return [key, data.items?.[0] as ItemEntry | undefined] as const;
           } catch {
@@ -400,6 +405,7 @@ export default function EditorPage() {
           }
         }),
       );
+      if (!request.current() || lookRef.current.classType !== cls) return;
       replace((prev) => {
         const items = { ...prev.items };
         for (const [key, item] of results) if (item && !items[key]) items[key] = item;
@@ -420,6 +426,7 @@ export default function EditorPage() {
    * turns up a bug can be reproduced from the console line.
    */
   const randomizeSet = useCallback(async () => {
+    const request = loadIntent.current.begin();
     const cls = lookRef.current.classType;
     const pick = <T,>(arr: T[]): T | undefined =>
       arr.length ? arr[Math.floor(Math.random() * arr.length)] : undefined;
@@ -430,7 +437,7 @@ export default function EditorPage() {
           const params = new URLSearchParams({ slot: key, kind: "armor", limit: "500" });
           if (cls !== 3) params.set("classType", String(cls));
           try {
-            const res = await fetch(`/api/items?${params.toString()}`);
+            const res = await fetch(`/api/items?${params.toString()}`, { signal: request.signal });
             const data = await res.json();
             return [key, pick((data.items ?? []) as ItemEntry[])] as const;
           } catch {
@@ -440,7 +447,7 @@ export default function EditorPage() {
       ),
       (async () => {
         try {
-          const res = await fetch("/api/items?kind=shader&limit=1000");
+          const res = await fetch("/api/items?kind=shader&limit=1000", { signal: request.signal });
           const data = await res.json();
           return (data.items ?? []) as ItemEntry[];
         } catch {
@@ -449,6 +456,7 @@ export default function EditorPage() {
       })(),
     ]);
 
+    if (!request.current() || lookRef.current.classType !== cls) return;
     setStatus({});
     commit((prev) => {
       const items = { ...prev.items };
@@ -509,13 +517,14 @@ export default function EditorPage() {
   }, []);
 
   const skipAccount = useCallback(() => {
+    loadDefaultSet(lookRef.current.classType);
     setGateDone(true);
     try {
       window.localStorage.setItem(MANUAL_MODE_KEY, "1");
     } catch {
       /* private mode — the gate just reappears next visit */
     }
-  }, []);
+  }, [loadDefaultSet]);
 
   // Start with a full placeholder set so the stage is never empty.
   useEffect(() => {
@@ -531,7 +540,7 @@ export default function EditorPage() {
    */
   const equipLoadout = useCallback(
     async (character: ProfileChar) => {
-      setActiveCharacter(character);
+      const request = loadIntent.current.begin();
       setGateDone(true);
       setStatus({});
       const armor = character.items.filter((it) =>
@@ -540,12 +549,14 @@ export default function EditorPage() {
       const resolved = await Promise.all(
         armor.map(async (it) => {
           const [display, shader] = await Promise.all([
-            fetchItem(it.itemHash),
-            it.shaderHash ? fetchItem(it.shaderHash) : Promise.resolve(null),
+            fetchItem(it.itemHash, request.signal),
+            it.shaderHash ? fetchItem(it.shaderHash, request.signal) : Promise.resolve(null),
           ]);
           return { it, display, shader };
         }),
       );
+      if (!request.current()) return;
+      setActiveCharacter(character);
       const items: SlotState<ItemEntry> = {};
       const shaders: SlotState<ItemEntry> = {};
       for (const { it, display, shader } of resolved) {
